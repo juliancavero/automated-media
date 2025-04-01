@@ -17,9 +17,25 @@ export class VideosService {
     private googleAIUploadService: GoogleAIUploadService,
   ) {}
 
-  async create(createVideoDto: CreateVideoDto): Promise<Video> {
+  async create(createVideoDto: CreateVideoDto): Promise<boolean> {
+    const existingVideo = await this.videoModel
+      .findOne({ url: createVideoDto.url })
+      .exec();
+
+    if (existingVideo) {
+      this.logger.warn(`Video with URL ${createVideoDto.url} already exists`);
+      return false;
+    }
+
     const newVideo = new this.videoModel(createVideoDto);
-    return newVideo.save();
+    try {
+      await newVideo.save();
+      this.logger.log(`Video created with ID: ${newVideo._id}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error creating video: ${error.message}`, error.stack);
+      throw new NotFoundException('Failed to create video');
+    }
   }
 
   async findAll(): Promise<Video[]> {
