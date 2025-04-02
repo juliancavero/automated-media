@@ -52,33 +52,8 @@
         cursor: pointer;
         font-weight: bold;
         transition: background-color 0.3s;
-        width: 100%;
+        width: 50%;
         text-align: center;
-      }
-      .btn-primary {
-        background-color: #007bff;
-        color: white;
-      }
-      .btn-primary:hover {
-        background-color: #0069d9;
-      }
-      .btn-secondary {
-        background-color: #6c757d;
-        color: white;
-      }
-      .btn-secondary:hover {
-        background-color: #5a6268;
-      }
-      .actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 20px;
-      }
-      .download-copy-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 20px;
-        gap: 20px;
       }
       .toast {
         position: fixed;
@@ -94,6 +69,52 @@
       }
       .toast.show {
         opacity: 1;
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+        justify-content: center;
+        align-items: center;
+      }
+      .actions > * {
+        width: 50%;
+        text-align: center;
+        box-sizing: border-box;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: block;
+        color: white;
+      }
+      .btn-primary {
+        background-color: #007bff;
+      }
+      .btn-primary:hover {
+        background-color: #0069d9;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+      }
+      .btn-secondary:hover {
+        background-color: #5a6268;
+      }
+      .btn-success {
+        background-color: #28a745;
+      }
+      .btn-success:hover {
+        background-color: #218838;
+      }
+      .btn-info {
+        background-color: #17a2b8;
+      }
+      .btn-info:hover {
+        background-color: #138496;
       }
     </style>
   </head>
@@ -116,16 +137,24 @@
         >{{description}}</div>
       </div>
 
-      <div class='download-copy-actions'>
-        <a href='http://www.tiktok.com/upload' class='btn btn-primary'>Go To
-          TikTok</a>
-        <button class='btn btn-secondary' onclick='copyDescription()'>Copy to
-          Clipboard</button>
-      </div>
-
       <div class='actions'>
-        <button class='btn btn-secondary' onclick='window.location.reload()'>Get
-          Another Video</button>
+        <button
+          class='btn btn-primary'
+          onclick='copyDescription()'
+        >COPIAR</button>
+        <a
+          href='http://www.tiktok.com/upload'
+          class='btn btn-secondary'
+          target='_blank'
+        >SUBIR</a>
+        <button
+          class='btn btn-success'
+          onclick='markAsUploaded()'
+        >MARCAR</button>
+        <button
+          class='btn btn-info'
+          onclick='window.location.reload()'
+        >OTRO</button>
       </div>
     </div>
 
@@ -134,7 +163,14 @@
     <script>
       function copyDescription() { const descText =
       document.getElementById('description-text').innerText;
-      navigator.clipboard.writeText(descText); }
+      navigator.clipboard.writeText(descText); } async function markAsUploaded()
+      { const videoId = '{{videoId}}'; try { const response = await
+      fetch(`/videos/${videoId}/mark-uploaded`, { method: 'PUT', }); if
+      (response.ok) { alert('Video marked as uploaded!');
+      window.location.reload(); } else { const errorData = await
+      response.json(); alert(`Failed to mark as uploaded:
+      ${errorData.message}`); } } catch (error) { alert(`An error occurred while
+      marking the video as uploaded.`); } }
     </script>
   </body>
 </html>

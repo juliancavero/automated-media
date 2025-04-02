@@ -9,6 +9,7 @@ import {
   Put,
   HttpStatus,
   HttpException,
+  HttpCode,
 } from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/create-video.dto';
@@ -56,5 +57,24 @@ export class VideosController {
     }
 
     return updatedVideo;
+  }
+
+  @Put(':id/mark-uploaded')
+  @HttpCode(HttpStatus.OK)
+  async markUploaded(@Param('id') id: string) {
+    try {
+      const updatedVideo = await this.videosService.update(id, {
+        uploaded: true,
+      });
+      if (!updatedVideo) {
+        throw new HttpException('Video not found', HttpStatus.NOT_FOUND);
+      }
+      return { message: 'Video marked as uploaded successfully' };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to mark video as uploaded: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

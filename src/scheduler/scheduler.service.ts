@@ -13,10 +13,10 @@ export class SchedulerService {
   ) {}
 
   /**
-   * Run every 6 hours (4 times a day) to generate descriptions for videos
-   * Times: 00:00, 06:00, 12:00, 18:00
+   * Run every 3 hours to generate descriptions for videos
+   * Times: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
    */
-  @Cron('0 0 */6 * * *')
+  @Cron('0 0 */3 * * *')
   async handleGenerateDescriptionCron() {
     this.logger.log('Running scheduled task to generate video description');
 
