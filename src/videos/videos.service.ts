@@ -94,6 +94,27 @@ export class VideosService {
     return videos[randomIndex];
   }
 
+  async findVideosWithDescriptionAndNotUploaded(): Promise<Video[]> {
+    return this.videoModel
+      .find({
+        description: { $exists: true, $ne: null },
+        uploaded: false,
+      })
+      .exec();
+  }
+
+  async selectRandomVideoWithDescription(): Promise<Video | null> {
+    const videos = await this.findVideosWithDescriptionAndNotUploaded();
+
+    if (!videos || videos.length === 0) {
+      this.logger.warn('No videos found with description and not uploaded');
+      return null;
+    }
+
+    const randomIndex = Math.floor(Math.random() * videos.length);
+    return videos[randomIndex];
+  }
+
   async generateDescriptionForRandomVideo(): Promise<Video | null> {
     this.logger.log('Generating description for a random video');
 

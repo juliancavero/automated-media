@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { VideosService } from '../videos/videos.service';
+import { BrowserService } from '../browser/browser.service';
 
 @Injectable()
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly browserService: BrowserService,
+  ) {}
 
   /**
    * Run every 6 hours (4 times a day) to generate descriptions for videos
@@ -30,6 +34,29 @@ export class SchedulerService {
     } catch (error) {
       this.logger.error(
         `Error in scheduled task: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Run every minute to keep the TikTok session active
+   */
+  //@Cron('0 * * * * *')
+  async handleTikTokNavigation() {
+    this.logger.log('Running scheduled task to navigate to TikTok');
+
+    try {
+      const result = await this.browserService.navigateToTikTok();
+
+      if (result.success) {
+        this.logger.log('Successfully navigated to TikTok homepage');
+      } else {
+        this.logger.error(`Failed to navigate to TikTok: ${result.message}`);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error in TikTok navigation task: ${error.message}`,
         error.stack,
       );
     }

@@ -79,6 +79,13 @@ $ npm run test:cov
 - `DELETE /videos/:id` - Delete a video
 - `POST /videos/generate-description` - Generate a description for a random video without a description
 
+### Browser Automation
+
+- `POST /browser/open?type=chromium` - Open a browser (type can be chromium, firefox, or webkit)
+- `GET /browser/navigate-to-google` - Navigate to Google Spain
+- `POST /browser/close` - Close the browser
+- `GET /browser/screenshot` - Take a screenshot of the current page
+
 ## AI Features
 
 The application uses Google's Generative AI to analyze videos and generate descriptions. The process works as follows:

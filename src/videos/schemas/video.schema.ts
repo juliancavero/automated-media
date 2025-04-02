@@ -7,7 +7,7 @@ export type VideoDocument = Video & Document;
   timestamps: true,
 })
 export class Video {
-  _id?: MongooseSchema.Types.ObjectId;
+  _id: MongooseSchema.Types.ObjectId;
 
   @Prop({ required: true })
   url: string;
