@@ -79,7 +79,7 @@
         align-items: center;
       }
       .actions > * {
-        width: 50%;
+        width: 100%;
         text-align: center;
         box-sizing: border-box;
         padding: 10px 15px;
@@ -116,10 +116,35 @@
       .btn-info:hover {
         background-color: #138496;
       }
+      /* Navigation menu styles */
+      .nav-menu {
+        display: flex;
+        justify-content: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .nav-link {
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      .nav-link:hover {
+        background-color: #0069d9;
+      }
     </style>
   </head>
   <body>
     <div class='container'>
+      <!-- Navigation menu -->
+      <div class='nav-menu'>
+        <a href='/' class='nav-link'>Home</a>
+        <a href='/post' class='nav-link'>Post</a>
+      </div>
+
       <div class='video-container'>
         <video controls>
           <source src='{{videoUrl}}' type='video/mp4' />
@@ -142,19 +167,10 @@
           class='btn btn-primary'
           onclick='copyDescription()'
         >COPIAR</button>
-        <a
-          href='http://www.tiktok.com/upload'
-          class='btn btn-secondary'
-          target='_blank'
-        >SUBIR</a>
         <button
           class='btn btn-success'
           onclick='markAsUploaded()'
         >MARCAR</button>
-        <button
-          class='btn btn-info'
-          onclick='window.location.reload()'
-        >OTRO</button>
       </div>
     </div>
 

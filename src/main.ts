@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import * as fs from 'fs';
 import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as hbs from 'hbs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -34,6 +35,22 @@ async function bootstrap() {
   // Configure Handlebars as the view engine
   app.setViewEngine('hbs');
   app.setBaseViewsDir(path.join(process.cwd(), 'views'));
+
+  // Register Handlebars helpers
+  hbs.registerHelper('truncate', function (text, length) {
+    if (!text) return '';
+    return text.length > length ? text.substring(0, length) + '...' : text;
+  });
+
+  hbs.registerHelper('formatDate', function (date) {
+    return new Date(date).toLocaleString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  });
 
   const port = process.env.PORT ?? 3000;
 

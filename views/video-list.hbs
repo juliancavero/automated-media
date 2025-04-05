@@ -1,0 +1,130 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Videos Pendientes</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+        cursor: pointer;
+      }
+      .description {
+        max-width: 400px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .date {
+        white-space: nowrap;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        font-style: italic;
+      }
+      /* Navigation menu styles */
+      .nav-menu {
+        display: flex;
+        justify-content: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .nav-link {
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      .nav-link:hover {
+        background-color: #0069d9;
+      }
+      /* Clickable row styling */
+      .clickable-row {
+        transition: background-color 0.2s;
+      }
+      .clickable-row:hover {
+        background-color: #e9f0f7;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <!-- Navigation menu -->
+      <div class='nav-menu'>
+        <a href='/' class='nav-link'>Home</a>
+        <a href='/post' class='nav-link'>Post</a>
+      </div>
+
+      <h1>Videos Pendientes de Subir</h1>
+
+      {{#if videos.length}}
+        <table>
+          <thead>
+            <tr>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each videos}}
+              <tr class='clickable-row' data-video-id='{{_id}}'>
+                <td class='description'>{{truncate description 100}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <div class='empty-message'>
+          <p>No hay videos pendientes de subir en este momento.</p>
+        </div>
+      {{/if}}
+    </div>
+
+    <script>
+      // Add click event listener to all rows with the clickable-row class
+      document.querySelectorAll('.clickable-row').forEach(row => {
+      row.addEventListener('click', function() { const videoId =
+      this.getAttribute('data-video-id'); window.location.href = '/video/' +
+      videoId; }); });
+    </script>
+  </body>
+</html>

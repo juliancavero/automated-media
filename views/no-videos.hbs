@@ -49,10 +49,35 @@
       .btn-primary:hover {
         background-color: #0069d9;
       }
+      /* Navigation menu styles */
+      .nav-menu {
+        display: flex;
+        justify-content: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .nav-link {
+        padding: 8px 15px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      .nav-link:hover {
+        background-color: #0069d9;
+      }
     </style>
   </head>
   <body>
     <div class='container'>
+      <!-- Navigation menu -->
+      <div class='nav-menu'>
+        <a href='/' class='nav-link'>Home</a>
+        <a href='/post' class='nav-link'>Post</a>
+      </div>
+      
       <h1>No Videos Available</h1>
       <p>{{message}}</p>
       <a href='/' class='btn btn-primary'>Go to Homepage</a>

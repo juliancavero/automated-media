@@ -12,9 +12,9 @@ export class VideosService {
   private readonly logger = new Logger(VideosService.name);
 
   constructor(
-    @InjectModel(Video.name) private videoModel: Model<VideoDocument>,
-    private aiService: AiService,
-    private googleAIUploadService: GoogleAIUploadService,
+    @InjectModel(Video.name) private readonly videoModel: Model<VideoDocument>,
+    private readonly aiService: AiService,
+    private readonly googleAIUploadService: GoogleAIUploadService,
   ) {}
 
   async create(createVideoDto: CreateVideoDto): Promise<boolean> {
@@ -158,7 +158,7 @@ export class VideosService {
         .exec();
 
       this.logger.log(
-        `Updated video ${selectedVideo._id} with new description`,
+        `Updated video ${selectedVideo._id} wsith new description`,
       );
 
       return updatedVideo;
