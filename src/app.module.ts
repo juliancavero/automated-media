@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AiModule } from './ai/ai.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ConfigModule } from '@nestjs/config';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ConfigModule } from '@nestjs/config';
     VideosModule,
     AiModule,
     SchedulerModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [],

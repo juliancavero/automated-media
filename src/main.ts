@@ -36,6 +36,10 @@ async function bootstrap() {
   app.setViewEngine('hbs');
   app.setBaseViewsDir(path.join(process.cwd(), 'views'));
 
+  hbs.registerHelper('add', function (value1, value2) {
+    return value1 + value2;
+  });
+
   // Register Handlebars helpers
   hbs.registerHelper('truncate', function (text, length) {
     if (!text) return '';

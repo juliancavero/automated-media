@@ -38,6 +38,31 @@ export class AppController {
     };
   }
 
+  @Get('no-description')
+  @Render('video-list')
+  async getVideosWithoutDescription() {
+    const videos =
+      await this.videosService.findVideosWithoutDescriptionAndNotUploaded();
+
+    return {
+      videos,
+      title: 'Videos Sin Descripción',
+      formatDate: (date) => {
+        return new Date(date).toLocaleString('es-ES', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      },
+      truncate: (text, length) => {
+        if (!text) return '';
+        return text.length > length ? text.substring(0, length) + '...' : text;
+      },
+    };
+  }
+
   @Get('video/:id')
   @Render('video-preview')
   async getVideoById(@Param('id') id: string) {
@@ -69,6 +94,15 @@ export class AppController {
     this.logger.log('Accessing post page for generating descriptions');
     return {
       title: 'Generate Video Description',
+    };
+  }
+
+  @Get('upload')
+  @Render('upload-videos')
+  getUploadPage() {
+    this.logger.log('Accessing upload videos page');
+    return {
+      title: 'Upload Videos',
     };
   }
 }

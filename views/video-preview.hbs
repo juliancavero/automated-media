@@ -79,7 +79,7 @@
         align-items: center;
       }
       .actions > * {
-        width: 100%;
+        width: 50%;
         text-align: center;
         box-sizing: border-box;
         padding: 10px 15px;
@@ -116,6 +116,12 @@
       .btn-info:hover {
         background-color: #138496;
       }
+      .btn-danger {
+        background-color: #dc3545;
+      }
+      .btn-danger:hover {
+        background-color: #c82333;
+      }
       /* Navigation menu styles */
       .nav-menu {
         display: flex;
@@ -142,7 +148,9 @@
       <!-- Navigation menu -->
       <div class='nav-menu'>
         <a href='/' class='nav-link'>Home</a>
-        <a href='/post' class='nav-link'>Post</a>
+        <a href='/post' class='nav-link'>Generate Description</a>
+        <a href='/upload' class='nav-link'>Upload Videos</a>
+        <a href='/no-description' class='nav-link'>No Description</a>
       </div>
 
       <div class='video-container'>
@@ -171,22 +179,62 @@
           class='btn btn-success'
           onclick='markAsUploaded()'
         >MARCAR</button>
+        <button
+          class='btn btn-danger'
+          onclick='deleteVideo()'
+        >BORRAR</button>
       </div>
     </div>
 
     <div id='toast' class='toast'>Text copied to clipboard!</div>
 
     <script>
-      function copyDescription() { const descText =
-      document.getElementById('description-text').innerText;
-      navigator.clipboard.writeText(descText); } async function markAsUploaded()
-      { const videoId = '{{videoId}}'; try { const response = await
-      fetch(`/videos/${videoId}/mark-uploaded`, { method: 'PUT', }); if
-      (response.ok) { alert('Video marked as uploaded!');
-      window.location.reload(); } else { const errorData = await
-      response.json(); alert(`Failed to mark as uploaded:
-      ${errorData.message}`); } } catch (error) { alert(`An error occurred while
-      marking the video as uploaded.`); } }
+      function copyDescription() { 
+        const descText = document.getElementById('description-text').innerText;
+        navigator.clipboard.writeText(descText); 
+      } 
+      
+      async function markAsUploaded() { 
+        const videoId = '{{videoId}}'; 
+        try { 
+          const response = await fetch(`/videos/${videoId}/mark-uploaded`, { 
+            method: 'PUT', 
+          }); 
+          if (response.ok) { 
+            alert('Video marked as uploaded!');
+            window.location.reload(); 
+          } else { 
+            const errorData = await response.json(); 
+            alert(`Failed to mark as uploaded: ${errorData.message}`); 
+          } 
+        } catch (error) { 
+          alert(`An error occurred while marking the video as uploaded.`); 
+        } 
+      }
+
+      async function deleteVideo() {
+        if (!confirm('¿Estás seguro de que quieres borrar este video?')) {
+          return;
+        }
+        
+        const videoId = '{{videoId}}';
+        try {
+          const response = await fetch(`/videos/${videoId}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            alert('Video borrado con éxito');
+            window.location.href = '/';  // Redirect to home page
+          } else {
+            const errorData = await response.json();
+            alert(`Error al borrar el video: ${errorData.message}`);
+          }
+        } catch (error) {
+          alert('Ha ocurrido un error al intentar borrar el video');
+          console.error(error);
+        }
+      }
     </script>
   </body>
 </html>

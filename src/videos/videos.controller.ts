@@ -10,14 +10,22 @@ import {
   HttpStatus,
   HttpException,
   HttpCode,
+  UseInterceptors,
+  UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('videos')
 export class VideosController {
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Post()
   create(@Body() createVideoDto: CreateVideoDto) {
@@ -40,8 +48,20 @@ export class VideosController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.videosService.remove(id);
+  @HttpCode(HttpStatus.OK)
+  async remove(@Param('id') id: string) {
+    try {
+      await this.videosService.remove(id);
+      return { message: 'Video deleted successfully' };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException(
+        `Failed to delete video: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('generate-description')
@@ -73,6 +93,36 @@ export class VideosController {
     } catch (error) {
       throw new HttpException(
         `Failed to mark video as uploaded: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVideo(@UploadedFile() file: Express.Multer.File) {
+    try {
+      if (!file) {
+        throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
+      }
+
+      const result = await this.cloudinaryService.uploadFile(file);
+
+      // Create a new video entry with the Cloudinary URL
+      const createVideoDto: CreateVideoDto = {
+        url: result.url,
+      };
+
+      await this.videosService.create(createVideoDto);
+
+      return {
+        message: 'Video uploaded successfully',
+        url: result.url,
+        public_id: result.public_id,
+      };
+    } catch (error) {
+      throw new HttpException(
+        `Failed to upload video: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -31,6 +31,10 @@ This application requires the following environment variables:
 
 ```
 GOOGLE_AI_API_KEY=your_google_ai_api_key
+MONGO_URI=your_mongodb_connection_string
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 PORT=3000 (optional, defaults to 3000)
 ```
 
@@ -78,6 +82,7 @@ $ npm run test:cov
 - `PATCH /videos/:id` - Update a video
 - `DELETE /videos/:id` - Delete a video
 - `POST /videos/generate-description` - Generate a description for a random video without a description
+- `POST /videos/upload` - Upload a video file to Cloudinary and create a new video entry
 
 ### Browser Automation
 
