@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VideosModule } from './videos/videos.module';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AiModule } from './ai/ai.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ConfigModule } from '@nestjs/config';
@@ -16,7 +15,7 @@ import { ConfigModule } from '@nestjs/config';
     SchedulerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
   exports: [],
 })
 export class AppModule {}

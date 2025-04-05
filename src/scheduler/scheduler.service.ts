@@ -8,11 +8,7 @@ export class SchedulerService {
 
   constructor(private readonly videosService: VideosService) {}
 
-  /**
-   * Run every 3 hours to generate descriptions for videos
-   * Times: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00
-   */
-  @Cron('0 0 */3 * * *')
+  @Cron('0 */15 * * * *')
   async handleGenerateDescriptionCron() {
     this.logger.log('Running scheduled task to generate video description');
 
@@ -33,10 +29,5 @@ export class SchedulerService {
         error.stack,
       );
     }
-  }
-
-  @Cron('0 * * * * *')
-  async handleCron() {
-    this.logger.log('Called every minute');
   }
 }

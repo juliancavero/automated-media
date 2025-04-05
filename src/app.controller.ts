@@ -6,22 +6,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AppService } from './app.service';
 import { VideosService } from './videos/videos.service';
 
 @Controller()
 export class AppController {
   private readonly logger = new Logger(AppController.name);
 
-  constructor(
-    private readonly appService: AppService,
-    private readonly videosService: VideosService,
-  ) {}
+  constructor(private readonly videosService: VideosService) {}
 
   @Get()
   @Render('video-list')
   async getVideoList() {
-    this.logger.log('Getting list of non-uploaded videos for homepage');
     const videos =
       await this.videosService.findVideosWithDescriptionAndNotUploaded();
 
@@ -46,8 +41,6 @@ export class AppController {
   @Get('video/:id')
   @Render('video-preview')
   async getVideoById(@Param('id') id: string) {
-    this.logger.log(`Getting video preview for ID: ${id}`);
-
     try {
       const video = await this.videosService.findOne(id);
 
