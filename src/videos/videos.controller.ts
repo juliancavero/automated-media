@@ -75,6 +75,35 @@ export class VideosController {
     return updatedVideo;
   }
 
+  @Post(':id/generate-description')
+  @HttpCode(HttpStatus.OK)
+  async generateDescriptionForVideo(@Param('id') id: string) {
+    try {
+      const updatedVideo =
+        await this.videosService.generateDescriptionForVideo(id);
+
+      if (!updatedVideo) {
+        throw new HttpException(
+          'Failed to generate description for the video',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      return {
+        message: 'Description generated successfully',
+        video: updatedVideo,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException(
+        `Failed to generate description: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Put(':id/mark-uploaded')
   @HttpCode(HttpStatus.OK)
   async markUploaded(@Param('id') id: string) {

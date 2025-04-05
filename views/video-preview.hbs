@@ -55,6 +55,10 @@
         width: 50%;
         text-align: center;
       }
+      .btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
       .toast {
         position: fixed;
         bottom: 20px;
@@ -122,6 +126,11 @@
       .btn-danger:hover {
         background-color: #c82333;
       }
+      .btn-outlined {
+        background-color: transparent;
+        border: 2px solid #007bff;
+        color: #007bff;
+      }
       /* Navigation menu styles */
       .nav-menu {
         display: flex;
@@ -140,6 +149,12 @@
       }
       .nav-link:hover {
         background-color: #0069d9;
+      }
+
+      .centered {
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
     </style>
   </head>
@@ -164,10 +179,18 @@
         <div class='description-header'>
           <h2>Description</h2>
         </div>
+        {{#if description}}
         <div
           class='description-text'
           id='description-text'
         >{{description}}</div>
+        {{else}}
+        <div class='description-text centered' id='description-text'><button
+            id="generate-btn"
+            class='btn btn-outlined'
+            onclick='generateDescription()'
+          >GENERAR</button></div>
+        {{/if}}
       </div>
 
       <div class='actions'>
@@ -233,6 +256,38 @@
         } catch (error) {
           alert('Ha ocurrido un error al intentar borrar el video');
           console.error(error);
+        }
+      }
+
+      async function generateDescription() {
+        const videoId = '{{videoId}}';
+        const generateBtn = document.getElementById('generate-btn');
+        
+        try {
+          // Set button to loading state
+          generateBtn.disabled = true;
+          generateBtn.textContent = 'Generando...';
+          
+          const response = await fetch(`/videos/${videoId}/generate-description`, {
+            method: 'POST',
+          });
+          
+          if (response.ok) {
+            alert('Description generated successfully!');
+            window.location.reload();
+          } else {
+            const errorData = await response.json();
+            alert(`Failed to generate description: ${errorData.message}`);
+            // Reset button if there's an error
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'GENERAR';
+          }
+        } catch (error) {
+          alert('An error occurred while generating the description.');
+          console.error(error);
+          // Reset button if there's an error
+          generateBtn.disabled = false;
+          generateBtn.textContent = 'GENERAR';
         }
       }
     </script>

@@ -188,6 +188,53 @@ export class VideosService {
     }
   }
 
+  async generateDescriptionForVideo(id: string): Promise<Video | null> {
+    this.logger.log(`Generating description for video with ID: ${id}`);
+
+    const video = await this.videoModel.findById(id).exec();
+    if (!video) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+
+    this.logger.log(`Found video: ${video._id} with URL: ${video.url}`);
+
+    try {
+      // Upload the video using the GoogleAIUploadService
+      this.logger.log('Uploading video using GoogleAIUploadService');
+      const file = await this.googleAIUploadService.uploadVideoFromUrl(
+        video.url,
+      );
+
+      this.logger.log(
+        `File ${file.displayName} is ready for inference as ${file.uri}`,
+      );
+
+      // Generate description using the AI service with the File API data
+      this.logger.log('Generating description with AI using File API');
+      const result = await this.aiService.generateVideoDescriptionWithFileData(
+        file.mimeType,
+        file.uri,
+      );
+
+      this.logger.log('Description generated successfully');
+
+      // Update the video with the generated description
+      const updatedVideo = await this.videoModel
+        .findByIdAndUpdate(video._id, { description: result }, { new: true })
+        .exec();
+
+      this.logger.log(`Updated video ${video._id} with new description`);
+
+      return updatedVideo;
+    } catch (error) {
+      this.logger.error(
+        `Error during video processing: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
   async markAsUploaded(id: string): Promise<Video> {
     this.logger.log(`Marking video with ID ${id} as uploaded`);
 
