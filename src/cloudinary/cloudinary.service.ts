@@ -63,4 +63,38 @@ export class CloudinaryService {
       throw error;
     }
   }
+
+  async deleteFile(publicId: string): Promise<boolean> {
+    try {
+      this.logger.log(
+        `Deleting file with public ID: ${publicId} from Cloudinary`,
+      );
+
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.destroy(
+          publicId,
+          { resource_type: 'video' },
+          (error, result) => {
+            if (error) {
+              this.logger.error(
+                `Failed to delete file from Cloudinary: ${error.message}`,
+                error.stack,
+              );
+              return reject(new Error('Cloudinary deletion failed'));
+            }
+
+            this.logger.log(
+              `File with public ID ${publicId} deleted successfully from Cloudinary`,
+            );
+
+            // result.result will be 'ok' if deletion was successful
+            return resolve(result.result === 'ok');
+          },
+        );
+      });
+    } catch (error) {
+      this.logger.error(`Error in deleteFile: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 }

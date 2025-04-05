@@ -2,10 +2,10 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateVideoDto } from './dto/create-video.dto';
-import { UpdateVideoDto } from './dto/update-video.dto';
 import { Video, VideoDocument } from './schemas/video.schema';
 import { AiService } from '../ai/ai.service';
 import { GoogleAIUploadService } from '../google-ai-upload/google-ai-upload.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class VideosService {
@@ -15,6 +15,7 @@ export class VideosService {
     @InjectModel(Video.name) private readonly videoModel: Model<VideoDocument>,
     private readonly aiService: AiService,
     private readonly googleAIUploadService: GoogleAIUploadService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createVideoDto: CreateVideoDto): Promise<boolean> {
@@ -50,23 +51,39 @@ export class VideosService {
     return video;
   }
 
-  async update(id: string, updateVideoDto: UpdateVideoDto): Promise<Video> {
-    const updatedVideo = await this.videoModel
-      .findByIdAndUpdate(id, updateVideoDto, { new: true })
-      .exec();
-
-    if (!updatedVideo) {
+  async remove(id: string): Promise<void> {
+    // First, find the video to get the publicId
+    const video = await this.videoModel.findById(id).exec();
+    if (!video) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
 
-    return updatedVideo;
-  }
+    // If video has a publicId, delete from Cloudinary first
+    if (video.publicId) {
+      try {
+        this.logger.log(
+          `Attempting to delete from Cloudinary: ${video.publicId}`,
+        );
+        await this.cloudinaryService.deleteFile(video.publicId);
+        this.logger.log(
+          `Successfully deleted from Cloudinary: ${video.publicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error deleting from Cloudinary: ${error.message}. Continuing with database deletion.`,
+          error.stack,
+        );
+        // We continue with database deletion even if Cloudinary deletion fails
+      }
+    }
 
-  async remove(id: string): Promise<void> {
+    // Delete from database
     const result = await this.videoModel.deleteOne({ _id: id }).exec();
     if (result.deletedCount === 0) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
+
+    this.logger.log(`Successfully deleted video with ID ${id} from database`);
   }
 
   async findVideosWithoutDescriptionAndNotUploaded(): Promise<Video[]> {
@@ -169,5 +186,20 @@ export class VideosService {
       );
       return null;
     }
+  }
+
+  async markAsUploaded(id: string): Promise<Video> {
+    this.logger.log(`Marking video with ID ${id} as uploaded`);
+
+    const updatedVideo = await this.videoModel
+      .findByIdAndUpdate(id, { uploaded: true }, { new: true })
+      .exec();
+
+    if (!updatedVideo) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+
+    this.logger.log(`Successfully marked video ${id} as uploaded`);
+    return updatedVideo;
   }
 }

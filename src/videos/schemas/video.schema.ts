@@ -17,6 +17,9 @@ export class Video {
 
   @Prop({ default: false })
   uploaded: boolean;
+
+  @Prop()
+  publicId: string;
 }
 
 export const VideoSchema = SchemaFactory.createForClass(Video);

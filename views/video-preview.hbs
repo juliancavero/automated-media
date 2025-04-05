@@ -224,7 +224,7 @@
           });
           
           if (response.ok) {
-            alert('Video borrado con éxito');
+            alert('Video borrado con éxito de la base de datos y Cloudinary');
             window.location.href = '/';  // Redirect to home page
           } else {
             const errorData = await response.json();
