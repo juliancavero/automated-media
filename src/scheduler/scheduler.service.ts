@@ -34,4 +34,9 @@ export class SchedulerService {
       );
     }
   }
+
+  @Cron('0 * * * * *')
+  async handleCron() {
+    this.logger.log('Called every minute');
+  }
 }
