@@ -74,6 +74,10 @@ $ npm run test:cov
 
 ## API Endpoints
 
+### Image Generation
+
+- `POST /image-generation/generate` - Generate images from an array of text prompts. Accepts a JSON array of strings as input and returns an array of image URLs.
+
 ### Video Management
 
 - `GET /videos` - Get all videos
@@ -119,6 +123,30 @@ $ mau deploy
 ```
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## AWS Polly Configuration
+
+The application uses AWS Polly for text-to-speech functionality. To set up AWS credentials:
+
+### Option 1: Using Environment Variables (Recommended)
+
+Add the following variables to your `.env` file:
+
+```
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_REGION=your_aws_region
+```
+
+### Option 2: Using AWS CLI
+
+Install the AWS CLI and configure your credentials:
+
+```bash
+$ aws configure
+```
+
+Follow the prompts to enter your AWS Access Key ID, Secret Access Key, and default region.
 
 ## Resources
 

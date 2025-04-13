@@ -1,29 +1,7 @@
 <html lang='en'>
   <head>
-    <meta charset='UTF-8' />
-    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Videos Pendientes</title>
+    {{> head}}
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        margin: 0;
-        padding: 20px;
-        background-color: #f5f5f5;
-      }
-      .container {
-        max-width: 900px;
-        margin: 0 auto;
-        background-color: #fff;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        color: #333;
-        text-align: center;
-        margin-bottom: 20px;
-      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -58,26 +36,6 @@
         color: #666;
         font-style: italic;
       }
-      /* Navigation menu styles */
-      .nav-menu {
-        display: flex;
-        justify-content: flex-start;
-        gap: 15px;
-        margin-bottom: 20px;
-      }
-      .nav-link {
-        padding: 8px 15px;
-        background-color: #007bff;
-        color: white;
-        text-decoration: none;
-        border-radius: 4px;
-        font-weight: bold;
-        transition: background-color 0.3s;
-      }
-      .nav-link:hover {
-        background-color: #0069d9;
-      }
-      /* Clickable row styling */
       .clickable-row {
         transition: background-color 0.2s;
       }
@@ -90,12 +48,7 @@
   <body>
     <div class='container'>
       <!-- Navigation menu -->
-      <div class='nav-menu'>
-        <a href='/' class='nav-link'>Home</a>
-        <a href='/post' class='nav-link'>Generate Description</a>
-        <a href='/upload' class='nav-link'>Upload Videos</a>
-        <a href='/no-description' class='nav-link'>No Description</a>
-      </div>
+      {{> navmenu}}
 
       <h1>Videos Pendientes de Subir</h1>
 

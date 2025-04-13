@@ -1,0 +1,126 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      .image-container {
+        margin: 30px auto;
+        max-width: 800px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+      .image-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+      }
+      .image-display {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .image-display img {
+        max-width: 100%;
+        max-height: 500px;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .image-details {
+        margin-top: 20px;
+      }
+      .detail-row {
+        display: flex;
+        margin-bottom: 10px;
+      }
+      .detail-label {
+        font-weight: bold;
+        width: 120px;
+      }
+      .detail-value {
+        flex: 1;
+      }
+      .prompt-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f3f3f3;
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
+      }
+      .actions {
+        margin-top: 30px;
+        text-align: center;
+      }
+      .actions button {
+        margin: 0 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      {{> navmenu}}
+
+      <div class='image-container'>
+        <div class='image-header'>
+          <h1>Image Details</h1>
+          <a href='/images/view/list' class='btn btn-outline-primary'>Back to List</a>
+        </div>
+        
+        <div class='image-display'>
+          <img src='/images/{{image._id}}' alt='{{image.description}}'>
+        </div>
+        
+        <div class='image-details'>
+          <div class='detail-row'>
+            <div class='detail-label'>ID:</div>
+            <div class='detail-value'>{{image._id}}</div>
+          </div>
+          <div class='detail-row'>
+            <div class='detail-label'>MIME Type:</div>
+            <div class='detail-value'>{{image.mimeType}}</div>
+          </div>
+          <div class='detail-row'>
+            <div class='detail-label'>Created:</div>
+            <div class='detail-value'>{{formatDate image.createdAt}}</div>
+          </div>
+          {{#if image.videoId}}
+          <div class='detail-row'>
+            <div class='detail-label'>Video ID:</div>
+            <div class='detail-value'>
+              <a href='/video/{{image.videoId}}'>{{image.videoId}}</a>
+            </div>
+          </div>
+          {{/if}}
+          <div class='detail-row'>
+            <div class='detail-label'>Order:</div>
+            <div class='detail-value'>{{image.order}}</div>
+          </div>
+        </div>
+        
+        {{#if image.prompt}}
+        <div class='prompt-container'>
+          <h4>Prompt:</h4>
+          <p>{{image.prompt}}</p>
+        </div>
+        {{/if}}
+        
+        <div class='actions'>
+          <button class='btn btn-primary' onclick='downloadImage("{{image._id}}")'>Download</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function downloadImage(id) {
+        const a = document.createElement('a');
+        a.href = `/images/${id}`;
+        a.download = `image-${id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    </script>
+  </body>
+</html>

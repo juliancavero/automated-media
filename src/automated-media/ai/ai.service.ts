@@ -1,9 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VIDEO_DESCRIPTION_PROMPT =
   'Act as a TikTok Content Manager. Analyze the provided video and generate a single, engaging, and optimized caption with relevant hashtags. Respond with the caption only, without any extra text or options.';
-
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -13,11 +12,11 @@ export class AiService {
     // Get API key from environment variable
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
-      this.logger.warn(
-        'GOOGLE_AI_API_KEY not set. AI functionality will be limited.',
+      this.logger.error(
+        'GOOGLE_AI_API_KEY not set. AI functionality will not work.',
       );
     }
-    this.genAI = new GoogleGenerativeAI(apiKey || 'dummy-key');
+    this.genAI = new GoogleGenerativeAI(apiKey || '');
   }
 
   async generateVideoDescriptionWithFileData(
@@ -29,10 +28,7 @@ export class AiService {
     );
 
     if (!process.env.GOOGLE_AI_API_KEY) {
-      this.logger.warn(
-        'Using mock description because GOOGLE_AI_API_KEY is not set',
-      );
-      return `This is an AI-generated description for the video with URI ${fileUri}.`;
+      throw new UnauthorizedException('GOOGLE_AI_API_KEY is not set');
     }
 
     try {
@@ -50,13 +46,16 @@ export class AiService {
       const result = await model.generateContent([fileDataPart, textPart]);
 
       const description = result.response.text();
-      return description || `Could not generate description for ${fileUri}`;
+      if (!description) {
+        throw new Error(`Could not generate description for ${fileUri}`);
+      }
+      return description;
     } catch (error) {
       this.logger.error(
         `Error generating description with File API: ${error.message}`,
         error.stack,
       );
-      return `An automated description could not be generated for this video due to technical issues. Video URI: ${fileUri}`;
+      throw error;
     }
   }
 }

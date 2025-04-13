@@ -6,13 +6,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { VideosService } from './videos/videos.service';
+import { AudioStorageService } from './ai-video-generation/audio/audio-storage.service';
+import { VideosService } from './automated-media/videos/videos.service';
 
 @Controller()
 export class AppController {
   private readonly logger = new Logger(AppController.name);
 
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly audioStorageService: AudioStorageService,
+  ) {}
 
   @Get()
   @Render('video-list')
@@ -104,5 +108,41 @@ export class AppController {
     return {
       title: 'Upload Videos',
     };
+  }
+
+  @Get('text-to-speech')
+  @Render('text-to-speech')
+  getTextToSpeechPage() {
+    this.logger.log('Accessing text-to-speech page');
+    return {
+      title: 'Text to Speech',
+    };
+  }
+
+  @Get('audio-management')
+  @Render('audio-management')
+  async getAudioManagementPage() {
+    this.logger.log('Accessing audio management page');
+    try {
+      const audios = await this.audioStorageService.getAllAudios();
+      return {
+        title: 'Audio Management',
+        audios: audios.map((audio) => ({
+          id: audio._id,
+          originalText: audio.originalText,
+          url: `/api/audios/${audio._id}`,
+          format: audio.format,
+          voiceId: audio.voiceId || 'Default',
+          createdAt: audio.createdAt,
+        })),
+      };
+    } catch (error) {
+      this.logger.error(`Error getting audios: ${error.message}`);
+      return {
+        title: 'Audio Management',
+        error: 'Failed to load audio files',
+        audios: [],
+      };
+    }
   }
 }

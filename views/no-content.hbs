@@ -1,0 +1,44 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      .not-found-container {
+        margin: 30px auto;
+        max-width: 600px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+      .not-found-icon {
+        font-size: 60px;
+        color: #6c757d;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      {{> navmenu}}
+
+      <div class='not-found-container'>
+        <div class='not-found-icon'>
+          <i class='fas fa-search'></i>
+        </div>
+        <h2>Not Found</h2>
+        <p>{{message}}</p>
+        
+        {{#if type}}
+        <div style='margin: 20px 0;'>
+          <a href='/api/{{#if type}}{{#eq type 'audio'}}audios{{else}}images{{/eq}}{{/if}}/view/list' class='btn btn-outline-primary'>
+            Back to {{#if type}}{{#eq type 'audio'}}Audio{{else}}Image{{/eq}}{{/if}} List
+          </a>
+        </div>
+        {{/if}}
+        
+        <a href='/' class='btn btn-primary'>Go to Homepage</a>
+      </div>
+    </div>
+  </body>
+</html>

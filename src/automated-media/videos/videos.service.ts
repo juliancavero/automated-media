@@ -19,23 +19,23 @@ export class VideosService {
   ) {}
 
   async create(createVideoDto: CreateVideoDto): Promise<boolean> {
-    const existingVideo = await this.videoModel
-      .findOne({ url: createVideoDto.url })
-      .exec();
-
-    if (existingVideo) {
-      this.logger.warn(`Video with URL ${createVideoDto.url} already exists`);
-      return false;
-    }
-
-    const newVideo = new this.videoModel(createVideoDto);
     try {
+      const existingVideo = await this.videoModel
+        .findOne({ url: createVideoDto.url })
+        .exec();
+
+      if (existingVideo) {
+        this.logger.warn(`Video with URL ${createVideoDto.url} already exists`);
+        return false;
+      }
+
+      const newVideo = new this.videoModel(createVideoDto);
       await newVideo.save();
       this.logger.log(`Video created with ID: ${newVideo._id}`);
       return true;
     } catch (error) {
       this.logger.error(`Error creating video: ${error.message}`, error.stack);
-      throw new NotFoundException('Failed to create video');
+      throw new Error('Failed to create video');
     }
   }
 
@@ -52,38 +52,43 @@ export class VideosService {
   }
 
   async remove(id: string): Promise<void> {
-    // First, find the video to get the publicId
-    const video = await this.videoModel.findById(id).exec();
-    if (!video) {
-      throw new NotFoundException(`Video with ID ${id} not found`);
-    }
-
-    // If video has a publicId, delete from Cloudinary first
-    if (video.publicId) {
-      try {
-        this.logger.log(
-          `Attempting to delete from Cloudinary: ${video.publicId}`,
-        );
-        await this.cloudinaryService.deleteFile(video.publicId);
-        this.logger.log(
-          `Successfully deleted from Cloudinary: ${video.publicId}`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Error deleting from Cloudinary: ${error.message}. Continuing with database deletion.`,
-          error.stack,
-        );
-        // We continue with database deletion even if Cloudinary deletion fails
+    try {
+      // First, find the video to get the publicId
+      const video = await this.videoModel.findById(id).exec();
+      if (!video) {
+        throw new NotFoundException(`Video with ID ${id} not found`);
       }
-    }
 
-    // Delete from database
-    const result = await this.videoModel.deleteOne({ _id: id }).exec();
-    if (result.deletedCount === 0) {
-      throw new NotFoundException(`Video with ID ${id} not found`);
-    }
+      // If video has a publicId, delete from Cloudinary first
+      if (video.publicId) {
+        try {
+          this.logger.log(
+            `Attempting to delete from Cloudinary: ${video.publicId}`,
+          );
+          await this.cloudinaryService.deleteFile(video.publicId);
+          this.logger.log(
+            `Successfully deleted from Cloudinary: ${video.publicId}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error deleting from Cloudinary: ${error.message}. Continuing with database deletion.`,
+            error.stack,
+          );
+          // We continue with database deletion even if Cloudinary deletion fails
+        }
+      }
 
-    this.logger.log(`Successfully deleted video with ID ${id} from database`);
+      // Delete from database
+      const result = await this.videoModel.deleteOne({ _id: id }).exec();
+      if (result.deletedCount === 0) {
+        throw new NotFoundException(`Video with ID ${id} not found`);
+      }
+
+      this.logger.log(`Successfully deleted video with ID ${id} from database`);
+    } catch (error) {
+      this.logger.error(`Error removing video: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   async findVideosWithoutDescriptionAndNotUploaded(): Promise<Video[]> {
@@ -100,15 +105,25 @@ export class VideosService {
   }
 
   async selectRandomVideoWithoutDescription(): Promise<Video | null> {
-    const videos = await this.findVideosWithoutDescriptionAndNotUploaded();
+    try {
+      const videos = await this.findVideosWithoutDescriptionAndNotUploaded();
 
-    if (!videos || videos.length === 0) {
-      this.logger.warn('No videos found without description and not uploaded');
+      if (!videos || videos.length === 0) {
+        this.logger.warn(
+          'No videos found without description and not uploaded',
+        );
+        return null;
+      }
+
+      const randomIndex = Math.floor(Math.random() * videos.length);
+      return videos[randomIndex];
+    } catch (error) {
+      this.logger.error(
+        `Error selecting random video: ${error.message}`,
+        error.stack,
+      );
       return null;
     }
-
-    const randomIndex = Math.floor(Math.random() * videos.length);
-    return videos[randomIndex];
   }
 
   async findVideosWithDescriptionAndNotUploaded(): Promise<Video[]> {
@@ -121,15 +136,23 @@ export class VideosService {
   }
 
   async selectRandomVideoWithDescription(): Promise<Video | null> {
-    const videos = await this.findVideosWithDescriptionAndNotUploaded();
+    try {
+      const videos = await this.findVideosWithDescriptionAndNotUploaded();
 
-    if (!videos || videos.length === 0) {
-      this.logger.warn('No videos found with description and not uploaded');
+      if (!videos || videos.length === 0) {
+        this.logger.warn('No videos found with description and not uploaded');
+        return null;
+      }
+
+      const randomIndex = Math.floor(Math.random() * videos.length);
+      return videos[randomIndex];
+    } catch (error) {
+      this.logger.error(
+        `Error selecting random video with description: ${error.message}`,
+        error.stack,
+      );
       return null;
     }
-
-    const randomIndex = Math.floor(Math.random() * videos.length);
-    return videos[randomIndex];
   }
 
   async generateDescriptionForRandomVideo(): Promise<Video | null> {
@@ -175,7 +198,7 @@ export class VideosService {
         .exec();
 
       this.logger.log(
-        `Updated video ${selectedVideo._id} wsith new description`,
+        `Updated video ${selectedVideo._id} with new description`,
       );
 
       return updatedVideo;
@@ -191,14 +214,14 @@ export class VideosService {
   async generateDescriptionForVideo(id: string): Promise<Video | null> {
     this.logger.log(`Generating description for video with ID: ${id}`);
 
-    const video = await this.videoModel.findById(id).exec();
-    if (!video) {
-      throw new NotFoundException(`Video with ID ${id} not found`);
-    }
-
-    this.logger.log(`Found video: ${video._id} with URL: ${video.url}`);
-
     try {
+      const video = await this.videoModel.findById(id).exec();
+      if (!video) {
+        throw new NotFoundException(`Video with ID ${id} not found`);
+      }
+
+      this.logger.log(`Found video: ${video._id} with URL: ${video.url}`);
+
       // Upload the video using the GoogleAIUploadService
       this.logger.log('Uploading video using GoogleAIUploadService');
       const file = await this.googleAIUploadService.uploadVideoFromUrl(
@@ -236,17 +259,25 @@ export class VideosService {
   }
 
   async markAsUploaded(id: string): Promise<Video> {
-    this.logger.log(`Marking video with ID ${id} as uploaded`);
+    try {
+      this.logger.log(`Marking video with ID ${id} as uploaded`);
 
-    const updatedVideo = await this.videoModel
-      .findByIdAndUpdate(id, { uploaded: true }, { new: true })
-      .exec();
+      const updatedVideo = await this.videoModel
+        .findByIdAndUpdate(id, { uploaded: true }, { new: true })
+        .exec();
 
-    if (!updatedVideo) {
-      throw new NotFoundException(`Video with ID ${id} not found`);
+      if (!updatedVideo) {
+        throw new NotFoundException(`Video with ID ${id} not found`);
+      }
+
+      this.logger.log(`Successfully marked video ${id} as uploaded`);
+      return updatedVideo;
+    } catch (error) {
+      this.logger.error(
+        `Error marking video as uploaded: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
-
-    this.logger.log(`Successfully marked video ${id} as uploaded`);
-    return updatedVideo;
   }
 }

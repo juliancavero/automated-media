@@ -1,0 +1,132 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      .audio-container {
+        margin-bottom: 20px;
+      }
+      .audio-item {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 15px;
+        position: relative;
+      }
+      .audio-text {
+        margin-bottom: 10px;
+        font-style: italic;
+      }
+      .audio-player {
+        width: 100%;
+        margin: 10px 0;
+      }
+      .audio-meta {
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 0.85em;
+      }
+      .delete-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      .delete-btn:hover {
+        background-color: #c82333;
+      }
+      .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 30px;
+        font-style: italic;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <!-- Navigation menu -->
+      {{> navmenu}}
+
+      <h1>Audio Management</h1>
+
+      {{#if error}}
+        <div class="error-message">{{error}}</div>
+      {{/if}}
+
+      <div class="audio-container">
+        {{#if audios.length}}
+          {{#each audios}}
+            <div class="audio-item" id="audio-{{id}}">
+              <button class="delete-btn" onclick="deleteAudio('{{id}}')">Delete</button>
+              <div class="audio-text">{{originalText}}</div>
+              <audio controls class="audio-player" src="{{url}}"></audio>
+              <div class="audio-meta">
+                <span>Voice: {{voiceId}}</span>
+                <span>Format: {{format}}</span>
+                <span>Created: {{formatDate createdAt}}</span>
+              </div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-message">
+            <p>No audio files available.</p>
+            <a href="/text-to-speech" class="btn btn-primary">Generate New Audio</a>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <script>
+      async function deleteAudio(id) {
+        if (!confirm('Are you sure you want to delete this audio file?')) {
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/api/audios/${id}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            // Remove the audio item from the DOM
+            const audioItem = document.getElementById(`audio-${id}`);
+            if (audioItem) {
+              audioItem.remove();
+            }
+            
+            // Check if there are any audio items left
+            const remainingItems = document.querySelectorAll('.audio-item');
+            if (remainingItems.length === 0) {
+              document.querySelector('.audio-container').innerHTML = `
+                <div class="empty-message">
+                  <p>No audio files available.</p>
+                  <a href="/text-to-speech" class="btn btn-primary">Generate New Audio</a>
+                </div>
+              `;
+            }
+          } else {
+            const error = await response.json();
+            alert(`Failed to delete audio: ${error.message || 'Unknown error'}`);
+          }
+        } catch (error) {
+          alert(`Error: ${error.message}`);
+          console.error('Error deleting audio:', error);
+        }
+      }
+    </script>
+  </body>
+</html>

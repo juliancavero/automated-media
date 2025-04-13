@@ -1,0 +1,60 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      .error-container {
+        margin: 30px auto;
+        max-width: 800px;
+        padding: 20px;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        background-color: #f8d7da;
+      }
+      .error-header {
+        color: #721c24;
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+      .error-message {
+        margin-bottom: 20px;
+      }
+      .error-details {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        overflow: auto;
+        max-height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      {{> navmenu}}
+
+      <div class='error-container'>
+        <h1 class='error-header'>Error</h1>
+        <div class='error-message'>
+          <p>{{message}}</p>
+        </div>
+        
+        {{#if error}}
+        <div class='error-details'>
+          <strong>Details:</strong>
+          {{#if error.stack}}
+          <div>{{error.stack}}</div>
+          {{else}}
+          <div>{{error}}</div>
+          {{/if}}
+        </div>
+        {{/if}}
+        
+        <div style='margin-top: 20px; text-align: center;'>
+          <a href='/' class='btn btn-primary'>Go to Homepage</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

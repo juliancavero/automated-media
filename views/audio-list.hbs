@@ -1,0 +1,87 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      .audio-list {
+        margin-top: 20px;
+      }
+      .audio-item {
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+      .audio-item:hover {
+        background-color: #f9f9f9;
+        cursor: pointer;
+      }
+      .audio-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .audio-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .audio-details {
+        color: #666;
+        font-size: 0.9em;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      {{> navmenu}}
+
+      <h1>Audio Files</h1>
+
+      {{#if audios.length}}
+        <div class='audio-list'>
+          {{#each audios}}
+            <div class='audio-item' data-audio-id='{{_id}}'>
+              <div class='audio-info'>
+                <div>
+                  <div class='audio-title'>Audio #{{add @index 1}}</div>
+                  <div class='audio-details'>
+                    <strong>Format:</strong> {{format}} | 
+                    <strong>Created:</strong> {{formatDate createdAt}}
+                  </div>
+                  {{#if text}}
+                    <div class='audio-text'>"{{truncate text 100}}"</div>
+                  {{/if}}
+                </div>
+                <div>
+                  <audio controls>
+                    <source src='/api/audios/{{_id}}' type='audio/{{format}}'>
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class='empty-message'>
+          <p>No audio files found.</p>
+        </div>
+      {{/if}}
+    </div>
+
+    <script>
+      document.querySelectorAll('.audio-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const audioId = this.getAttribute('data-audio-id');
+          window.location.href = '/api/audios/view/' + audioId;
+        });
+      });
+    </script>
+  </body>
+</html>

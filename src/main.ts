@@ -5,23 +5,31 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as hbs from 'hbs';
+import * as express from 'express';
+
+// Helper function to create directories safely
+function ensureDirectoryExists(dir: string, logger: Logger): void {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    logger.log(`Created directory at: ${dir}`);
+  }
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  // Create temp directory if it doesn't exist
+  // Create required directories
   const tempDir = path.join(process.cwd(), 'temp');
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
-    logger.log(`Created temp directory at: ${tempDir}`);
-  }
-
-  // Create views directory if it doesn't exist
   const viewsDir = path.join(process.cwd(), 'views');
-  if (!fs.existsSync(viewsDir)) {
-    fs.mkdirSync(viewsDir, { recursive: true });
-    logger.log(`Created views directory at: ${viewsDir}`);
-  }
+  const publicDir = path.join(process.cwd(), 'public');
+  const videosDir = path.join(publicDir, 'videos');
+  const partialsDir = path.join(viewsDir, 'partials');
+
+  ensureDirectoryExists(tempDir, logger);
+  ensureDirectoryExists(viewsDir, logger);
+  ensureDirectoryExists(publicDir, logger);
+  ensureDirectoryExists(videosDir, logger);
+  ensureDirectoryExists(partialsDir, logger);
 
   // Check for important environment variables
   if (!process.env.GOOGLE_AI_API_KEY) {
@@ -32,15 +40,22 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Serve static files from the public directory
+  app.use('/videos', express.static(path.join(process.cwd(), 'public/videos')));
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
   // Configure Handlebars as the view engine
   app.setViewEngine('hbs');
   app.setBaseViewsDir(path.join(process.cwd(), 'views'));
 
+  // Register handlebars partials
+  hbs.registerPartials(partialsDir);
+
+  // Register Handlebars helpers
   hbs.registerHelper('add', function (value1, value2) {
     return value1 + value2;
   });
 
-  // Register Handlebars helpers
   hbs.registerHelper('truncate', function (text, length) {
     if (!text) return '';
     return text.length > length ? text.substring(0, length) + '...' : text;

@@ -1,0 +1,55 @@
+<nav class='main-nav'>
+  <div class='nav-menu'>
+    <a href='/' class='nav-link'>Home</a>
+    <a href='/post' class='nav-link'>Generate Description</a>
+    <a href='/upload' class='nav-link'>Upload Videos</a>
+    <a href='/no-description' class='nav-link'>No Description</a>
+    <a href='/text-to-speech' class='nav-link'>Text to Speech</a>
+    <a href='/audio-management' class='nav-link'>Audio Management</a>
+    <a href='/images/view/list' class='nav-link'>Image Management</a>
+  </div>
+</nav>
+
+<style>
+  .main-nav {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .nav-link {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    padding: 8px 15px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+  }
+
+  .nav-link:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    .nav-menu {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .nav-link {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+  }
+</style>
