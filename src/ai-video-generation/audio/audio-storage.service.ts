@@ -64,4 +64,18 @@ export class AudioStorageService {
       throw error;
     }
   }
+
+  async findByVideoId(videoId: string): Promise<StoredAudio[]> {
+    try {
+      return await this.storedAudioModel
+        .find({ videoId })
+        .sort({ createdAt: -1 })
+        .exec();
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving audios for video ID ${videoId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
 }

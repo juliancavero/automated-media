@@ -64,6 +64,50 @@ export class CloudinaryService {
     }
   }
 
+  async uploadVideo(
+    video: Buffer,
+  ): Promise<{ url: string; public_id: string }> {
+    try {
+      this.logger.log(`Uploading video to Cloudinary`);
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'video',
+            folder: 'automated-media',
+          },
+          (error, result) => {
+            if (error) {
+              this.logger.error(
+                `Failed to upload video to Cloudinary: ${error.message}`,
+                error.stack,
+              );
+              return reject(new Error('Cloudinary upload failed'));
+            }
+            if (!result) {
+              this.logger.error(
+                `Cloudinary upload returned no result for video`,
+              );
+              return reject(new Error('No result from Cloudinary'));
+            }
+            this.logger.log(`Video uploaded successfully to Cloudinary`);
+            return resolve({
+              url: result.secure_url,
+              public_id: result.public_id,
+            });
+          },
+        );
+        // Convert buffer to Readable Stream
+        const readableStream = new Readable();
+        readableStream.push(video);
+        readableStream.push(null);
+        readableStream.pipe(uploadStream);
+      });
+    } catch (error) {
+      this.logger.error(`Error in uploadVideo: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
   async deleteFile(publicId: string): Promise<boolean> {
     try {
       this.logger.log(

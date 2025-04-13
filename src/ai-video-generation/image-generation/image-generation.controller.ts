@@ -86,4 +86,22 @@ export class ImageGenerationController {
       });
     }
   }
+
+  @Post('generate')
+  async generateImage(@Body() body: { text: string }, @Res() res: Response) {
+    const image = await this.imageGenerationService.generateImageFromText(
+      body.text,
+      'exampleId',
+      0,
+    );
+    if (!image) {
+      res.status(500).send('Failed to generate image');
+      return;
+    }
+
+    return res.status(200).json({
+      message: 'Image generated successfully',
+      imageUrl: `${image}`,
+    });
+  }
 }

@@ -1,10 +1,6 @@
-export class AudioConfig {
-  voice: string;
-  language: string;
-  speed?: number;
-}
+import { TextToSpeechOptions } from 'src/ai-video-generation/aws-polly/interfaces/text-to-speech-options.interface';
 
 export class GenerateVideoDto {
   texts: string[];
-  audioConfig: AudioConfig;
+  options: TextToSpeechOptions;
 }

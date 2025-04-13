@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
-import { VideoController } from './video.controller';
-import { VideoBaseService } from './services/video-base.service';
-import { VideoGeneratorService } from './services/video-generator.service';
-import { FileOperationsService } from './services/file-operations.service';
-import { AudioService } from './services/audio.service';
+import { BullModule } from '@nestjs/bullmq';
+import { VideoService } from './video.service';
+import { VideoQueueService } from './video-queue.service';
+import { CloudinaryModule } from 'src/automated-media/cloudinary/cloudinary.module';
 
 @Module({
-  controllers: [VideoController],
-  providers: [
-    VideoBaseService,
-    VideoGeneratorService,
-    FileOperationsService,
-    AudioService,
+  imports: [
+    BullModule.registerQueue({
+      name: 'video-generation-queue',
+    }),
+    CloudinaryModule,
   ],
-  exports: [VideoBaseService],
+  controllers: [],
+  providers: [VideoQueueService, VideoService],
+  exports: [VideoQueueService, VideoService],
 })
 export class VideoModule {}

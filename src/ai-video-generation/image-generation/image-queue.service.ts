@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-
+import { v4 } from 'uuid';
 @Injectable()
 export class ImageQueueService {
   private readonly logger = new Logger(ImageQueueService.name);
@@ -14,12 +14,13 @@ export class ImageQueueService {
     text: string,
     videoId: string,
     order: number,
-  ): Promise<{ jobId: string }> {
+  ): Promise<string> {
     this.logger.log(
       `Adding image generation job to queue with text: ${text}, videoId: ${videoId}, order: ${order}`,
     );
 
     try {
+      const uuid = v4();
       const job = await this.imageQueue.add(
         'generate-image',
         { prompt: text, videoId, order },
@@ -31,11 +32,12 @@ export class ImageQueueService {
           },
           removeOnComplete: true,
           removeOnFail: false,
+          jobId: uuid, // Unique job ID
         },
       );
 
       this.logger.log(`Image generation job added with ID: ${job.id}`);
-      return { jobId: job.id || '' };
+      return uuid;
     } catch (error) {
       this.logger.error(
         `Failed to add image generation job to queue: ${error.message}`,

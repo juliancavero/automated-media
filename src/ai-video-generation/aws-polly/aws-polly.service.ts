@@ -7,6 +7,13 @@ import { TextToSpeechOptions } from './interfaces/text-to-speech-options.interfa
 import { validateAWSConfig } from './utils/aws-config';
 import { CreateStoredAudioDto } from '../audio/dto/create-stored-audio.dto';
 
+const DEFAULT_CONFIG: TextToSpeechOptions = {
+  voiceId: 'Joanna',
+  outputFormat: 'mp3',
+  languageCode: 'en-US',
+  engine: 'standard',
+};
+
 @Injectable()
 export class AwsPollyService {
   private readonly logger = new Logger(AwsPollyService.name);
@@ -77,8 +84,13 @@ export class AwsPollyService {
    */
   async convertTextsToSpeech(
     text: string,
-    options: TextToSpeechOptions,
+    options?: TextToSpeechOptions,
   ): Promise<CreateStoredAudioDto> {
+    const mergedOptions: TextToSpeechOptions = {
+      ...DEFAULT_CONFIG,
+      ...options,
+    };
+
     if (!this.isConfigured) {
       this.logger.error(
         'AWS Polly is not properly configured. Cannot convert text to speech.',
@@ -92,23 +104,23 @@ export class AwsPollyService {
 
     try {
       // Generate unique filename
-      const filename = `speech_${uuidv4()}.${options.outputFormat || 'mp3'}`;
+      const filename = `speech_${uuidv4()}.${mergedOptions.outputFormat || 'mp3'}`;
 
       // Convert text to speech using the AWS Polly service
       const audioData = await this.synthesizeSpeech(
         text,
-        this.mapOptionsToPollyParams(options),
+        this.mapOptionsToPollyParams(mergedOptions),
       );
 
       // Prepare storage data object
       const createStoredAudioDto: CreateStoredAudioDto = {
         originalText: text,
         audioData: audioData.toString('base64'),
-        mimeType: this.getMimeType(options.outputFormat || 'mp3'),
-        format: options.outputFormat || 'mp3',
-        voiceId: options.voiceId,
-        languageCode: options.languageCode,
-        engine: options.engine,
+        mimeType: this.getMimeType(mergedOptions.outputFormat || 'mp3'),
+        format: mergedOptions.outputFormat || 'mp3',
+        voiceId: mergedOptions.voiceId,
+        languageCode: mergedOptions.languageCode,
+        engine: mergedOptions.engine,
         fileName: filename,
       };
       this.logger.log(`Generated audio for text successfully`);

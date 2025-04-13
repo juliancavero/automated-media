@@ -5,6 +5,7 @@ import {
   HttpStatus,
   HttpException,
   Logger,
+  Get,
 } from '@nestjs/common';
 import { VideoGenerationService } from './video-generation.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
@@ -16,6 +17,30 @@ export class VideoGenerationController {
   constructor(
     private readonly videoGenerationService: VideoGenerationService,
   ) {}
+
+  @Get()
+  async listVideoGenerations() {
+    try {
+      this.logger.log('Listing all video generations');
+      const videoGenerations = await this.videoGenerationService.findAll();
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Video generations retrieved successfully',
+        data: videoGenerations,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error listing video generations: ${error.message}`,
+        error.stack,
+      );
+
+      throw new HttpException(
+        `Failed to list video generations: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Post()
   async generateVideo(@Body() generateVideoDto: GenerateVideoDto) {

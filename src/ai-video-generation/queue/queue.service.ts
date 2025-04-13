@@ -5,52 +5,51 @@ import { Queue } from 'bullmq';
 @Injectable()
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
+  private readonly queues: Map<string, Queue> = new Map();
 
   constructor(
     @InjectQueue('media-processing')
-    private readonly mediaProcessingQueue: Queue,
-  ) {}
-
-  async addToQueue(type: string, data: any, options?: any): Promise<string> {
-    try {
-      const job = await this.mediaProcessingQueue.add(
-        'media-job',
-        { type, data },
-        {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 1000,
-          },
-          ...options,
-        },
-      );
-
-      this.logger.log(`Job added to queue: ${job.id}`);
-      return job.id || '';
-    } catch (error) {
-      this.logger.error(`Failed to add job to queue: ${error.message}`);
-      throw error;
-    }
+    mediaProcessingQueue: Queue,
+    // Aquí puedes inyectar otras colas según necesites
+  ) {
+    this.queues.set('media-processing', mediaProcessingQueue);
+    // Añade más colas al mapa según sea necesario
   }
 
+  /**
+   * Obtiene el estado de un trabajo a partir de su ID
+   * Busca en todas las colas registradas
+   */
   async getJobStatus(jobId: string): Promise<any> {
-    const job = await this.mediaProcessingQueue.getJob(jobId);
+    this.logger.log(`Fetching status for job: ${jobId}`);
 
-    if (!job) {
-      return { status: 'not-found' };
+    // Intentar encontrar el trabajo en alguna de las colas
+    for (const [queueName, queue] of this.queues.entries()) {
+      const job = await queue.getJob(jobId);
+
+      if (job) {
+        const state = await job.getState();
+        const progress = job.progress;
+
+        this.logger.log(
+          `Job ${jobId} found in queue: ${queueName}, state: ${state}`,
+        );
+
+        return {
+          id: job.id,
+          queueName,
+          state,
+          progress,
+          data: job.data,
+          returnvalue: job.returnvalue,
+          failedReason: job.failedReason,
+          createdAt: job.timestamp,
+          finishedAt: job.finishedOn,
+        };
+      }
     }
 
-    const state = await job.getState();
-    const progress = job.progress;
-
-    return {
-      id: job.id,
-      state,
-      progress,
-      data: job.data,
-      returnvalue: job.returnvalue,
-      failedReason: job.failedReason,
-    };
+    this.logger.warn(`Job ${jobId} not found in any queue`);
+    return { status: 'not-found' };
   }
 }

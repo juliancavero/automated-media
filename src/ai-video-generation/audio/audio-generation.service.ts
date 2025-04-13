@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AwsPollyService } from '../aws-polly/aws-polly.service';
-import {
-  PollyVoiceId,
-  TextToSpeechOptions,
-} from '../aws-polly/interfaces/text-to-speech-options.interface';
+import { TextToSpeechOptions } from '../aws-polly/interfaces/text-to-speech-options.interface';
 import { AudioStorageService } from './audio-storage.service';
 import { StoredAudio } from './schemas/stored-audio.schema';
 
@@ -18,20 +15,13 @@ export class AudioGenerationService {
 
   async generateAudioFromText(
     text: string,
-    voiceId: PollyVoiceId,
     videoId: string,
     order: number,
+    options?: TextToSpeechOptions,
   ): Promise<string> {
     this.logger.log(`Generating audio for text: ${text}`);
 
     try {
-      // Configure AWS Polly options
-      const options: TextToSpeechOptions = {
-        voiceId: voiceId || 'Conchita',
-        outputFormat: 'mp3',
-        languageCode: 'es-ES',
-      };
-
       // Call AWS Polly service to convert text to speech
       const audioResult = await this.awsPollyService.convertTextsToSpeech(
         text,

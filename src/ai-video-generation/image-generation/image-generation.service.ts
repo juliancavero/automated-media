@@ -70,7 +70,8 @@ export class ImageGenerationService {
       const response = await this.genAI.models.generateContent({
         model: 'gemini-2.0-flash-exp-image-generation',
         contents:
-          'Generate an image based on the following text: \n\n' + prompt,
+          'Generate a high-quality, photorealistic image that visually represents the following concept. Do not include any text, labels, or words in the image itself: \n\n' +
+          prompt,
         config: {
           responseModalities: ['Text', 'Image'],
         },
@@ -108,7 +109,7 @@ export class ImageGenerationService {
               prompt,
               imageData,
               mimeType,
-              description: `Generated image for prompt: ${prompt}`,
+              description: `Create an image based on the: ${prompt}`,
               videoId,
               order,
             });
@@ -118,7 +119,7 @@ export class ImageGenerationService {
             );
 
             // Return URL to access the image via API
-            return `/api/images/${savedImage._id}`;
+            return `http://localhost:8080/images/view/${savedImage._id}`;
           }
         }
       }
@@ -153,6 +154,20 @@ export class ImageGenerationService {
     } catch (error) {
       this.logger.error(
         `Error retrieving image with ID ${id}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  async findByVideoId(videoId: string): Promise<GeneratedImage[]> {
+    try {
+      return await this.generatedImageModel
+        .find({ videoId })
+        .sort({ createdAt: -1 })
+        .exec();
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving images for video ID ${videoId}: ${error.message}`,
       );
       throw error;
     }

@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as path from 'path';
+import { GeneratedImage } from '../image-generation/schemas/generated-image.schema';
+import { StoredAudio } from '../audio/schemas/stored-audio.schema';
+import { CloudinaryService } from 'src/automated-media/cloudinary/cloudinary.service';
 import * as fs from 'fs';
-import * as https from 'https';
-import * as http from 'http';
-import { URL } from 'url';
+import * as path from 'path';
+import * as os from 'os';
+import { promisify } from 'util';
 
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
@@ -27,73 +29,42 @@ export class VideoService {
     format: 'mp4',
   };
 
+  constructor(private readonly cloudinaryService: CloudinaryService) {
+    this.logger.log('VideoService inicializado');
+  }
+
   /**
-   * Crea un video a partir de una lista de URLs de imágenes usando audios de la carpeta /public/audios
-   * @param imagenes Lista de URLs de imágenes
+   * Crea un video a partir de arrays de imágenes y audios generados
+   * @param imagenes Array de GeneratedImage
+   * @param audios Array de StoredAudio
    * @param options Opciones de configuración del video
    * @returns Promise<Buffer> Buffer con los datos del video generado
    */
   async crearVideo(
-    imagenes: string[],
+    imagenes: GeneratedImage[],
+    audios: StoredAudio[],
     options?: VideoOptions,
   ): Promise<Buffer> {
     const videoOptions = { ...this.DEFAULT_VIDEO_OPTIONS, ...options };
-    const tempDir = path.join(process.cwd(), 'temp');
-    const imageDir = path.join(tempDir, 'images', `job_${Date.now()}`);
-    const videoPath = path.join(
-      tempDir,
-      `video_${Date.now()}.${videoOptions.format}`,
-    );
-
-    // Directorio de audios
-    const publicDir = path.join(process.cwd(), 'public');
-    const audiosDir = path.join(publicDir, 'audios');
-
-    // Crear directorios necesarios
-    this.ensureDirectoryExists(tempDir);
-    this.ensureDirectoryExists(imageDir);
-    this.ensureDirectoryExists(publicDir);
-    this.ensureDirectoryExists(audiosDir);
-
-    const downloadedImages: string[] = [];
-    let audioFiles: string[] = [];
 
     try {
-      // Obtener archivos de audio de la carpeta /public/audios
-      audioFiles = this.getAudioFilesFromDirectory(audiosDir);
-      this.logger.log(`Archivos de audio encontrados: ${audioFiles.length}`);
-
-      // Descargar todas las imágenes
-      await Promise.all(
-        imagenes.map(async (imageUrl, index) => {
-          const imageName = `image${index + 1}.jpg`;
-          const imagePath = path.join(imageDir, imageName);
-          await this.downloadImage(imageUrl, imagePath);
-          downloadedImages.push(imagePath);
-        }),
+      this.logger.log(
+        `Creando video con ${imagenes.length} imágenes y ${audios.length} audios`,
       );
 
-      // Generar el video
-      await this.generateVideo(
-        downloadedImages,
-        audioFiles,
-        videoPath,
-        tempDir,
+      // Generar el video utilizando los datos en memoria
+      const videoBuffer = await this.generateVideo(
+        imagenes,
+        audios,
         videoOptions,
       );
 
-      // Leer el archivo de video como buffer
-      const videoBuffer = fs.readFileSync(videoPath);
+      this.logger.log(`Video generado exitosamente`);
+      // Subir el video a Cloudinary
+      const uploadResult =
+        await this.cloudinaryService.uploadVideo(videoBuffer);
 
-      // Limpiar archivos temporales (solo las imágenes y el video, no los audios porque los necesitamos para futuros videos)
-      this.limpiarArchivosTemporales(
-        [...downloadedImages, videoPath],
-        imageDir,
-      );
-
-      // Eliminar directorios temporales específicos de este trabajo
-      if (fs.existsSync(imageDir)) fs.rmdirSync(imageDir, { recursive: true });
-
+      this.logger.log(`Video subido a Cloudinary: ${uploadResult.url}`);
       return videoBuffer;
     } catch (error) {
       this.logger.error('Error al crear el video:', error);
@@ -102,465 +73,216 @@ export class VideoService {
   }
 
   /**
-   * Obtiene los archivos de audio .mp3 de un directorio
-   * @param directory Directorio donde buscar archivos de audio
-   * @returns Array de rutas de archivos de audio
-   */
-  private getAudioFilesFromDirectory(directory: string): string[] {
-    try {
-      if (!fs.existsSync(directory)) {
-        this.logger.warn(`El directorio ${directory} no existe`);
-        return [];
-      }
-
-      // Leer todos los archivos del directorio
-      const files = fs.readdirSync(directory);
-
-      // Filtrar solo archivos .mp3
-      const audioFiles = files
-        .filter((file) => file.toLowerCase().endsWith('.mp3'))
-        .map((file) => path.join(directory, file));
-
-      if (audioFiles.length === 0) {
-        this.logger.warn(`No se encontraron archivos .mp3 en ${directory}`);
-      }
-
-      return audioFiles;
-    } catch (error) {
-      this.logger.error(`Error al leer directorio de audios: ${error.message}`);
-      return [];
-    }
-  }
-
-  /**
-   * Asegura que un directorio exista, creándolo si es necesario
-   */
-  private ensureDirectoryExists(dir: string): void {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
-
-  /**
-   * Descarga una imagen desde una URL y la guarda en el sistema de archivos
-   */
-  private async downloadImage(
-    imageUrl: string,
-    imagePath: string,
-  ): Promise<void> {
-    return this.downloadFile(imageUrl, imagePath);
-  }
-
-  /**
-   * Descarga un archivo desde una URL y lo guarda en el sistema de archivos
-   */
-  private async downloadFile(fileUrl: string, filePath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const url = new URL(fileUrl);
-      const protocol = url.protocol === 'https:' ? https : http;
-
-      protocol
-        .get(fileUrl, (response) => {
-          if (response.statusCode !== 200) {
-            reject(
-              new Error(
-                `Failed to download file. Status code: ${response.statusCode}`,
-              ),
-            );
-            return;
-          }
-
-          const fileStream = fs.createWriteStream(filePath);
-          response.pipe(fileStream);
-
-          fileStream.on('finish', () => {
-            fileStream.close();
-            resolve();
-          });
-        })
-        .on('error', (error) => {
-          fs.unlink(filePath, () => reject(error));
-        });
-    });
-  }
-
-  /**
-   * Obtiene la duración de un archivo de audio en segundos
-   */
-  private async getAudioDuration(audioPath: string): Promise<number> {
-    try {
-      return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(audioPath, (err, metadata) => {
-          if (err) {
-            this.logger.error(
-              `Error obteniendo duración con ffprobe: ${err.message}`,
-            );
-            resolve(this.DEFAULT_VIDEO_OPTIONS.duration); // Usar duración por defecto en caso de error
-          } else {
-            const duration = metadata.format.duration;
-            resolve(duration);
-          }
-        });
-      });
-    } catch (error) {
-      this.logger.error(
-        `Error obteniendo duración del audio: ${error.message}`,
-      );
-      return this.DEFAULT_VIDEO_OPTIONS.duration; // Usar duración por defecto en caso de error
-    }
-  }
-
-  /**
-   * Genera un video a partir de imágenes utilizando ffmpeg, sincronizando cada imagen con su audio correspondiente
+   * Genera un video combinando imágenes y audios
+   * @param imagenes Array de imágenes generadas
+   * @param audios Array de audios almacenados
+   * @param options Opciones de configuración del video
+   * @returns Buffer con los datos del video generado
    */
   private async generateVideo(
-    imagePaths: string[],
-    audioPaths: string[],
-    videoPath: string,
-    publicDir: string,
+    imagenes: GeneratedImage[],
+    audios: StoredAudio[],
     options: VideoOptions,
-  ): Promise<void> {
-    if (audioPaths.length === 0) {
-      // Si no hay audios, usar el método original con duración fija por imagen
-      return this.generateVideoWithFixedDuration(
-        imagePaths,
-        [],
-        videoPath,
-        publicDir,
-        options,
-      );
-    }
-
-    // Crear directorio temporal para segmentos
-    const segmentsDir = path.join(publicDir, 'segments');
-    this.ensureDirectoryExists(segmentsDir);
+  ): Promise<Buffer> {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'video-gen-'));
+    const tempFiles: string[] = [];
 
     try {
-      const segments: { input: string; duration: number }[] = [];
-      const segmentFilePaths: string[] = [];
+      this.logger.log(`Creando archivos temporales en: ${tempDir}`);
 
-      // Para cada audio, crear un segmento de video con su imagen correspondiente
-      for (let i = 0; i < audioPaths.length; i++) {
-        // Usar la última imagen disponible si no hay suficientes imágenes
-        const imageIndex = Math.min(i, imagePaths.length - 1);
-        const imagePath = imagePaths[imageIndex];
-        const audioPath = audioPaths[i];
-
-        // Obtener duración del audio
-        const audioDuration = await this.getAudioDuration(audioPath);
-
-        // Crear segmento de video
-        const segmentPath = path.join(segmentsDir, `segment_${i}.mp4`);
-        await this.createVideoSegment(
-          imagePath,
-          audioPath,
-          segmentPath,
-          audioDuration,
-        );
-
-        segments.push({
-          input: segmentPath,
-          duration: audioDuration,
-        });
-        segmentFilePaths.push(segmentPath);
-      }
-
-      // Concatenar todos los segmentos en un solo video
-      await this.concatenateSegments(
-        segmentFilePaths,
-        videoPath,
-        options.format,
-      );
-
-      // Limpiar archivos temporales
-      for (const segmentPath of segmentFilePaths) {
-        if (fs.existsSync(segmentPath)) {
-          fs.unlinkSync(segmentPath);
-        }
-      }
-      if (fs.existsSync(segmentsDir)) {
-        fs.rmdirSync(segmentsDir);
-      }
-
-      return;
-    } catch (error) {
-      this.logger.error(`Error generando video: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Crear un segmento de video con una imagen y un audio
-   */
-  private async createVideoSegment(
-    imagePath: string,
-    audioPath: string,
-    outputPath: string,
-    duration: number,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(imagePath)
-        .inputOptions(['-loop 1', `-t ${duration}`])
-        .input(audioPath)
-        .outputOptions([
-          '-c:v libx264',
-          '-pix_fmt yuv420p',
-          '-c:a aac', // Use AAC codec for audio
-          '-b:a 192k', // Set audio bitrate to ensure quality
-          '-shortest',
-          `-t ${duration}`,
-          '-map 0:v:0', // Map video from first input
-          '-map 1:a:0', // Map audio from second input
-        ])
-        .on('start', (commandLine) => {
-          this.logger.log(`FFmpeg segmento iniciado: ${commandLine}`);
-        })
-        .on('error', (err) => {
-          this.logger.error(`Error en FFmpeg segmento: ${err.message}`);
-          reject(err);
-        })
-        .on('end', () => {
-          this.logger.log(`Segmento creado exitosamente: ${outputPath}`);
-          resolve();
-        })
-        .output(outputPath)
-        .run();
-    });
-  }
-
-  /**
-   * Concatenar múltiples segmentos de video en uno solo
-   */
-  private async concatenateSegments(
-    segmentPaths: string[],
-    outputPath: string,
-    format: string = 'mp4',
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Verify if we have segments to concatenate
-      if (segmentPaths.length === 0) {
-        reject(new Error('No hay segmentos para concatenar'));
-        return;
-      }
-
-      // Check if segments exist
-      for (const segmentPath of segmentPaths) {
-        if (!fs.existsSync(segmentPath)) {
-          reject(new Error(`Segment file not found: ${segmentPath}`));
-          return;
-        }
-      }
-
-      const command = ffmpeg();
-
-      // Crear una lista de concatanación para ffmpeg
-      const concatList = segmentPaths.map((p) => `file '${p}'`).join('\n');
-      const concatFilePath = path.join(
-        path.dirname(segmentPaths[0]),
-        'concat_list.txt',
-      );
-      fs.writeFileSync(concatFilePath, concatList);
-
-      command
-        .input(concatFilePath)
-        .inputOptions(['-f concat', '-safe 0'])
-        .outputOptions([
-          '-c:v copy', // Copy video stream without re-encoding
-          '-c:a aac', // Use AAC codec for audio
-          '-b:a 192k', // Set audio bitrate
-          '-movflags +faststart', // Optimize for web playback
-        ])
-        .on('start', (commandLine) => {
-          this.logger.log(`FFmpeg concatenación iniciada: ${commandLine}`);
-        })
-        .on('error', (err) => {
-          this.logger.error(`Error en FFmpeg concatenación: ${err.message}`);
-          if (fs.existsSync(concatFilePath)) {
-            fs.unlinkSync(concatFilePath);
-          }
-          reject(err);
-        })
-        .on('end', () => {
-          this.logger.log(`Video concatenado exitosamente: ${outputPath}`);
-          if (fs.existsSync(concatFilePath)) {
-            fs.unlinkSync(concatFilePath);
-          }
-
-          // Verify the output file has audio
-          this.verifyVideoHasAudio(outputPath)
-            .then((hasAudio) => {
-              if (!hasAudio) {
-                this.logger.warn(
-                  'El video generado no tiene audio o el stream de audio está corrupto',
-                );
-              }
-              resolve();
-            })
-            .catch((error) => {
-              this.logger.error(`Error verificando audio: ${error.message}`);
-              resolve(); // Still resolve to continue the process
-            });
-        })
-        .output(outputPath)
-        .run();
-    });
-  }
-
-  /**
-   * Verificar si un archivo de video tiene audio
-   */
-  private async verifyVideoHasAudio(videoPath: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      ffmpeg.ffprobe(videoPath, (err, metadata) => {
-        if (err) {
-          this.logger.error(`Error al verificar audio: ${err.message}`);
-          resolve(false);
-          return;
-        }
-
-        // Check if the video has audio streams
-        const hasAudio = metadata.streams.some(
-          (stream) => stream.codec_type === 'audio',
-        );
-        if (!hasAudio) {
-          this.logger.warn(
-            'No se encontraron streams de audio en el video generado',
+      // Crear archivos temporales para las imágenes
+      const imageFiles = await Promise.all(
+        imagenes.map(async (imagen, index) => {
+          const imageExt = this.getExtensionFromMimeType(imagen.mimeType);
+          const imageFilePath = path.join(
+            tempDir,
+            `image_${index}.${imageExt}`,
           );
-        } else {
-          this.logger.log('Video generado con audio correctamente');
-        }
+          const imageData = Buffer.from(imagen.imageData, 'base64');
+          await promisify(fs.writeFile)(imageFilePath, imageData);
+          tempFiles.push(imageFilePath);
+          return { path: imageFilePath, order: imagen.order };
+        }),
+      );
 
-        resolve(hasAudio);
+      // Crear archivos temporales para los audios
+      const audioFiles = await Promise.all(
+        audios.map(async (audio, index) => {
+          const audioExt = audio.format || 'mp3';
+          const audioFilePath = path.join(
+            tempDir,
+            `audio_${index}.${audioExt}`,
+          );
+          const audioData = Buffer.from(audio.audioData, 'base64');
+          await promisify(fs.writeFile)(audioFilePath, audioData);
+          tempFiles.push(audioFilePath);
+          return { path: audioFilePath, order: audio.order };
+        }),
+      );
+
+      // Ordenar archivos por orden
+      imageFiles.sort((a, b) => a.order - b.order);
+      audioFiles.sort((a, b) => a.order - b.order);
+
+      // Archivo de salida del video
+      const outputVideoPath = path.join(tempDir, `output.${options.format}`);
+      tempFiles.push(outputVideoPath);
+
+      // Enfoque simplificado: crear un archivo de texto para cada imagen con su duración
+      const segmentsFile = path.join(tempDir, 'segments.txt');
+      let segmentsContent = '';
+
+      // Crear el contenido del archivo de segmentos
+      for (let i = 0; i < Math.min(imageFiles.length, audioFiles.length); i++) {
+        const imageFile = imageFiles[i];
+        const audioFile = audioFiles[i];
+
+        // Obtener la duración del audio correspondiente
+        const audioDuration = await this.getAudioDuration(audioFile.path);
+
+        // Añadir entrada al archivo de segmentos
+        segmentsContent += `file '${imageFile.path}'\n`;
+        segmentsContent += `duration ${audioDuration}\n`;
+      }
+
+      // Añadir la última imagen una vez más (necesario para el último segmento)
+      if (imageFiles.length > 0) {
+        segmentsContent += `file '${imageFiles[imageFiles.length - 1].path}'\n`;
+      }
+
+      // Escribir archivo de segmentos
+      await promisify(fs.writeFile)(segmentsFile, segmentsContent);
+      tempFiles.push(segmentsFile);
+
+      // Crear archivo con lista de audios para concatenar
+      const audioListFile = path.join(tempDir, 'audiolist.txt');
+      let audioListContent = '';
+
+      audioFiles.forEach((audioFile) => {
+        audioListContent += `file '${audioFile.path}'\n`;
       });
-    });
-  }
 
-  /**
-   * Método original para generar video con duración fija por imagen (sin sincronización con audio)
-   */
-  private async generateVideoWithFixedDuration(
-    imagePaths: string[],
-    audioPaths: string[],
-    videoPath: string,
-    publicDir: string,
-    options: VideoOptions,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const command = ffmpeg();
+      await promisify(fs.writeFile)(audioListFile, audioListContent);
+      tempFiles.push(audioListFile);
 
-      // Configurar cada imagen como entrada
-      imagePaths.forEach((imagePath) => {
-        command
-          .input(imagePath)
-          .loop(options.duration || this.DEFAULT_VIDEO_OPTIONS.duration);
+      // Archivo temporal para audio concatenado
+      const concatAudioPath = path.join(tempDir, 'concat_audio.mp3');
+      tempFiles.push(concatAudioPath);
+
+      // Primero concatenar todos los audios
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg()
+          .input(audioListFile)
+          .inputOptions('-f', 'concat', '-safe', '0')
+          .outputOptions('-c', 'copy')
+          .output(concatAudioPath)
+          .on('end', resolve)
+          .on('error', reject)
+          .run();
       });
 
-      // Si hay audios, agregarlos al comando
-      if (audioPaths.length > 0) {
-        // Agregar todos los audios como inputs
-        audioPaths.forEach((audioPath) => {
-          command.input(audioPath);
-        });
+      // Luego crear el video con las imágenes y el audio concatenado
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg()
+          .input(segmentsFile)
+          .inputOptions('-f', 'concat', '-safe', '0')
+          .input(concatAudioPath)
+          .outputOptions([
+            '-pix_fmt',
+            'yuv420p',
+            '-c:v',
+            'libx264', // Especifica el codec de video
+            '-c:a',
+            'aac', // Especifica el codec de audio
+            '-b:a',
+            '192k', // Bitrate de audio
+            '-s',
+            '1280x720', // Resolución de video (720p)
+            '-r',
+            '30', // Framerate
+            '-shortest', // Termina cuando el stream más corto termina
+          ])
+          .output(outputVideoPath)
+          .on('progress', (progress) => {
+            if (progress.percent) {
+              this.logger.log(`Progreso: ${Math.floor(progress.percent)}%`);
+            }
+          })
+          .on('end', () => {
+            this.logger.log('Video generado exitosamente');
+            resolve();
+          })
+          .on('error', (err) => {
+            this.logger.error('Error al generar el video:', err);
+            reject(err);
+          })
+          .run();
+      });
 
-        // Preparar filtro complejo para mezclar imágenes y audios
-        let complexFilter = '';
-
-        // Crear un filtro para concatenar las imágenes
-        const imageInputs = imagePaths.map((_, i) => `[${i}:v]`).join('');
-        complexFilter += `${imageInputs}concat=n=${imagePaths.length}:v=1:a=0[vout];`;
-
-        // Crear un filtro para concatenar los audios (si hay más de uno)
-        if (audioPaths.length > 1) {
-          const audioInputs = audioPaths
-            .map((_, i) => `[${imagePaths.length + i}:a]`)
-            .join('');
-          complexFilter += `${audioInputs}concat=n=${audioPaths.length}:v=0:a=1[aout]`;
-        }
-
-        command.complexFilter(complexFilter);
-
-        // Mapear las salidas
-        command.map('[vout]');
-        if (audioPaths.length > 1) {
-          command.map('[aout]');
-        } else if (audioPaths.length === 1) {
-          command.map(`[${imagePaths.length}:a]`);
-        }
-      }
-
-      command
-        .outputOptions([
-          '-c:v libx264', // Use H.264 codec for video
-          '-pix_fmt yuv420p', // Set pixel format for compatibility
-          '-c:a aac', // Use AAC codec for audio
-          '-b:a 192k', // Set audio bitrate
-          '-shortest', // End when shortest input stream ends
-        ])
-        .on('start', (commandLine) => {
-          this.logger.log(`FFmpeg proceso iniciado: ${commandLine}`);
-        })
-        .on('progress', (progress) => {
-          this.logger.debug(`FFmpeg progreso: ${JSON.stringify(progress)}`);
-        })
-        .on('error', (err) => {
-          this.logger.error('Error en FFmpeg: ' + err.message);
-          reject(err);
-        })
-        .on('end', () => {
-          this.logger.log(`Video generado exitosamente en: ${videoPath}`);
-
-          // Verify the output file has audio
-          this.verifyVideoHasAudio(videoPath)
-            .then((hasAudio) => {
-              if (!hasAudio && audioPaths.length > 0) {
-                this.logger.warn(
-                  'El video generado no tiene audio o el stream de audio está corrupto',
-                );
-              }
-              resolve();
-            })
-            .catch(() => {
-              resolve(); // Still resolve to continue the process
-            });
-        })
-        .output(videoPath)
-        .format(options.format)
-        .run();
-    });
-  }
-
-  /**
-   * Limpia los archivos temporales creados durante el proceso
-   */
-  async limpiarArchivosTemporales(
-    filePaths: string[],
-    imageDir: string,
-    audioDir?: string,
-  ): Promise<void> {
-    try {
-      // Eliminar cada archivo descargado
-      for (const filePath of filePaths) {
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-
-      // Eliminar el directorio de imágenes si está vacío
-      if (fs.existsSync(imageDir) && fs.readdirSync(imageDir).length === 0) {
-        fs.rmdirSync(imageDir);
-      }
-
-      // Eliminar el directorio de audios si está vacío y existe
-      if (
-        audioDir &&
-        fs.existsSync(audioDir) &&
-        fs.readdirSync(audioDir).length === 0
-      ) {
-        fs.rmdirSync(audioDir);
-      }
+      // Leer el video generado como buffer
+      return await promisify(fs.readFile)(outputVideoPath);
     } catch (error) {
-      this.logger.warn('Error al limpiar archivos temporales:', error);
+      this.logger.error('Error en generateVideo:', error);
+      throw error;
+    } finally {
+      // Limpiar archivos temporales
+      for (const file of tempFiles) {
+        try {
+          if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+          }
+        } catch (err) {
+          this.logger.warn(
+            `No se pudo eliminar el archivo temporal: ${file}`,
+            err,
+          );
+        }
+      }
+
+      // Eliminar directorio temporal
+      try {
+        fs.rmdirSync(tempDir);
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo eliminar el directorio temporal: ${tempDir}`,
+          err,
+        );
+      }
     }
+  }
+
+  /**
+   * Obtiene la extensión de archivo a partir del tipo MIME
+   */
+  private getExtensionFromMimeType(mimeType: string): string {
+    const mimeMap = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'audio/mpeg': 'mp3',
+      'audio/mp3': 'mp3',
+      'audio/wav': 'wav',
+      'audio/ogg': 'ogg',
+    };
+
+    return mimeMap[mimeType] || 'jpg';
+  }
+
+  /**
+   * Obtiene la duración de un archivo de audio usando ffprobe
+   */
+  private getAudioDuration(audioFilePath: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(audioFilePath, (err, metadata) => {
+        if (err) {
+          return reject(err);
+        }
+
+        const duration =
+          metadata.format.duration || this.DEFAULT_VIDEO_OPTIONS.duration;
+        resolve(duration);
+      });
+    });
   }
 }

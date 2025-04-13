@@ -1,6 +1,8 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { TextToSpeechOptions } from '../aws-polly/interfaces/text-to-speech-options.interface';
+import { v4 } from 'uuid';
 
 @Injectable()
 export class AudioQueueService {
@@ -12,18 +14,19 @@ export class AudioQueueService {
 
   async addAudioGenerationJob(
     text: string,
-    voice: string,
     videoId: string,
     order: number,
-  ): Promise<{ jobId: string }> {
+    options?: TextToSpeechOptions,
+  ): Promise<string> {
     this.logger.log(
       `Adding audio generation job to queue with text: ${text}, videoId: ${videoId}, order: ${order}`,
     );
 
     try {
+      const uuid = v4();
       const job = await this.audioQueue.add(
         'generate-audio',
-        { text, voice, videoId, order },
+        { text, videoId, order, options },
         {
           attempts: 3,
           backoff: {
@@ -32,11 +35,12 @@ export class AudioQueueService {
           },
           removeOnComplete: true,
           removeOnFail: false,
+          jobId: uuid, // Unique job ID
         },
       );
 
       this.logger.log(`Audio generation job added with ID: ${job.id}`);
-      return { jobId: job.id || '' };
+      return uuid;
     } catch (error) {
       this.logger.error(
         `Failed to add audio generation job to queue: ${error.message}`,

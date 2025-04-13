@@ -17,7 +17,9 @@ export class ImageQueueConsumer extends WorkerHost {
     super();
   }
 
-  async process(job: Job<ImageGenerationJob>): Promise<string> {
+  async process(
+    job: Job<ImageGenerationJob>,
+  ): Promise<{ success: boolean; videoId: string }> {
     this.logger.log(
       `Processing image generation job ${job.id} with prompt: ${job.data.prompt}`,
     );
@@ -30,7 +32,7 @@ export class ImageQueueConsumer extends WorkerHost {
       );
 
       this.logger.log(`Image generated successfully: ${imageUrl}`);
-      return imageUrl;
+      return { success: true, ...job.data };
     } catch (error) {
       this.logger.error(
         `Failed to process image generation job ${job.id}: ${error.message}`,
