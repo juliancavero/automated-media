@@ -4,14 +4,12 @@ import { AudioQueueConsumer } from './consumers/audio-queue.consumer';
 import { ImageQueueConsumer } from './consumers/image-queue.consumer';
 import { AudioModule } from '../audio/audio.module';
 import { ImageGenerationModule } from '../image-generation/image-generation.module';
-import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule,
     BullModule.forRoot({
       connection: {
-        url: process.env.REDIS_URL ?? 'xdxdxd',
+        url: process.env.REDIS_URL,
       },
     }),
     BullModule.registerQueue(
