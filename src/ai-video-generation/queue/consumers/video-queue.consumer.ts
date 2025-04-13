@@ -47,7 +47,17 @@ export class VideoQueueProcessor extends WorkerHost {
       const images = await this.imageService.findByVideoId(videoId);
       const audios = await this.audioService.findByVideoId(videoId);
 
-      await this.videoService.crearVideo(images, audios);
+      const url = await this.videoService.crearVideo(images, audios);
+      if (!url) {
+        this.logger.error(`Failed to create video for videoId: ${videoId}`);
+        return { success: false, videoId };
+      }
+      this.logger.log(`Video created successfully: ${url}`);
+      // Update the video generation status
+      const vid = await this.videoGenerationService.setUrl(videoId, url);
+      this.logger.log('*******************************');
+      this.logger.log(vid);
+      this.logger.log('*******************************');
       return { success: true, videoId };
     } catch (error) {
       this.logger.warn(

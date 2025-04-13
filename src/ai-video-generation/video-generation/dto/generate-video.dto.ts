@@ -2,5 +2,5 @@ import { TextToSpeechOptions } from 'src/ai-video-generation/aws-polly/interface
 
 export class GenerateVideoDto {
   texts: string[];
-  options: TextToSpeechOptions;
+  options?: TextToSpeechOptions;
 }

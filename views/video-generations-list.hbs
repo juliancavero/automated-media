@@ -1,0 +1,98 @@
+<html lang='en'>
+  <head>
+    {{> head}}
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .description {
+        max-width: 400px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .date {
+        white-space: nowrap;
+      }
+      .url {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pending {
+        color: #999;
+        font-style: italic;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        font-style: italic;
+      }
+      .clickable-row {
+        transition: background-color 0.2s;
+      }
+      .clickable-row:hover {
+        background-color: #e9f0f7;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <!-- Navigation menu -->
+      {{> navmenu}}
+
+      <h1>Video Generations</h1>
+
+      {{#if videoGenerations.length}}
+        <table>
+          <thead>
+            <tr>
+              <th>Texto</th>
+              <th>Fecha de Creación</th>
+              <th>URL</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each videoGenerations}}
+              <tr>
+                <td class='description'>{{truncate texts.[0] 100}}</td>
+                <td class='date'>{{formatDate createdAt}}</td>
+                <td class='url'>
+                  {{#if url}}
+                    <a href='{{url}}' target='_blank'>Ver Video</a>
+                  {{else}}
+                    <span class='pending'>...pendiente</span>
+                  {{/if}}
+                </td>
+                <td>{{status}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <div class='empty-message'>
+          <p>No hay generaciones de video en este momento.</p>
+        </div>
+      {{/if}}
+    </div>
+  </body>
+</html>

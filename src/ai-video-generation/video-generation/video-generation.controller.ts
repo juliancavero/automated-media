@@ -6,6 +6,7 @@ import {
   HttpException,
   Logger,
   Get,
+  Render,
 } from '@nestjs/common';
 import { VideoGenerationService } from './video-generation.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
@@ -19,6 +20,40 @@ export class VideoGenerationController {
   ) {}
 
   @Get()
+  @Render('video-generation')
+  async renderVideoGenerationPage() {
+    return {
+      title: 'AI Video Generation',
+    };
+  }
+
+  @Get('all')
+  @Render('video-generations-list')
+  async renderVideoGenerationsList() {
+    try {
+      this.logger.log('Rendering video generations list');
+      const videoGenerations = await this.videoGenerationService.findAll();
+
+      this.logger.log(`Found ${videoGenerations.length} video generations`);
+      return {
+        title: 'Video Generations List',
+        videoGenerations,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error rendering video generations list: ${error.message}`,
+        error.stack,
+      );
+
+      return {
+        title: 'Video Generations List',
+        videoGenerations: [],
+        error: `Failed to load video generations: ${error.message}`,
+      };
+    }
+  }
+
+  @Get('list')
   async listVideoGenerations() {
     try {
       this.logger.log('Listing all video generations');

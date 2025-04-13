@@ -23,9 +23,7 @@ export class VideoGenerationService {
   ) {}
 
   async findAll(): Promise<VideoGeneration[]> {
-    return this.videoGenerationModel.find({
-      order: { createdAt: 'DESC' },
-    });
+    return this.videoGenerationModel.find();
   }
 
   async generateVideo(generateVideoDto: GenerateVideoDto): Promise<boolean> {
@@ -103,5 +101,14 @@ export class VideoGenerationService {
     return this.videoGenerationModel.findByIdAndUpdate(id, videoGeneration, {
       new: true,
     });
+  }
+
+  async setUrl(id: string, url: string): Promise<VideoGeneration | null> {
+    const videoGeneration = await this.videoGenerationModel.findById(id);
+    if (!videoGeneration) {
+      return null;
+    }
+    videoGeneration.url = url;
+    return videoGeneration.save();
   }
 }

@@ -44,7 +44,7 @@ export class VideoService {
     imagenes: GeneratedImage[],
     audios: StoredAudio[],
     options?: VideoOptions,
-  ): Promise<Buffer> {
+  ): Promise<string> {
     const videoOptions = { ...this.DEFAULT_VIDEO_OPTIONS, ...options };
 
     try {
@@ -65,7 +65,7 @@ export class VideoService {
         await this.cloudinaryService.uploadVideo(videoBuffer);
 
       this.logger.log(`Video subido a Cloudinary: ${uploadResult.url}`);
-      return videoBuffer;
+      return uploadResult.url;
     } catch (error) {
       this.logger.error('Error al crear el video:', error);
       throw error;

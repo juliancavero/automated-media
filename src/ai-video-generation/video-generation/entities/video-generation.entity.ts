@@ -17,6 +17,9 @@ export class VideoGeneration {
   @Prop()
   jobs: string[];
 
+  @Prop()
+  url?: string;
+
   @Prop({ default: Date.now })
   createdAt: Date;
   @Prop({ default: Date.now })
