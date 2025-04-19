@@ -19,7 +19,7 @@ export class VideoGenerationController {
     private readonly videoService: VideoService,
     private readonly imageService: ImageService,
     private readonly audioService: AudioService,
-  ) {}
+  ) { }
 
   @Post()
   async crearVideo(@Body() crearVideoDto: CrearVideoDto) {
@@ -54,18 +54,11 @@ export class VideoGenerationController {
       crearVideoDto.audios.includes(audio._id.toString()),
     );
 
-    const result = await this.videoService.crearVideo(
+    this.videoService.crearVideo(
       crearVideoDto.videoId,
       chosenImages,
       chosenAudios,
     );
-
-    if (!result) {
-      throw new HttpException(
-        'Failed to process video generation request',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
 
     return {
       statusCode: HttpStatus.OK,

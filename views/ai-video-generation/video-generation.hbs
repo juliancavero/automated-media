@@ -11,13 +11,22 @@
             margin-bottom: 20px;
         }
 
-        .text-entry {
+        .prompt-entry {
             position: relative;
             padding: 15px;
             background-color: #f9f9f9;
             border: 1px solid #ddd;
             border-radius: 4px;
             margin-bottom: 15px;
+        }
+
+        .prompt-pair {
+            display: flex;
+            gap: 15px;
+        }
+
+        .prompt-box {
+            flex: 1;
         }
 
         .remove-btn {
@@ -141,6 +150,35 @@
             margin-left: 10px;
             display: none;
         }
+
+        /* Batch import styles */
+        .batch-import {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .batch-import h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .batch-import p {
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        #transformBtn {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        #transformBtn:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 
@@ -173,21 +211,41 @@
                 <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
             </div>
 
-            <p>Enter text prompts to generate video content. Each text will be used to create a segment in the final
-                video.</p>
+            <!-- Batch import section -->
+            <div class="batch-import">
+                <h3>Batch Import</h3>
+                <p>Paste a JSON array with "text" and "image" properties to create multiple entries at once.</p>
+                <textarea id="batchImportText" class="form-control"
+                    placeholder='[{"text": "First text prompt", "image": "First image prompt"}, {"text": "Second text prompt", "image": "Second image prompt"}]'
+                    rows="4"></textarea>
+                <button id="transformBtn" class="btn mt-2">Transform JSON to Entries</button>
+            </div>
 
-            <div class='text-entries' id='textEntries'>
-                <!-- Text entries will be added here dynamically -->
-                <div class='text-entry'>
-                    <button class='remove-btn' onclick='removeTextEntry(this)'>×</button>
-                    <div class='form-group'>
-                        <label>Text Prompt:</label>
-                        <textarea class='text-input' placeholder='Enter text to generate a video segment...'></textarea>
+            <!-- Prompt entries section -->
+            <p>Enter text and image prompts to generate video content. Each pair will be used to create a segment in the
+                final video.</p>
+            <div class='text-entries' id='promptEntries'>
+                <div class='prompt-entry'>
+                    <button class='remove-btn' onclick='removePromptEntry(this)'>×</button>
+                    <div class='prompt-pair'>
+                        <div class='prompt-box'>
+                            <div class='form-group'>
+                                <label>Text Prompt:</label>
+                                <textarea class='text-input'
+                                    placeholder='Enter text to generate a video segment...'></textarea>
+                            </div>
+                        </div>
+                        <div class='prompt-box'>
+                            <div class='form-group'>
+                                <label>Image Prompt:</label>
+                                <textarea class='image-input'
+                                    placeholder='Enter image description for this segment...'></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <button class='btn btn-add' onclick='addTextEntry()'>Add Another Prompt</button>
+            <button class='btn btn-add' onclick='addPromptEntry()'>Add Another Prompt</button>
 
             <div class='submit-container'>
                 <button id='generateBtn' class='btn btn-primary' onclick='generateVideo()'>Generate Video</button>
@@ -212,22 +270,16 @@
     </div>
 
     <script>
-        // Voice and language selectors functionality
         let allVoices = [];
         let currentConfig = null;
 
-        // Fetch voices and populate selectors on page load
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Fetch available voices
                 const voicesResponse = await fetch('/polly-config/voices');
                 if (!voicesResponse.ok) throw new Error('Failed to fetch voices');
                 allVoices = await voicesResponse.json();
 
-                // Get unique languages and sort them
                 const languages = [...new Set(allVoices.map(voice => voice.language))].sort();
-
-                // Populate language dropdown
                 const languageSelect = document.getElementById('languageSelect');
                 languages.forEach(language => {
                     const option = document.createElement('option');
@@ -236,48 +288,31 @@
                     languageSelect.appendChild(option);
                 });
 
-                // Fetch current configuration
-                try {
-                    const configResponse = await fetch('/polly-config');
-                    if (configResponse.ok) {
-                        currentConfig = await configResponse.json();
-
-                        // Set selected language
-                        if (currentConfig.languageCode) {
-                            languageSelect.value = currentConfig.languageCode;
-                            // Update voices dropdown based on selected language
-                            updateVoiceOptions(currentConfig.languageCode, currentConfig.voiceId);
-                        }
+                const configResponse = await fetch('/polly-config');
+                if (configResponse.ok) {
+                    currentConfig = await configResponse.json();
+                    if (currentConfig.languageCode) {
+                        languageSelect.value = currentConfig.languageCode;
+                        updateVoiceOptions(currentConfig.languageCode, currentConfig.voiceId);
                     }
-                } catch (error) {
-                    console.warn('No existing configuration found:', error);
                 }
             } catch (error) {
-                console.error('Error initializing voice selectors:', error);
+                console.warn('No existing configuration found:', error);
             }
         });
 
-        // Update voice options when language changes
         document.getElementById('languageSelect').addEventListener('change', function () {
             const selectedLanguage = this.value;
             updateVoiceOptions(selectedLanguage);
-
-            // Enable/disable voice select and save button accordingly
-            const voiceSelect = document.getElementById('voiceSelect');
-            voiceSelect.disabled = !selectedLanguage;
-            updateSaveButtonState();
         });
 
-        // Enable/disable save button when voice changes
         document.getElementById('voiceSelect').addEventListener('change', function () {
             updateSaveButtonState();
         });
 
-        // Save configuration
         document.getElementById('saveConfigBtn').addEventListener('click', async function () {
             const languageCode = document.getElementById('languageSelect').value;
             const voiceId = document.getElementById('voiceSelect').value;
-
             if (!languageCode || !voiceId) return;
 
             try {
@@ -294,16 +329,11 @@
 
                 if (response.ok) {
                     currentConfig = await response.json();
-
-                    // Show success message
                     const saveSuccess = document.getElementById('saveSuccess');
                     saveSuccess.style.display = 'inline';
                     setTimeout(() => {
                         saveSuccess.style.display = 'none';
                     }, 3000);
-
-                    // Update generate video function to use these values
-                    console.log('Configuration saved successfully:', currentConfig);
                 } else {
                     throw new Error('Failed to save configuration');
                 }
@@ -313,24 +343,21 @@
             }
         });
 
-        // Helper function to update voice options based on selected language
         function updateVoiceOptions(language, selectedVoice = null) {
             const voiceSelect = document.getElementById('voiceSelect');
+            if (!language) {
+                voiceSelect.disabled = true;
+                while (voiceSelect.options.length > 1) {
+                    voiceSelect.remove(1);
+                }
+                return;
+            }
 
-            // Clear existing options except the first one
+            const filteredVoices = allVoices.filter(voice => voice.language === language);
             while (voiceSelect.options.length > 1) {
                 voiceSelect.remove(1);
             }
 
-            if (!language) {
-                voiceSelect.disabled = true;
-                return;
-            }
-
-            // Filter voices by selected language
-            const filteredVoices = allVoices.filter(voice => voice.language === language);
-
-            // Add filtered voice options
             filteredVoices.forEach(voice => {
                 const option = document.createElement('option');
                 option.value = voice.name;
@@ -338,16 +365,13 @@
                 voiceSelect.appendChild(option);
             });
 
-            // Enable the voice select
             voiceSelect.disabled = false;
 
-            // Set previously selected voice if it exists and matches the language
             if (selectedVoice && filteredVoices.some(voice => voice.name === selectedVoice)) {
                 voiceSelect.value = selectedVoice;
             }
         }
 
-        // Helper function to update save button state
         function updateSaveButtonState() {
             const languageSelect = document.getElementById('languageSelect');
             const voiceSelect = document.getElementById('voiceSelect');
@@ -357,24 +381,25 @@
         }
 
         async function generateVideo() {
-            // Get all text inputs
             const textInputs = document.querySelectorAll('.text-input');
+            const imageInputs = document.querySelectorAll('.image-input');
             const texts = Array.from(textInputs)
                 .map(input => input.value.trim())
                 .filter(text => text);
+            const images = Array.from(imageInputs)
+                .map(input => input.value.trim())
+                .filter(image => image);
 
             if (texts.length === 0) {
                 alert('Please enter at least one text prompt.');
                 return;
             }
 
-            // Show loading indicator and hide results
             document.getElementById('loadingIndicator').style.display = 'block';
             document.getElementById('resultContainer').style.display = 'none';
             document.getElementById('errorContainer').style.display = 'none';
             document.getElementById('generateBtn').disabled = true;
 
-            // Get voice settings from the form or use defaults
             const voiceId = document.getElementById('voiceSelect').value || "Joanna";
             const languageCode = document.getElementById('languageSelect').value || "en-US";
 
@@ -382,61 +407,116 @@
                 const response = await fetch('/videos/create-video-job', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        languageCode,
                         texts,
+                        images,
                         options: {
-                            voiceId: voiceId,
+                            voiceId,
                             outputFormat: "mp3",
-                            languageCode: languageCode,
+                            languageCode,
                             engine: "standard"
-                        },
-                    }),
+                        }
+                    })
                 });
 
-                const result = await response.json();
-
                 if (response.ok) {
+                    const result = await response.json();
                     document.getElementById('resultContainer').style.display = 'block';
                 } else {
-                    throw new Error(result.message || 'Failed to generate video');
+                    throw new Error('Failed to generate video');
                 }
             } catch (error) {
                 document.getElementById('errorMessage').textContent = `Error: ${error.message}`;
                 document.getElementById('errorContainer').style.display = 'block';
                 console.error('Error generating video:', error);
             } finally {
-                // Hide loading indicator and enable button
                 document.getElementById('loadingIndicator').style.display = 'none';
                 document.getElementById('generateBtn').disabled = false;
             }
         }
 
-        function addTextEntry() {
-            const textEntries = document.getElementById('textEntries');
+        function addPromptEntry() {
+            const promptEntries = document.getElementById('promptEntries');
             const newEntry = document.createElement('div');
-            newEntry.className = 'text-entry';
+            newEntry.className = 'prompt-entry';
             newEntry.innerHTML = `
-          <button class="remove-btn" onclick="removeTextEntry(this)">×</button>
-          <div class="form-group">
-            <label>Text Prompt:</label>
-            <textarea class="text-input" placeholder="Enter text to generate a video segment..."></textarea>
-          </div>
-        `;
-            textEntries.appendChild(newEntry);
+                <button class="remove-btn" onclick="removePromptEntry(this)">×</button>
+                <div class='prompt-pair'>
+                    <div class='prompt-box'>
+                        <div class="form-group">
+                            <label>Text Prompt:</label>
+                            <textarea class="text-input" placeholder="Enter text to generate a video segment..."></textarea>
+                        </div>
+                    </div>
+                    <div class='prompt-box'>
+                        <div class="form-group">
+                            <label>Image Prompt:</label>
+                            <textarea class="image-input" placeholder="Enter image description for this segment..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+            promptEntries.appendChild(newEntry);
         }
 
-        function removeTextEntry(button) {
-            const entries = document.querySelectorAll('.text-entry');
-            // Don't remove if it's the only entry
+        function removePromptEntry(button) {
+            const entries = document.querySelectorAll('.prompt-entry');
             if (entries.length > 1) {
                 const entry = button.parentElement;
                 entry.remove();
             } else {
-                alert('You need at least one text prompt.');
+                alert('You need at least one prompt pair.');
             }
         }
+
+        document.getElementById('transformBtn').addEventListener('click', function () {
+            const batchImportText = document.getElementById('batchImportText').value.trim();
+            if (!batchImportText) {
+                alert('Please paste a JSON array.');
+                return;
+            }
+
+            try {
+                const parsedData = JSON.parse(batchImportText);
+                if (!Array.isArray(parsedData)) {
+                    throw new Error('Invalid JSON format. Expected an array.');
+                }
+
+                parsedData.forEach(item => {
+                    if (item.text && item.image) {
+                        const promptEntries = document.getElementById('promptEntries');
+                        const newEntry = document.createElement('div');
+                        newEntry.className = 'prompt-entry';
+                        newEntry.innerHTML = `
+                            <button class="remove-btn" onclick="removePromptEntry(this)">×</button>
+                            <div class='prompt-pair'>
+                                <div class='prompt-box'>
+                                    <div class="form-group">
+                                        <label>Text Prompt:</label>
+                                        <textarea class="text-input">${item.text}</textarea>
+                                    </div>
+                                </div>
+                                <div class='prompt-box'>
+                                    <div class="form-group">
+                                        <label>Image Prompt:</label>
+                                        <textarea class="image-input">${item.image}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        promptEntries.appendChild(newEntry);
+                    } else {
+                        console.warn('Skipping invalid item:', item);
+                    }
+                });
+            } catch (error) {
+                alert(`Error parsing JSON: ${error.message}`);
+                console.error('Error parsing batch import JSON:', error);
+            }
+        });
     </script>
 </body>
 

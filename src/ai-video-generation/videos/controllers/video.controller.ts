@@ -22,11 +22,13 @@ export class VideoController {
     private readonly videoGenerationService: VideoGenerationService,
     private readonly imageService: ImageService,
     private readonly audioService: AudioService,
-  ) {}
+  ) { }
 
   @Post('create-video-job')
   async generateVideo(@Body() generateVideoDto: GenerateVideoDto) {
-    if (!generateVideoDto.texts || generateVideoDto.texts.length === 0) {
+    if (!generateVideoDto.texts
+      || generateVideoDto.texts.length === 0
+      || !generateVideoDto.images || generateVideoDto.images.length === 0) {
       throw new HttpException(
         'Texts array cannot be empty',
         HttpStatus.BAD_REQUEST,

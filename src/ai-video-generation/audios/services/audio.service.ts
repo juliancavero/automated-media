@@ -2,13 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Audio, AudioDocument } from '../schemas/audio.schema';
+import { AudioQueueService } from '../queues/audio-queue.service';
 
 @Injectable()
 export class AudioService {
   constructor(
     @InjectModel(Audio.name)
     private readonly audioModel: Model<AudioDocument>,
-  ) {}
+    private readonly audioQueueService: AudioQueueService,
+  ) { }
 
   async createAudio(
     text: string,
@@ -56,5 +58,15 @@ export class AudioService {
     }
 
     return updatedAudio;
+  }
+
+  async relaunchFailedAudios(): Promise<void> {
+    const failedAudios = await this.audioModel
+      .find({ status: 'pending' })
+      .exec();
+
+    for (const audio of failedAudios) {
+      await this.audioQueueService.addAudioGenerationJob(audio);
+    }
   }
 }

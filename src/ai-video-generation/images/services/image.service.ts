@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Image, ImageDocument } from '../schemas/image.schema';
+import { ImageQueueService } from '../queues/image-queue.service';
 
 @Injectable()
 export class ImageService {
   constructor(
     @InjectModel(Image.name)
     private readonly imageModel: Model<ImageDocument>,
-  ) {}
+    private readonly imageQueueService: ImageQueueService,
+  ) { }
 
   async createImage(
     text: string,
@@ -58,5 +60,15 @@ export class ImageService {
         { new: true, runValidators: true },
       )
       .exec();
+  }
+
+  async relaunchFailedImages(): Promise<void> {
+    const failedImages = await this.imageModel
+      .find({ status: 'pending' })
+      .exec();
+
+    for (const image of failedImages) {
+      await this.imageQueueService.addImageGenerationJob(image);
+    }
   }
 }

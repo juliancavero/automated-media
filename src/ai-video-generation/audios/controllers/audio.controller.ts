@@ -1,34 +1,24 @@
-import { Controller, Delete, Get, Param, Render, Res } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Render, Res, Post } from '@nestjs/common';
 import { Response } from 'express';
-import { Audio } from '../schemas/audio.schema';
 import { AudioService } from '../services/audio.service';
 
 @Controller('audios')
 export class AudioController {
-  constructor(private readonly audioService: AudioService) {}
-
-  /* @Get()
-  async getAllAudios(): Promise<Audio[]> {
-    return await this.audioService.getAllAudios();
-  }
-
-  @Get(':id')
-  async getAudioById(
-    @Param('id') id: string,
-    @Res() res: Response,
-  ): Promise<Audio | void> {
-    const audio = await this.audioService.getAudioById(id);
-    if (!audio) {
-      res.status(404).send('Audio not found');
-      return;
-    }
-
-    return audio;
-  } */
+  constructor(private readonly audioService: AudioService) { }
 
   @Delete(':id')
   async deleteAudio(@Param('id') id: string): Promise<void> {
     return await this.audioService.deleteAudio(id);
+  }
+
+  @Post('relaunch-failed')
+  async relaunchFailedAudios(): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.audioService.relaunchFailedAudios();
+      return { success: true, message: 'Failed audio tasks have been requeued' };
+    } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
   }
 
   // Views

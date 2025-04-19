@@ -32,6 +32,7 @@
 
     .detail-card {
       margin-bottom: 20px;
+      width: 100%;
     }
 
     .text-item {
@@ -45,6 +46,21 @@
       margin-top: 20px;
       margin-bottom: 30px;
     }
+
+    .table-responsive {
+      width: 100%;
+    }
+
+    .btn-generate {
+      padding: 15px 30px;
+      font-size: 1.25rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
   </style>
 </head>
 
@@ -55,25 +71,6 @@
     <h1>{{title}}</h1>
 
     {{#if videoGeneration}}
-    <div class="card detail-card">
-      <div class="card-header">
-        <h5>Generation Details</h5>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>ID:</strong> {{videoGeneration._id}}</p>
-            <p><strong>Status:</strong>
-
-            </p>
-            <p><strong>Created At:</strong> {{formatDate videoGeneration.createdAt}}</p>
-            {{#if videoGeneration.completedAt}}
-            <p><strong>Completed At:</strong> {{formatDate videoGeneration.completedAt}}</p>
-            {{/if}}
-          </div>
-        </div>
-      </div>
-    </div>
 
     {{#if videoGeneration.url}}
     <div class="card detail-card">
@@ -127,7 +124,7 @@
       </div>
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-striped" id="images-table">
+          <table class="table table-striped w-100" id="images-table">
             <thead>
               <tr>
                 <th><input type="checkbox" id="select-all-images" class="form-check-input"></th>
@@ -185,7 +182,7 @@
       </div>
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-striped" id="audio-table">
+          <table class="table table-striped w-100" id="audio-table">
             <thead>
               <tr>
                 <th><input type="checkbox" id="select-all-audio" class="form-check-input"></th>
@@ -239,7 +236,10 @@
     {{/if}}
 
     <div class="text-center generate-video-btn">
-      <button id="generate-video-btn" class="btn btn-primary btn-lg">Generate Video</button>
+      <div class="action-buttons">
+        <button id="select-all-btn" class="btn btn-secondary btn-lg">Select All Items</button>
+        <button id="generate-video-btn" class="btn btn-primary btn-lg btn-generate">Generate Video</button>
+      </div>
       <div id="generate-status" class="mt-2"></div>
     </div>
 
@@ -260,6 +260,7 @@
       // Select all checkboxes functionality
       const selectAllImages = document.getElementById('select-all-images');
       const selectAllAudio = document.getElementById('select-all-audio');
+      const selectAllBtn = document.getElementById('select-all-btn');
 
       if (selectAllImages) {
         selectAllImages.addEventListener('change', function () {
@@ -276,6 +277,28 @@
           checkboxes.forEach(checkbox => {
             checkbox.checked = selectAllAudio.checked;
           });
+        });
+      }
+
+      if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function () {
+          // Select all images
+          if (selectAllImages) {
+            selectAllImages.checked = true;
+            const imageCheckboxes = document.querySelectorAll('.image-checkbox:not([disabled])');
+            imageCheckboxes.forEach(checkbox => {
+              checkbox.checked = true;
+            });
+          }
+
+          // Select all audio
+          if (selectAllAudio) {
+            selectAllAudio.checked = true;
+            const audioCheckboxes = document.querySelectorAll('.audio-checkbox:not([disabled])');
+            audioCheckboxes.forEach(checkbox => {
+              checkbox.checked = true;
+            });
+          }
         });
       }
 

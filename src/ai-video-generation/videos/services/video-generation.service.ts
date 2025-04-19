@@ -19,7 +19,7 @@ export class VideoGenerationService {
     private readonly audioService: AudioService,
     @InjectModel(Video.name)
     private readonly videoGenerationModel: Model<VideoDocument>,
-  ) {}
+  ) { }
 
   async findAll(): Promise<Video[]> {
     return this.videoGenerationModel.find();
@@ -31,17 +31,16 @@ export class VideoGenerationService {
 
   async createVideoJob(generateVideoDto: GenerateVideoDto): Promise<boolean> {
     try {
-      const { texts } = generateVideoDto;
+      const { texts, images } = generateVideoDto;
       // Create and save VideoGeneration entity
-      this.logger.warn("************ ATTENTION, VIDEO BEING CREATED ************");
       const videoGeneration = await this.videoGenerationModel.create({
         texts,
       });
 
       const videoId = String(videoGeneration._id);
-      for (const [index, text] of texts.entries()) {
-        const image = await this.imageService.createImage(text, videoId, index);
-        //this.logger.log(`Created image entity with ID: ${image._id}`);
+      for (const [index, prompt] of images.entries()) {
+        const image = await this.imageService.createImage(prompt, videoId, index);
+        this.logger.log(`Created image entity with ID: ${image._id}`);
         // Add image generation job to the queue
         await this.imageQueue.addImageGenerationJob(image);
       }
