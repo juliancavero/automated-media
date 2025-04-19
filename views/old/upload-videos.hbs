@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {{> head}}
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #upload-status {
+            margin-top: 20px;
+        }
+
+        .upload-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .status-pending {
+            color: #f39c12;
+        }
+
+        .status-uploading {
+            color: #3498db;
+        }
+
+        .status-success {
+            color: #2ecc71;
+        }
+
+        .status-error {
+            color: #e74c3c;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: #28a745;
+            border-radius: 5px;
+            width: 0%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Navigation menu -->
+        {{> navmenu}}
+
+        <h1>Upload Videos</h1>
+
+        <div class="form-group">
+            <label for="video-files">Select one or more video files:</label>
+            <input type="file" id="video-files" accept="video/*" multiple>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="upload-btn" class="btn btn-success">Upload Videos</button>
+        </div>
+
+        <div id="upload-status">
+            <h2>Upload Status</h2>
+            <div id="upload-list"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('video-files');
+            const uploadBtn = document.getElementById('upload-btn');
+            const uploadList = document.getElementById('upload-list');
+
+            // Store the files and their upload status
+            let filesToUpload = [];
+            let uploading = false;
+
+            // When files are selected, prepare the upload list
+            fileInput.addEventListener('change', (e) => {
+                filesToUpload = Array.from(e.target.files);
+                renderUploadList();
+            });
+
+            // Render the list of files to upload with their status
+            function renderUploadList() {
+                uploadList.innerHTML = '';
+
+                if (filesToUpload.length === 0) {
+                    uploadList.innerHTML = '<p>No files selected</p>';
+                    return;
+                }
+
+                filesToUpload.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'upload-item';
+                    item.id = `file-${index}`;
+
+                    // Create status text
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = 'status-pending';
+                    statusSpan.textContent = 'Pending';
+
+                    // Create progress bar
+                    const progressBarContainer = document.createElement('div');
+                    progressBarContainer.className = 'progress-bar';
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'progress';
+                    progressBarContainer.appendChild(progressBar);
+
+                    item.innerHTML = `<div>${file.name} (${formatFileSize(file.size)})</div>`;
+                    item.appendChild(statusSpan);
+                    item.appendChild(progressBarContainer);
+
+                    uploadList.appendChild(item);
+                });
+            }
+
+            // Format file size to human-readable format
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Start the upload process when the upload button is clicked
+            uploadBtn.addEventListener('click', async () => {
+                if (filesToUpload.length === 0) {
+                    alert('Please select at least one video file to upload');
+                    return;
+                }
+
+                if (uploading) return;
+                uploading = true;
+                uploadBtn.disabled = true;
+
+                // Upload files one by one
+                for (let i = 0; i < filesToUpload.length; i++) {
+                    const file = filesToUpload[i];
+                    const itemElement = document.getElementById(`file-${i}`);
+                    const statusSpan = itemElement.querySelector('span');
+                    const progressBar = itemElement.querySelector('.progress');
+
+                    try {
+                        // Update status to uploading
+                        statusSpan.className = 'status-uploading';
+                        statusSpan.textContent = 'Uploading...';
+
+                        // Create FormData and append the file
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        // Create and configure XMLHttpRequest
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/videos/upload', true);
+
+                        // Update progress bar during upload
+                        xhr.upload.onprogress = (event) => {
+                            if (event.lengthComputable) {
+                                const percentComplete = (event.loaded / event.total) * 100;
+                                progressBar.style.width = percentComplete + '%';
+                            }
+                        };
+
+                        // Handle response after upload
+                        const result = await new Promise((resolve, reject) => {
+                            xhr.onload = () => {
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    try {
+                                        const response = JSON.parse(xhr.responseText);
+                                        resolve(response);
+                                    } catch (err) {
+                                        reject(new Error('Invalid server response'));
+                                    }
+                                } else {
+                                    try {
+                                        const errorData = JSON.parse(xhr.responseText);
+                                        reject(new Error(errorData.message || 'Upload failed'));
+                                    } catch (err) {
+                                        reject(new Error(`Upload failed with status ${xhr.status}`));
+                                    }
+                                }
+                            };
+
+                            xhr.onerror = () => {
+                                reject(new Error('Network error occurred'));
+                            };
+
+                            // Send the form data
+                            xhr.send(formData);
+                        });
+
+                        // Update status to success
+                        statusSpan.className = 'status-success';
+                        statusSpan.textContent = 'Upload successful!';
+
+                    } catch (error) {
+                        // Update status to error
+                        statusSpan.className = 'status-error';
+                        statusSpan.textContent = `Error: ${error.message}`;
+                        progressBar.style.backgroundColor = '#e74c3c';
+                    }
+                }
+
+                // Reset the upload state
+                uploading = false;
+                uploadBtn.disabled = false;
+
+                // Clear the file input to prevent re-uploading the same files
+                fileInput.value = '';
+                filesToUpload = [];
+            });
+        });
+    </script>
+</body>
+
+</html>

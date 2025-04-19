@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  {{> head}}
+  <style>
+    .video-container {
+      margin-top: 20px;
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%;
+      /* 16:9 aspect ratio */
+      height: 0;
+      overflow: hidden;
+    }
+
+    .video-wrapper video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #000;
+    }
+
+    .detail-card {
+      margin-bottom: 20px;
+    }
+
+    .text-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .generate-video-btn {
+      margin-top: 20px;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4">
+    {{> navmenu}}
+
+    <h1>{{title}}</h1>
+
+    {{#if videoGeneration}}
+    <div class="card detail-card">
+      <div class="card-header">
+        <h5>Generation Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>ID:</strong> {{videoGeneration._id}}</p>
+            <p><strong>Status:</strong>
+
+            </p>
+            <p><strong>Created At:</strong> {{formatDate videoGeneration.createdAt}}</p>
+            {{#if videoGeneration.completedAt}}
+            <p><strong>Completed At:</strong> {{formatDate videoGeneration.completedAt}}</p>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{#if videoGeneration.url}}
+    <div class="card detail-card">
+      <div class="card-header">
+        <h5>Generated Video</h5>
+      </div>
+      <div class="card-body video-container">
+        <div class="video-wrapper">
+          <video controls>
+            <source src="{{videoGeneration.url}}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div class="mt-3">
+          <a href="{{videoGeneration.url}}" class="btn btn-primary" download>Download Video</a>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if videoGeneration.texts.length}}
+    <div class="card detail-card">
+      <div class="card-header">
+        <h5>Text Prompts</h5>
+      </div>
+      <div class="card-body">
+        {{#each videoGeneration.texts}}
+        <div class="text-item">
+          <strong>Text {{add @index 1}}:</strong> {{this}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if videoGeneration.error}}
+    <div class="card detail-card bg-light">
+      <div class="card-header bg-danger text-white">
+        <h5>Error Details</h5>
+      </div>
+      <div class="card-body">
+        <pre class="text-danger">{{videoGeneration.error}}</pre>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if images.length}}
+    <div class="card detail-card">
+      <div class="card-header">
+        <h5>Generated Images</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="images-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="select-all-images" class="form-check-input"></th>
+                <th>Preview</th>
+                <th>Prompt</th>
+                <th>Created At</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each images}}
+              <tr>
+                <td>
+                  {{#if this.url}}
+                  <input type="checkbox" class="form-check-input image-checkbox" data-id="{{this._id}}">
+                  {{else}}
+                  <input type="checkbox" disabled class="form-check-input">
+                  {{/if}}
+                </td>
+                <td>
+                  {{#if this.url}}
+                  <img src="{{this.url}}" alt="Generated image" style="max-width: 150px; max-height: 150px;"
+                    class="img-thumbnail">
+                  {{else}}
+                  <span class="badge bg-secondary">No image</span>
+                  {{/if}}
+                </td>
+                <td>{{this.prompt}}</td>
+                <td>{{formatDate this.createdAt}}</td>
+                <td>
+                  <span
+                    class="badge {{#if this.error}}bg-danger{{else if this.url}}bg-success{{else}}bg-warning{{/if}}">
+                    {{#if this.error}}Failed{{else if this.url}}Completed{{else}}Processing{{/if}}
+                  </span>
+                </td>
+                <td>
+                  {{#if this.url}}
+                  <a href="{{this.url}}" class="btn btn-sm btn-primary" download>Download</a>
+                  {{/if}}
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if audio.length}}
+    <div class="card detail-card">
+      <div class="card-header">
+        <h5>Generated Audio</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="audio-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="select-all-audio" class="form-check-input"></th>
+                <th>Audio</th>
+                <th>Text</th>
+                <th>Created At</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each audio}}
+              <tr>
+                <td>
+                  {{#if this.url}}
+                  <input type="checkbox" class="form-check-input audio-checkbox" data-id="{{this._id}}">
+                  {{else}}
+                  <input type="checkbox" disabled class="form-check-input">
+                  {{/if}}
+                </td>
+                <td>
+                  {{#if this.url}}
+                  <audio controls style="max-width: 200px;">
+                    <source src="{{this.url}}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                  </audio>
+                  {{else}}
+                  <span class="badge bg-secondary">No audio</span>
+                  {{/if}}
+                </td>
+                <td>{{this.text}}</td>
+                <td>{{formatDate this.createdAt}}</td>
+                <td>
+                  <span
+                    class="badge {{#if this.error}}bg-danger{{else if this.url}}bg-success{{else}}bg-warning{{/if}}">
+                    {{#if this.error}}Failed{{else if this.url}}Completed{{else}}Processing{{/if}}
+                  </span>
+                </td>
+                <td>
+                  {{#if this.url}}
+                  <a href="{{this.url}}" class="btn btn-sm btn-primary" download>Download</a>
+                  {{/if}}
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="text-center generate-video-btn">
+      <button id="generate-video-btn" class="btn btn-primary btn-lg">Generate Video</button>
+      <div id="generate-status" class="mt-2"></div>
+    </div>
+
+    {{else}}
+    <div class="alert alert-danger">
+      Video generation not found or an error occurred.
+    </div>
+    {{/if}}
+
+    <div class="mt-4">
+      <a href="/generate-video/all" class="btn btn-secondary">Back to List</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Select all checkboxes functionality
+      const selectAllImages = document.getElementById('select-all-images');
+      const selectAllAudio = document.getElementById('select-all-audio');
+
+      if (selectAllImages) {
+        selectAllImages.addEventListener('change', function () {
+          const checkboxes = document.querySelectorAll('.image-checkbox:not([disabled])');
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllImages.checked;
+          });
+        });
+      }
+
+      if (selectAllAudio) {
+        selectAllAudio.addEventListener('change', function () {
+          const checkboxes = document.querySelectorAll('.audio-checkbox:not([disabled])');
+          checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllAudio.checked;
+          });
+        });
+      }
+
+      // Generate video button functionality
+      const generateBtn = document.getElementById('generate-video-btn');
+      if (generateBtn) {
+        generateBtn.addEventListener('click', async function () {
+          const selectedImages = Array.from(document.querySelectorAll('.image-checkbox:checked'))
+            .map(checkbox => checkbox.dataset.id);
+
+          const selectedAudio = Array.from(document.querySelectorAll('.audio-checkbox:checked'))
+            .map(checkbox => checkbox.dataset.id);
+
+          if (selectedImages.length === 0 || selectedAudio.length === 0) {
+            document.getElementById('generate-status').innerHTML =
+              '<div class="alert alert-danger">Please select at least one image and one audio file</div>';
+            return;
+          }
+
+          const videoId = '{{videoGeneration._id}}';
+
+          try {
+            document.getElementById('generate-status').innerHTML =
+              '<div class="alert alert-info">Generating video... Please wait</div>';
+
+            const response = await fetch('/video-generation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                videoId,
+                images: selectedImages,
+                audios: selectedAudio
+              })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              document.getElementById('generate-status').innerHTML =
+                '<div class="alert alert-success">Video generation started successfully!</div>';
+            } else {
+              document.getElementById('generate-status').innerHTML =
+                `<div class="alert alert-danger">Error: ${result.message || 'Failed to start video generation'}</div>`;
+            }
+          } catch (error) {
+            document.getElementById('generate-status').innerHTML =
+              `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

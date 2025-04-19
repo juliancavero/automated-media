@@ -1,0 +1,443 @@
+<html lang='en'>
+
+<head>
+    {{> head}}
+    <style>
+        .form-container {
+            margin-bottom: 20px;
+        }
+
+        .text-entries {
+            margin-bottom: 20px;
+        }
+
+        .text-entry {
+            position: relative;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+            max-width: 200px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .btn-add:hover {
+            background-color: #218838;
+        }
+
+        .submit-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            color: #155724;
+        }
+
+        .error-container {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            color: #721c24;
+        }
+
+        /* Voice settings styles */
+        .voice-settings {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .voice-settings h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .selector-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .selector-container {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .save-config-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .save-config-btn:hover {
+            background-color: #0069d9;
+        }
+
+        .save-success {
+            color: #28a745;
+            margin-left: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='container'>
+        <!-- Navigation menu -->
+        {{> navmenu}}
+
+        <h1>AI Video Generation</h1>
+
+        <div class='form-container'>
+            <!-- Voice and language selectors -->
+            <div class="voice-settings">
+                <h3>Voice Settings</h3>
+                <div class="selector-row">
+                    <div class="selector-container">
+                        <label for="languageSelect">Language:</label>
+                        <select id="languageSelect" class="form-control">
+                            <option value="">Select a language</option>
+                        </select>
+                    </div>
+                    <div class="selector-container">
+                        <label for="voiceSelect">Voice:</label>
+                        <select id="voiceSelect" class="form-control" disabled>
+                            <option value="">Select a voice</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="saveConfigBtn" class="btn save-config-btn" disabled>Save Configuration</button>
+                <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
+            </div>
+
+            <p>Enter text prompts to generate video content. Each text will be used to create a segment in the final
+                video.</p>
+
+            <div class='text-entries' id='textEntries'>
+                <!-- Text entries will be added here dynamically -->
+                <div class='text-entry'>
+                    <button class='remove-btn' onclick='removeTextEntry(this)'>×</button>
+                    <div class='form-group'>
+                        <label>Text Prompt:</label>
+                        <textarea class='text-input' placeholder='Enter text to generate a video segment...'></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button class='btn btn-add' onclick='addTextEntry()'>Add Another Prompt</button>
+
+            <div class='submit-container'>
+                <button id='generateBtn' class='btn btn-primary' onclick='generateVideo()'>Generate Video</button>
+            </div>
+        </div>
+
+        <div id='loadingIndicator' class='loading'>
+            Generating your video... This may take several minutes. Please wait.
+        </div>
+
+        <div id='resultContainer' class='result-container'>
+            <h3>Success!</h3>
+            <p>Your video generation task has been created successfully. The video will be processed in the background.
+            </p>
+            <p>You can check the home page later to see your generated video.</p>
+        </div>
+
+        <div id='errorContainer' class='error-container'>
+            <h3>Error</h3>
+            <p id='errorMessage'></p>
+        </div>
+    </div>
+
+    <script>
+        // Voice and language selectors functionality
+        let allVoices = [];
+        let currentConfig = null;
+
+        // Fetch voices and populate selectors on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch available voices
+                const voicesResponse = await fetch('/polly-config/voices');
+                if (!voicesResponse.ok) throw new Error('Failed to fetch voices');
+                allVoices = await voicesResponse.json();
+
+                // Get unique languages and sort them
+                const languages = [...new Set(allVoices.map(voice => voice.language))].sort();
+
+                // Populate language dropdown
+                const languageSelect = document.getElementById('languageSelect');
+                languages.forEach(language => {
+                    const option = document.createElement('option');
+                    option.value = language;
+                    option.textContent = language;
+                    languageSelect.appendChild(option);
+                });
+
+                // Fetch current configuration
+                try {
+                    const configResponse = await fetch('/polly-config');
+                    if (configResponse.ok) {
+                        currentConfig = await configResponse.json();
+
+                        // Set selected language
+                        if (currentConfig.languageCode) {
+                            languageSelect.value = currentConfig.languageCode;
+                            // Update voices dropdown based on selected language
+                            updateVoiceOptions(currentConfig.languageCode, currentConfig.voiceId);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('No existing configuration found:', error);
+                }
+            } catch (error) {
+                console.error('Error initializing voice selectors:', error);
+            }
+        });
+
+        // Update voice options when language changes
+        document.getElementById('languageSelect').addEventListener('change', function () {
+            const selectedLanguage = this.value;
+            updateVoiceOptions(selectedLanguage);
+
+            // Enable/disable voice select and save button accordingly
+            const voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.disabled = !selectedLanguage;
+            updateSaveButtonState();
+        });
+
+        // Enable/disable save button when voice changes
+        document.getElementById('voiceSelect').addEventListener('change', function () {
+            updateSaveButtonState();
+        });
+
+        // Save configuration
+        document.getElementById('saveConfigBtn').addEventListener('click', async function () {
+            const languageCode = document.getElementById('languageSelect').value;
+            const voiceId = document.getElementById('voiceSelect').value;
+
+            if (!languageCode || !voiceId) return;
+
+            try {
+                const response = await fetch('/polly-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        languageCode,
+                        voiceId
+                    })
+                });
+
+                if (response.ok) {
+                    currentConfig = await response.json();
+
+                    // Show success message
+                    const saveSuccess = document.getElementById('saveSuccess');
+                    saveSuccess.style.display = 'inline';
+                    setTimeout(() => {
+                        saveSuccess.style.display = 'none';
+                    }, 3000);
+
+                    // Update generate video function to use these values
+                    console.log('Configuration saved successfully:', currentConfig);
+                } else {
+                    throw new Error('Failed to save configuration');
+                }
+            } catch (error) {
+                console.error('Error saving configuration:', error);
+                alert('Failed to save voice configuration. Please try again.');
+            }
+        });
+
+        // Helper function to update voice options based on selected language
+        function updateVoiceOptions(language, selectedVoice = null) {
+            const voiceSelect = document.getElementById('voiceSelect');
+
+            // Clear existing options except the first one
+            while (voiceSelect.options.length > 1) {
+                voiceSelect.remove(1);
+            }
+
+            if (!language) {
+                voiceSelect.disabled = true;
+                return;
+            }
+
+            // Filter voices by selected language
+            const filteredVoices = allVoices.filter(voice => voice.language === language);
+
+            // Add filtered voice options
+            filteredVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = voice.name;
+                voiceSelect.appendChild(option);
+            });
+
+            // Enable the voice select
+            voiceSelect.disabled = false;
+
+            // Set previously selected voice if it exists and matches the language
+            if (selectedVoice && filteredVoices.some(voice => voice.name === selectedVoice)) {
+                voiceSelect.value = selectedVoice;
+            }
+        }
+
+        // Helper function to update save button state
+        function updateSaveButtonState() {
+            const languageSelect = document.getElementById('languageSelect');
+            const voiceSelect = document.getElementById('voiceSelect');
+            const saveButton = document.getElementById('saveConfigBtn');
+
+            saveButton.disabled = !languageSelect.value || !voiceSelect.value;
+        }
+
+        async function generateVideo() {
+            // Get all text inputs
+            const textInputs = document.querySelectorAll('.text-input');
+            const texts = Array.from(textInputs)
+                .map(input => input.value.trim())
+                .filter(text => text);
+
+            if (texts.length === 0) {
+                alert('Please enter at least one text prompt.');
+                return;
+            }
+
+            // Show loading indicator and hide results
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+
+            // Get voice settings from the form or use defaults
+            const voiceId = document.getElementById('voiceSelect').value || "Joanna";
+            const languageCode = document.getElementById('languageSelect').value || "en-US";
+
+            try {
+                const response = await fetch('/videos/create-video-job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        texts,
+                        options: {
+                            voiceId: voiceId,
+                            outputFormat: "mp3",
+                            languageCode: languageCode,
+                            engine: "standard"
+                        },
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('resultContainer').style.display = 'block';
+                } else {
+                    throw new Error(result.message || 'Failed to generate video');
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = `Error: ${error.message}`;
+                document.getElementById('errorContainer').style.display = 'block';
+                console.error('Error generating video:', error);
+            } finally {
+                // Hide loading indicator and enable button
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function addTextEntry() {
+            const textEntries = document.getElementById('textEntries');
+            const newEntry = document.createElement('div');
+            newEntry.className = 'text-entry';
+            newEntry.innerHTML = `
+          <button class="remove-btn" onclick="removeTextEntry(this)">×</button>
+          <div class="form-group">
+            <label>Text Prompt:</label>
+            <textarea class="text-input" placeholder="Enter text to generate a video segment..."></textarea>
+          </div>
+        `;
+            textEntries.appendChild(newEntry);
+        }
+
+        function removeTextEntry(button) {
+            const entries = document.querySelectorAll('.text-entry');
+            // Don't remove if it's the only entry
+            if (entries.length > 1) {
+                const entry = button.parentElement;
+                entry.remove();
+            } else {
+                alert('You need at least one text prompt.');
+            }
+        }
+    </script>
+</body>
+
+</html>

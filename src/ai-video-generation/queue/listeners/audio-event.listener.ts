@@ -4,9 +4,8 @@ import {
   QueueEventsListener,
 } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { TextToSpeechOptions } from 'src/ai-video-generation/aws-polly/interfaces/text-to-speech-options.interface';
-import { VideoGenerationService } from 'src/ai-video-generation/video-generation/video-generation.service';
+import { TextToSpeechOptions } from 'src/external/aws-polly/interfaces/text-to-speech-options.interface';
+import { VideoGenerationService } from 'src/ai-video-generation/videos/services/video-generation.service';
 
 interface AudioGenerationJob {
   text: string;
@@ -15,6 +14,7 @@ interface AudioGenerationJob {
   options?: TextToSpeechOptions;
 }
 
+/** OLD - DO NOT USE */
 @QueueEventsListener('audio-generation')
 export class AudioEventListener extends QueueEventsHost {
   private readonly logger = new Logger(AudioEventListener.name);
@@ -23,7 +23,7 @@ export class AudioEventListener extends QueueEventsHost {
     super();
   }
 
-  @OnQueueEvent('completed')
+  /* @OnQueueEvent('completed')
   async onCompleted(job: { jobId: string; returnvalue: AudioGenerationJob }) {
     const { videoId } = job.returnvalue;
     this.logger.warn(`Job completed with videoId: ${videoId}`);
@@ -46,5 +46,5 @@ export class AudioEventListener extends QueueEventsHost {
 
       await this.videoGenerationService.update(videoId, videoGeneration);
     }
-  }
+  } */
 }

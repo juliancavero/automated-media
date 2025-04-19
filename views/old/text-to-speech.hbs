@@ -1,0 +1,382 @@
+<html lang='en'>
+
+<head>
+  {{> head}}
+  <style>
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: white;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .input-group>div {
+      flex: 1;
+    }
+
+    .btn-control {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+
+    .text-entry {
+      position: relative;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+
+    .text-entry .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .result-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f0f8ff;
+      border: 1px solid #b8daff;
+      border-radius: 4px;
+    }
+
+    .audio-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .audio-player {
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .audio-text {
+      font-style: italic;
+      margin-bottom: 5px;
+      color: #666;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      font-style: italic;
+      color: #666;
+    }
+
+    .btn-add {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .btn-add:hover {
+      background-color: #218838;
+    }
+
+    .audio-history {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .audio-history h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    .audio-history-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+
+    .audio-history-item:last-child {
+      border-bottom: none;
+    }
+
+    .audio-date {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .no-history {
+      font-style: italic;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class='container'>
+    <!-- Navigation menu -->
+    {{> navmenu}}
+
+    <h1>Text to Speech Converter</h1>
+
+    <div class='text-entries' id='textEntries'>
+      <!-- Text entries will be added here dynamically -->
+      <div class='text-entry'>
+        <button class='remove-btn' onclick='removeTextEntry(this)'>×</button>
+        <div class='form-group'>
+          <label>Text to Convert:</label>
+          <textarea class='text-input' placeholder='Enter text to convert to speech...'></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button class='btn btn-add btn-control' onclick='addTextEntry()'>Add
+      Another Text</button>
+
+    <div class='input-group'>
+      <div class='form-group'>
+        <label>Voice:</label>
+        <select id='voiceSelect'>
+          <option value='Joanna'>Joanna (Female, US English)</option>
+          <option value='Matthew'>Matthew (Male, US English)</option>
+          <option value='Amy'>Amy (Female, British English)</option>
+          <option value='Brian'>Brian (Male, British English)</option>
+          <option value='Enrique'>Enrique (Male, Spanish)</option>
+          <option value='Conchita'>Conchita (Female, Spanish)</option>
+        </select>
+      </div>
+
+      <div class='form-group'>
+        <label>Engine:</label>
+        <select id='engineSelect'>
+          <option value='neural'>Neural</option>
+          <option value='standard'>Standard</option>
+        </select>
+      </div>
+    </div>
+
+    <button id='convertBtn' class='btn btn-primary' onclick='convertToSpeech()'>Convert to Speech</button>
+
+    <div id='loadingIndicator' class='loading hidden'>
+      Converting your text to speech... Please wait.
+    </div>
+
+    <div id='resultContainer' class='result-container hidden'>
+      <h2>Generated Audio Files</h2>
+      <div id='audioResults'></div>
+    </div>
+
+    <div class="audio-history">
+      <h2>Previously Generated Audio</h2>
+      <div id="audioHistory">
+        <p class="no-history">Loading previously generated audio files...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function addTextEntry() {
+      const textEntries = document.getElementById('textEntries');
+      const newEntry = document.createElement('div');
+      newEntry.className = 'text-entry';
+      newEntry.innerHTML = `
+          <button class="remove-btn" onclick="removeTextEntry(this)">×</button>
+          <div class="form-group">
+            <label>Text to Convert:</label>
+            <textarea class="text-input" placeholder="Enter text to convert to speech..."></textarea>
+          </div>
+        `;
+      textEntries.appendChild(newEntry);
+    }
+
+    function removeTextEntry(button) {
+      const entries = document.querySelectorAll('.text-entry');
+      // Don't remove if it's the only entry
+      if (entries.length > 1) {
+        const entry = button.parentElement;
+        entry.remove();
+      } else {
+        alert('You need at least one text entry.');
+      }
+    }
+
+    async function convertToSpeech() {
+      // Get all text inputs
+      const textInputs = document.querySelectorAll('.text-input');
+      const texts = Array.from(textInputs)
+        .map(input => input.value.trim())
+        .filter(text => text);
+
+      if (texts.length === 0) {
+        alert('Please enter at least one text to convert.');
+        return;
+      }
+
+      // Get selected options
+      const voiceId = document.getElementById('voiceSelect').value;
+      const engine = document.getElementById('engineSelect').value;
+
+      // Show loading indicator and hide results
+      document.getElementById('loadingIndicator').classList.remove('hidden');
+      document.getElementById('resultContainer').classList.add('hidden');
+      document.getElementById('convertBtn').disabled = true;
+
+      try {
+        const response = await fetch('/aws-polly/text-to-speech', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            texts,
+            options: {
+              voiceId,
+              engine,
+              languageCode: getLanguageCodeForVoice(voiceId)
+            }
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          displayResults(result.data);
+          // Reload audio history after new files are generated
+          loadAudioHistory();
+        } else {
+          throw new Error(result.message || 'Failed to convert text to speech');
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        console.error('Error converting text to speech:', error);
+      } finally {
+        // Hide loading indicator and enable button
+        document.getElementById('loadingIndicator').classList.add('hidden');
+        document.getElementById('convertBtn').disabled = false;
+      }
+    }
+
+    function displayResults(audioResults) {
+      const resultsContainer = document.getElementById('audioResults');
+      resultsContainer.innerHTML = '';
+
+      audioResults.forEach(audio => {
+        const audioItem = document.createElement('div');
+        audioItem.className = 'audio-item';
+
+        const audioText = document.createElement('div');
+        audioText.className = 'audio-text';
+        audioText.textContent = audio.text;
+
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.className = 'audio-player';
+        audioPlayer.controls = true;
+        audioPlayer.src = audio.url;
+
+        audioItem.appendChild(audioText);
+        audioItem.appendChild(audioPlayer);
+        resultsContainer.appendChild(audioItem);
+      });
+
+      document.getElementById('resultContainer').classList.remove('hidden');
+    }
+
+    function getLanguageCodeForVoice(voiceId) {
+      const voiceMap = {
+        'Joanna': 'en-US',
+        'Matthew': 'en-US',
+        'Amy': 'en-GB',
+        'Brian': 'en-GB',
+        'Enrique': 'es-ES',
+        'Conchita': 'es-ES'
+      };
+      return voiceMap[voiceId] || 'en-US';
+    }
+
+    // Load previously generated audio files
+    async function loadAudioHistory() {
+      try {
+        const response = await fetch('/api/audios');
+        if (!response.ok) {
+          throw new Error('Failed to fetch audio history');
+        }
+
+        const audios = await response.json();
+        const historyContainer = document.getElementById('audioHistory');
+
+        if (audios.length === 0) {
+          historyContainer.innerHTML = '<p class="no-history">No audio files found.</p>';
+          return;
+        }
+
+        historyContainer.innerHTML = '';
+
+        audios.forEach(audio => {
+          const item = document.createElement('div');
+          item.className = 'audio-history-item';
+
+          const date = new Date(audio.createdAt).toLocaleString();
+
+          item.innerHTML = `
+              <p>${truncateText(audio.text, 100)}</p>
+              <audio controls class="audio-player" src="${audio.url}"></audio>
+              <div class="audio-date">Created: ${date} | Voice: ${audio.voiceId || 'Default'}</div>
+            `;
+
+          historyContainer.appendChild(item);
+        });
+      } catch (error) {
+        console.error('Error loading audio history:', error);
+        document.getElementById('audioHistory').innerHTML =
+          `<p class="no-history">Error loading audio history: ${error.message}</p>`;
+      }
+    }
+
+    function truncateText(text, maxLength) {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    }
+
+    // Load audio history when page loads
+    document.addEventListener('DOMContentLoaded', loadAudioHistory);
+  </script>
+</body>
+
+</html>

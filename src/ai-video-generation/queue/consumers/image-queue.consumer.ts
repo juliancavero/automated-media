@@ -1,12 +1,11 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { ImageGenerationService } from '../../image-generation/image-generation.service';
+import { ImageGenerationService } from 'src/ai-video-generation/images/services/image-generation.service';
 
 interface ImageGenerationJob {
-  prompt: string;
-  videoId: string;
-  order: number;
+  text: string;
+  id: string;
 }
 
 @Processor('image-generation')
@@ -17,18 +16,13 @@ export class ImageQueueConsumer extends WorkerHost {
     super();
   }
 
-  async process(
-    job: Job<ImageGenerationJob>,
-  ): Promise<{ success: boolean; videoId: string }> {
-    this.logger.log(
-      `Processing image generation job ${job.id} with prompt: ${job.data.prompt}`,
-    );
+  async process(job: Job<ImageGenerationJob>) {
+    const { text, id } = job.data;
 
     try {
       const imageUrl = await this.imageGenerationService.generateImageFromText(
-        job.data.prompt,
-        job.data.videoId,
-        job.data.order,
+        text,
+        id,
       );
 
       this.logger.log(`Image generated successfully: ${imageUrl}`);

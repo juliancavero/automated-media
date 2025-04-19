@@ -4,8 +4,7 @@ import {
   QueueEventsListener,
 } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { VideoGenerationService } from 'src/ai-video-generation/video-generation/video-generation.service';
+import { VideoGenerationService } from 'src/ai-video-generation/videos/services/video-generation.service';
 
 interface ImageGenerationJob {
   prompt: string;
@@ -13,6 +12,7 @@ interface ImageGenerationJob {
   order: number;
 }
 
+/** OLD - DO NOT USE */
 @QueueEventsListener('image-generation')
 export class ImageEventListener extends QueueEventsHost {
   private readonly logger = new Logger(ImageEventListener.name);
@@ -21,7 +21,7 @@ export class ImageEventListener extends QueueEventsHost {
     super();
   }
 
-  @OnQueueEvent('completed')
+  /* @OnQueueEvent('completed')
   async onCompleted(job: { jobId: string; returnvalue: ImageGenerationJob }) {
     const { videoId } = job.returnvalue;
     this.logger.warn(`Job is: ${JSON.stringify(job)}`);
@@ -32,5 +32,5 @@ export class ImageEventListener extends QueueEventsHost {
       );
       await this.videoGenerationService.update(videoId, videoGeneration);
     }
-  }
+  } */
 }

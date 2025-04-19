@@ -2,14 +2,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { AudioQueueConsumer } from './consumers/audio-queue.consumer';
 import { ImageQueueConsumer } from './consumers/image-queue.consumer';
-import { AudioModule } from '../audio/audio.module';
-import { ImageGenerationModule } from '../image-generation/image-generation.module';
-import { QueueService } from './queue.service';
-import { VideoGenerationModule } from '../video-generation/video-generation.module';
-import { VideoQueueProcessor } from './consumers/video-queue.consumer';
-import { AudioEventListener } from './listeners/audio-event.listener';
-import { ImageEventListener } from './listeners/image-event.listener';
-import { VideoModule } from '../video/video.module';
+import { AudioModule } from '../audios/audio.module';
+import { VideoModule } from '../videos/video.module';
+import { ImageModule } from '../images/image.module';
 
 @Module({
   imports: [
@@ -25,24 +20,13 @@ import { VideoModule } from '../video/video.module';
       {
         name: 'audio-generation',
       },
-      {
-        name: 'media-processing',
-      },
     ),
     AudioModule,
-    ImageGenerationModule,
-    VideoGenerationModule,
+    ImageModule,
     VideoModule,
   ],
   controllers: [],
-  providers: [
-    QueueService,
-    ImageQueueConsumer,
-    AudioQueueConsumer,
-    VideoQueueProcessor,
-    AudioEventListener,
-    ImageEventListener,
-  ],
-  exports: [QueueService],
+  providers: [ImageQueueConsumer, AudioQueueConsumer],
+  exports: [],
 })
 export class QueueModule {}

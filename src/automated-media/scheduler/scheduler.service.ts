@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { VideosService } from '../videos/videos.service';
+import { AutomatedMediaService } from '../videos/automated-media.service';
 
 @Injectable()
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
-  constructor(private readonly videosService: VideosService) {}
+  constructor(private readonly videosService: AutomatedMediaService) {}
 
   @Cron('0 */15 * * * *')
   async handleGenerateDescriptionCron() {

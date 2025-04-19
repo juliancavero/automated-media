@@ -33,6 +33,7 @@
     "@nestjs/schedule": "^5.0.1",
     "@types/fluent-ffmpeg": "^2.1.27",
     "aws-sdk": "^2.1692.0",
+    "axios": "^1.8.4",
     "bullmq": "^5.48.1",
     "cloudinary": "^2.6.0",
     "fluent-ffmpeg": "^2.1.3",

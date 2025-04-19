@@ -1,14 +1,11 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { AudioGenerationService } from '../../audio/audio-generation.service';
-import { TextToSpeechOptions } from 'src/ai-video-generation/aws-polly/interfaces/text-to-speech-options.interface';
+import { AudioGenerationService } from '../../audios/services/audio-generation.service';
 
 interface AudioGenerationJob {
   text: string;
-  videoId: string;
-  order: number;
-  options?: TextToSpeechOptions;
+  id: string;
 }
 
 @Processor('audio-generation')
@@ -20,21 +17,19 @@ export class AudioQueueConsumer extends WorkerHost {
   }
 
   async process(job: Job<AudioGenerationJob>): Promise<any> {
-    const { text, videoId, order, options } = job.data;
-    this.logger.log(
-      `Processing audio generation job ${job.id} for text: ${text.substring(0, 30)}...`,
+    const { text, id } = job.data;
+    this.logger.debug(
+      `Processing audio generation for AUDIO ID ${id} for text: ${text.substring(0, 30)}...`,
     );
 
     try {
       const audioUrl = await this.audioGenerationService.generateAudioFromText(
         text,
-        videoId,
-        order,
-        options,
+        id,
       );
 
-      this.logger.log(
-        `Successfully processed audio job ${job.id}. Audio URL: ${audioUrl}`,
+      this.logger.debug(
+        `Successfully processed audio ID ${id} Audio URL: ${audioUrl}`,
       );
       return { success: true, ...job.data };
     } catch (error) {

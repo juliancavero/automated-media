@@ -1,18 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AudioModule } from './ai-video-generation/audio/audio.module';
-import { AwsPollyModule } from './ai-video-generation/aws-polly/aws-polly.module';
-import { ImageGenerationModule } from './ai-video-generation/image-generation/image-generation.module';
+import { AudioModule } from './ai-video-generation/audios/audio.module';
+import { AwsPollyModule } from './external/aws-polly/aws-polly.module';
+import { ImageModule } from './ai-video-generation/images/image.module';
 import { QueueModule } from './ai-video-generation/queue/queue.module';
-import { VideoGenerationModule } from './ai-video-generation/video-generation/video-generation.module';
-import { VideoModule } from './ai-video-generation/video/video.module';
-import { AppController } from './app.controller';
+import { VideoModule } from './ai-video-generation/videos/video.module';
+import { ExternalModule } from './external/external.module';
 import { AiModule } from './automated-media/ai/ai.module';
 import { CloudinaryModule } from './automated-media/cloudinary/cloudinary.module';
 import { GoogleAIUploadModule } from './automated-media/google-ai-upload/google-ai-upload.module';
-import { VideosModule } from './automated-media/videos/videos.module';
 import { SchedulerModule } from './automated-media/scheduler/scheduler.module';
+import { AutomatedMediaModule } from './automated-media/videos/automated-media.module';
 
 @Module({
   imports: [
@@ -20,19 +19,19 @@ import { SchedulerModule } from './automated-media/scheduler/scheduler.module';
       envFilePath: ['.env.local', '.env'],
     }),
     MongooseModule.forRoot(process.env.MONGO_URI ?? ''),
-    VideosModule,
+    AutomatedMediaModule,
     AiModule,
     SchedulerModule,
     CloudinaryModule,
+    GoogleAIUploadModule,
     VideoModule,
     AwsPollyModule,
-    ImageGenerationModule,
+    ImageModule,
     AudioModule,
-    GoogleAIUploadModule,
     QueueModule,
-    VideoGenerationModule,
+    ExternalModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [],
   exports: [],
 })
