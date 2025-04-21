@@ -8,6 +8,8 @@ import {
   Get,
   Render,
   Param,
+  Query,
+  Delete,
 } from '@nestjs/common';
 import { VideoGenerationService } from '../services/video-generation.service';
 import { GenerateVideoDto } from '../dto/generate-video.dto';
@@ -52,6 +54,31 @@ export class VideoController {
     };
   }
 
+  @Post(':id/mark-uploaded')
+  async markVideoAsUploaded(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const video = await this.videoGenerationService.setVideoUploaded(id);
+      if (!video) {
+        return { success: false, message: 'Video not found' };
+      }
+      return { success: true, message: 'Video marked as uploaded successfully' };
+    } catch (error) {
+      this.logger.error(`Error marking video as uploaded: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Delete(':id')
+  async deleteVideo(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.videoGenerationService.deleteVideo(id);
+      return { success: true, message: 'Video and related resources deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Error deleting video: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
   // Views
   @Get('create')
   @Render('ai-video-generation/video-generation')
@@ -63,11 +90,30 @@ export class VideoController {
 
   @Get('list')
   @Render('ai-video-generation/video-list')
-  async renderVideoGenerationsList() {
-    const videoGenerations = await this.videoGenerationService.findAll();
+  async renderVideoGenerationsList(
+    @Query('series') series?: string,
+    @Query('page') pageQuery?: string,
+    @Query('limit') limitQuery?: string,
+  ) {
+    const page = pageQuery ? parseInt(pageQuery, 10) : 1;
+    const limit = limitQuery ? parseInt(limitQuery, 10) : 10;
+
+    const { videos, total, totalPages } = await this.videoGenerationService.findAll(series, page, limit);
+
     return {
       title: 'Video Generations List',
-      videoGenerations,
+      videoGenerations: videos,
+      currentSeriesFilter: series || '',
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+        nextPage: page + 1,
+        prevPage: page - 1,
+      }
     };
   }
 

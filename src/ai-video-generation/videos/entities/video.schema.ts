@@ -16,8 +16,11 @@ export class Video {
   @Prop()
   publicId?: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'finished'] })
+  @Prop({ default: 'pending', enum: ['pending', 'finished', 'uploaded'] })
   status: string;
+
+  @Prop()
+  series?: string;
 
   @Prop({ default: Date.now })
   createdAt: Date;

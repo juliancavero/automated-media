@@ -179,6 +179,26 @@
         #transformBtn:hover {
             background-color: #5a6268;
         }
+
+        /* Series input style */
+        .series-input {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .series-input h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .series-input p {
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
     </style>
 </head>
 
@@ -209,6 +229,13 @@
                 </div>
                 <button id="saveConfigBtn" class="btn save-config-btn" disabled>Save Configuration</button>
                 <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
+            </div>
+
+            <!-- Series input section -->
+            <div class="series-input">
+                <h3>Series (Optional)</h3>
+                <p>Add a series name to group related videos together. You can filter by series in the video list.</p>
+                <input type="text" id="seriesInput" class="form-control" placeholder="Enter series name (optional)">
             </div>
 
             <!-- Batch import section -->
@@ -389,6 +416,7 @@
             const images = Array.from(imageInputs)
                 .map(input => input.value.trim())
                 .filter(image => image);
+            const series = document.getElementById('seriesInput').value.trim();
 
             if (texts.length === 0) {
                 alert('Please enter at least one text prompt.');
@@ -413,6 +441,7 @@
                         languageCode,
                         texts,
                         images,
+                        series,
                         options: {
                             voiceId,
                             outputFormat: "mp3",

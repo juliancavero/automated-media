@@ -28,8 +28,24 @@ export class ImageController {
   }
 
   @Delete(':id')
-  async deleteImage(@Param('id') id: string): Promise<void> {
-    return await this.imageService.deleteImage(id);
+  async deleteImage(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.imageService.deleteImage(id);
+      return { success: true, message: 'Image deleted successfully' };
+    } catch (error) {
+      this.logger.error(`Error deleting image: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Post(':id/regenerate')
+  async regenerateImage(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.imageService.regenerateImage(id);
+      return { success: true, message: 'Image regeneration has been queued' };
+    } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
   }
 
   @Post('relaunch-failed')

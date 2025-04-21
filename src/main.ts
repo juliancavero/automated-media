@@ -56,6 +56,29 @@ async function bootstrap() {
     return value1 + value2;
   });
 
+  hbs.registerHelper('generatePageNumbers', (currentPage, totalPages) => {
+    const pages: number[] = [];
+    const maxPagesToShow = 5;
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = startPage + maxPagesToShow - 1;
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  });
+
+  hbs.registerHelper('eq', function (arg1, arg2) {
+    return arg1 === arg2;
+  });
+
   hbs.registerHelper('truncate', function (text, length) {
     if (!text) return '';
     return text.length > length ? text.substring(0, length) + '...' : text;

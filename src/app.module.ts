@@ -35,4 +35,4 @@ import { AutomatedMediaModule } from './automated-media/videos/automated-media.m
   providers: [],
   exports: [],
 })
-export class AppModule {}
+export class AppModule { }

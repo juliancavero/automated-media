@@ -74,10 +74,14 @@ export class VideoService {
       }
 
       // Guardar el video en la base de datos
+      const existingVideo = await this.videoGenerationService.findById(videoId);
+      const newStatus = existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
+
       const video = await this.videoGenerationService.setVideoUrl(
         videoId,
         uploadResult.url,
         uploadResult.public_id,
+        newStatus
       );
       if (!video) {
         this.logger.error('Error al guardar el video en la base de datos');

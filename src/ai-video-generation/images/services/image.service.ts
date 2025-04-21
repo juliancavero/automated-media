@@ -1,15 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Image, ImageDocument } from '../schemas/image.schema';
 import { ImageQueueService } from '../queues/image-queue.service';
+import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 
 @Injectable()
 export class ImageService {
+  private readonly logger = new Logger(ImageService.name);
+
   constructor(
     @InjectModel(Image.name)
     private readonly imageModel: Model<ImageDocument>,
     private readonly imageQueueService: ImageQueueService,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   async createImage(
@@ -40,12 +44,24 @@ export class ImageService {
   }
 
   async deleteImage(id: string): Promise<void> {
-    const image = await this.imageModel.findById(id);
-    if (image) {
-      await image.deleteOne();
-    } else {
-      throw new Error('Image not found');
+    const image = await this.imageModel.findById(id).exec();
+    if (!image) {
+      throw new NotFoundException(`Image with ID ${id} not found`);
     }
+
+    // Delete from Cloudinary if publicId exists
+    if (image.publicId) {
+      try {
+        await this.cloudinaryService.deleteFile(image.publicId, 'image');
+        this.logger.log(`Deleted image file from Cloudinary: ${image.publicId}`);
+      } catch (error) {
+        this.logger.error(`Failed to delete image from Cloudinary: ${error.message}`);
+      }
+    }
+
+    // Delete from database
+    await this.imageModel.findByIdAndDelete(id).exec();
+    this.logger.log(`Deleted image from database: ${id}`);
   }
 
   async setImageUrl(
@@ -60,6 +76,23 @@ export class ImageService {
         { new: true, runValidators: true },
       )
       .exec();
+  }
+
+  async regenerateImage(id: string): Promise<void> {
+    const image = await this.imageModel.findById(id);
+    if (!image) {
+      throw new Error('Image not found');
+    }
+
+    // Reset the image status to pending
+    await this.imageModel.findByIdAndUpdate(
+      id,
+      { status: 'pending', url: null, publicId: null },
+      { runValidators: true }
+    ).exec();
+
+    // Add to the queue
+    await this.imageQueueService.addImageGenerationJob(image);
   }
 
   async relaunchFailedImages(): Promise<void> {

@@ -60,6 +60,28 @@
     .actions button {
       margin: 0 5px;
     }
+
+    .danger-zone {
+      margin-top: 30px;
+      padding: 15px;
+      border: 1px solid #dc3545;
+      border-radius: 4px;
+      background-color: #f8d7da;
+    }
+
+    .danger-zone h4 {
+      color: #dc3545;
+    }
+
+    .btn-delete {
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+
+    .btn-delete:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
   </style>
 </head>
 
@@ -117,29 +139,35 @@
       {{/if}}
 
       <div class='actions'>
-        <button class='btn btn-danger' onclick='deleteAudio("{{audio._id}}")'>Delete Audio</button>
         <button class='btn btn-primary' onclick='downloadAudio("{{audio._id}}", "{{audio.fileName}}")'>Download</button>
+      </div>
+
+      <div class="danger-zone">
+        <h4>Danger Zone</h4>
+        <p>Once you delete this audio, there is no going back. Please be certain.</p>
+        <button class='btn btn-delete' onclick='deleteAudio("{{audio._id}}")'>Delete Audio</button>
       </div>
     </div>
   </div>
 
   <script>
     async function deleteAudio(id) {
-      if (!confirm('Are you sure you want to delete this audio?')) {
+      if (!confirm('Are you sure you want to delete this audio? This action cannot be undone.')) {
         return;
       }
 
       try {
-        const response = await fetch(`/api/audios/${id}`, {
+        const response = await fetch(`/audios/${id}`, {
           method: 'DELETE'
         });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (result.success) {
           alert('Audio deleted successfully');
           window.location.href = '/audios/list';
         } else {
-          const data = await response.json();
-          alert(`Failed to delete: ${data.message || 'Unknown error'}`);
+          alert(`Failed to delete: ${result.message || 'Unknown error'}`);
         }
       } catch (error) {
         alert(`Error: ${error.message}`);

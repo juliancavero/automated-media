@@ -7,8 +7,13 @@ export class AudioController {
   constructor(private readonly audioService: AudioService) { }
 
   @Delete(':id')
-  async deleteAudio(@Param('id') id: string): Promise<void> {
-    return await this.audioService.deleteAudio(id);
+  async deleteAudio(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.audioService.deleteAudio(id);
+      return { success: true, message: 'Audio deleted successfully' };
+    } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
   }
 
   @Post('relaunch-failed')

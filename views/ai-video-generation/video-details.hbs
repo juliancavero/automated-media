@@ -61,6 +61,49 @@
       justify-content: center;
       gap: 15px;
     }
+
+    .series-badge {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 5px 10px;
+      background-color: #6c757d;
+      color: white;
+      font-size: 0.8rem;
+      border-radius: 20px;
+      vertical-align: middle;
+    }
+
+    .series-link {
+      color: white;
+      text-decoration: none;
+    }
+
+    .series-link:hover {
+      text-decoration: underline;
+    }
+
+    .danger-zone {
+      margin-top: 40px;
+      padding: 20px;
+      border: 1px solid #dc3545;
+      border-radius: 4px;
+      background-color: #f8d7da;
+    }
+
+    .danger-zone h4 {
+      color: #dc3545;
+      margin-bottom: 15px;
+    }
+
+    .btn-delete {
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+
+    .btn-delete:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
   </style>
 </head>
 
@@ -68,7 +111,15 @@
   <div class="container mt-4">
     {{> navmenu}}
 
-    <h1>{{title}}</h1>
+    <h1>
+      {{title}}
+      {{#if videoGeneration.series}}
+      <span class="series-badge">
+        Series: <a href="/videos/list?series={{videoGeneration.series}}"
+          class="series-link">{{videoGeneration.series}}</a>
+      </span>
+      {{/if}}
+    </h1>
 
     {{#if videoGeneration}}
 
@@ -239,8 +290,21 @@
       <div class="action-buttons">
         <button id="select-all-btn" class="btn btn-secondary btn-lg">Select All Items</button>
         <button id="generate-video-btn" class="btn btn-primary btn-lg btn-generate">Generate Video</button>
+        {{#if videoGeneration.url}}
+        <button id="mark-uploaded-btn" class="btn btn-warning btn-lg" {{#if (eq videoGeneration.status 'uploaded'
+          )}}disabled{{/if}}>
+          Mark as Uploaded {{#if (eq videoGeneration.status 'uploaded')}}✓{{/if}}
+        </button>
+        {{/if}}
       </div>
       <div id="generate-status" class="mt-2"></div>
+    </div>
+
+    <div class="danger-zone">
+      <h4>Danger Zone</h4>
+      <p>This will permanently delete this video and all its related resources (images and audio). This action cannot be
+        undone.</p>
+      <button id="delete-video-btn" class="btn btn-delete btn-lg">Delete Video</button>
     </div>
 
     {{else}}
@@ -250,7 +314,7 @@
     {{/if}}
 
     <div class="mt-4">
-      <a href="/generate-video/all" class="btn btn-secondary">Back to List</a>
+      <a href="/videos/list" class="btn btn-secondary">Back to List</a>
     </div>
   </div>
 
@@ -348,6 +412,79 @@
           } catch (error) {
             document.getElementById('generate-status').innerHTML =
               `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+
+      // Mark as uploaded button functionality
+      const markUploadedBtn = document.getElementById('mark-uploaded-btn');
+      if (markUploadedBtn) {
+        markUploadedBtn.addEventListener('click', async function () {
+          const videoId = '{{videoGeneration._id}}';
+
+          try {
+            markUploadedBtn.disabled = true;
+            markUploadedBtn.innerHTML = 'Marking as uploaded...';
+
+            const response = await fetch(`/videos/${videoId}/mark-uploaded`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              markUploadedBtn.innerHTML = 'Mark as Uploaded ✓';
+              document.getElementById('generate-status').innerHTML =
+                '<div class="alert alert-success">Video marked as uploaded successfully!</div>';
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              markUploadedBtn.disabled = false;
+              markUploadedBtn.innerHTML = 'Mark as Uploaded';
+              document.getElementById('generate-status').innerHTML =
+                `<div class="alert alert-danger">Error: ${result.message || 'Failed to mark video as uploaded'}</div>`;
+            }
+          } catch (error) {
+            markUploadedBtn.disabled = false;
+            markUploadedBtn.innerHTML = 'Mark as Uploaded';
+            document.getElementById('generate-status').innerHTML =
+              `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+
+      // Delete video button functionality
+      const deleteBtn = document.getElementById('delete-video-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function () {
+          if (!confirm('Are you sure you want to delete this video and all its related resources? This action cannot be undone.')) {
+            return;
+          }
+
+          const videoId = '{{videoGeneration._id}}';
+
+          try {
+            const response = await fetch(`/videos/${videoId}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              alert('Video and related resources deleted successfully');
+              window.location.href = '/videos/list';
+            } else {
+              alert(`Failed to delete: ${result.message || 'Unknown error'}`);
+            }
+          } catch (error) {
+            alert(`Error: ${error.message}`);
           }
         });
       }
