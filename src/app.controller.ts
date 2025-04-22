@@ -1,9 +1,7 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
-import basic_story from 'public/templates/basic_story';
-import basic_story_json from 'public/templates/basic_story_json';
-import structured_story from 'public/templates/structured_story';
-import structured_story_json from 'public/templates/structured_story_json';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 @Controller('')
 export class AppController {
@@ -16,11 +14,25 @@ export class AppController {
 
     @Get('templates')
     async getTemplates(@Res() res: Response) {
-        return res.status(200).json({
-            basic_story,
-            basic_story_json,
-            structured_story,
-            structured_story_json,
-        });
+        try {
+            const templatesPath = join(process.cwd(), 'public', 'templates');
+
+            const basic_story = readFileSync(join(templatesPath, 'basic_story.txt'), 'utf8');
+            const basic_story_json = readFileSync(join(templatesPath, 'basic_story_json.txt'), 'utf8');
+            const structured_story = readFileSync(join(templatesPath, 'structured_story.txt'), 'utf8');
+            const structured_story_json = readFileSync(join(templatesPath, 'structured_story_json.txt'), 'utf8');
+
+            return res.status(200).json({
+                basic_story,
+                basic_story_json,
+                structured_story,
+                structured_story_json,
+            });
+        } catch (error) {
+            return res.status(500).json({
+                message: 'Error reading template files',
+                error: error.message
+            });
+        }
     }
 }
