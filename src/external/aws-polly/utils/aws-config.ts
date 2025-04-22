@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import * as AWS from 'aws-sdk';
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 
 const logger = new Logger('AWSConfig');
 
@@ -11,14 +11,9 @@ export function setupAWSConfig(): boolean {
   process.env.AWS_SDK_LOAD_CONFIG = '1';
 
   try {
-    // Try to configure from environment variables first
+    // Check if AWS credentials are in environment variables
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-      logger.log('Configuring AWS SDK using environment variables');
-      AWS.config.update({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION || 'us-east-1',
-      });
+      logger.log('AWS credentials found in environment variables');
       return true;
     }
 
@@ -38,11 +33,15 @@ export function setupAWSConfig(): boolean {
 export async function validateAWSConfig(): Promise<boolean> {
   try {
     // Create a test STS client
-    const sts = new AWS.STS();
+    const stsClient = new STSClient({
+      region: process.env.AWS_REGION || 'us-east-1'
+    });
 
     // Try to get the caller identity to verify credentials
-    const data = await sts.getCallerIdentity().promise();
-    logger.log(`AWS configuration valid. Account ID: ${data.Account}`);
+    const command = new GetCallerIdentityCommand({});
+    const response = await stsClient.send(command);
+
+    logger.log(`AWS configuration valid. Account ID: ${response.Account}`);
     return true;
   } catch (error) {
     logger.error(

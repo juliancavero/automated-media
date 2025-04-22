@@ -140,6 +140,7 @@
 
       <div class='actions'>
         <button class='btn btn-primary' onclick='downloadAudio("{{audio._id}}", "{{audio.fileName}}")'>Download</button>
+        <button class='btn btn-warning' onclick='regenerateAudio("{{audio._id}}")'>Regenerate Audio</button>
       </div>
 
       <div class="danger-zone">
@@ -181,6 +182,30 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+    }
+
+    function regenerateAudio(id) {
+      if (confirm('Are you sure you want to regenerate this audio? This will overwrite the current audio.')) {
+        fetch(`/audios/${id}/regenerate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Audio regeneration has been queued. The page will reload in a few seconds.');
+              setTimeout(() => location.reload(), 3000);
+            } else {
+              alert(`Failed to regenerate audio: ${data.message}`);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert(`An error occurred: ${error.message}`);
+          });
+      }
     }
   </script>
 </body>

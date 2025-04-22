@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Render, Res, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Render, Res, Post, Query } from '@nestjs/common';
 import { Response } from 'express';
 import { AudioService } from '../services/audio.service';
 
@@ -26,14 +26,37 @@ export class AudioController {
     }
   }
 
+  @Post(':id/regenerate')
+  async regenerateAudio(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.audioService.regenerateAudio(id);
+      return { success: true, message: 'Audio regeneration has been queued' };
+    } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
   // Views
   @Get('list')
   @Render('ai-video-generation/audio-list')
-  async getAudiosListView(@Res() res: Response) {
-    const audios = await this.audioService.getAllAudios();
+  async getAudiosListView(@Query('page') page = '1', @Query('limit') limit = '10', @Res() res: Response) {
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10) || 10;
+
+    const { audios, total, pages } = await this.audioService.getAllAudios(pageNumber, limitNumber);
+
     return {
       title: 'Audio List',
       audios,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages: pages,
+        totalItems: total,
+        hasNext: pageNumber < pages,
+        hasPrev: pageNumber > 1,
+        nextPage: pageNumber + 1,
+        prevPage: pageNumber - 1,
+      }
     };
   }
 

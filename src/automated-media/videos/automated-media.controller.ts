@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { AutomatedMediaService } from './automated-media.service';
 
-@Controller()
+@Controller('/automated-media')
 export class AutomatedMediaController {
   private readonly logger = new Logger(AutomatedMediaController.name);
 
-  constructor(private readonly automatedMediaService: AutomatedMediaService) {}
+  constructor(private readonly automatedMediaService: AutomatedMediaService) { }
 
   @Get()
   @Render('automated-media/automated-media-list')

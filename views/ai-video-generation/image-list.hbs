@@ -5,9 +5,23 @@
   <style>
     .image-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(1, 1fr);
       gap: 20px;
       margin-top: 20px;
+    }
+
+    /* Tablet */
+    @media (min-width: 768px) {
+      .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Desktop - exactly 3 columns */
+    @media (min-width: 992px) {
+      .image-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
     }
 
     .image-card {
@@ -97,6 +111,60 @@
     .error {
       background-color: #dc3545;
     }
+
+    /* Pagination styles */
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin: 30px 0;
+      align-items: center;
+    }
+
+    .pagination {
+      display: flex;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .pagination li {
+      margin: 0 5px;
+    }
+
+    .pagination a {
+      display: block;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      color: #007bff;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+
+    .pagination a:hover {
+      background-color: #f8f9fa;
+    }
+
+    .pagination .active a {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    .pagination .disabled a {
+      color: #6c757d;
+      pointer-events: none;
+      cursor: not-allowed;
+      background-color: #fff;
+      border-color: #dee2e6;
+    }
+
+    .pagination-info {
+      margin-bottom: 10px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 
@@ -112,6 +180,10 @@
     <div id="notification" class="notification"></div>
 
     {{#if images.length}}
+    <div class="pagination-info">
+      Showing page {{pagination.currentPage}} of {{pagination.totalPages}} ({{pagination.totalItems}} total images)
+    </div>
+
     <div class='image-grid'>
       {{#each images}}
       <div class='image-card' data-image-id='{{_id}}'>
@@ -124,6 +196,30 @@
         </div>
       </div>
       {{/each}}
+    </div>
+
+    <div class="pagination-container">
+      <ul class="pagination">
+        <li class="{{#unless pagination.hasPrev}}disabled{{/unless}}">
+          <a href="?page=1">First</a>
+        </li>
+        <li class="{{#unless pagination.hasPrev}}disabled{{/unless}}">
+          <a href="?page={{pagination.prevPage}}">Previous</a>
+        </li>
+
+        {{#each (generatePageNumbers pagination.currentPage pagination.totalPages)}}
+        <li class="{{#if (eq this ../pagination.currentPage)}}active{{/if}}">
+          <a href="?page={{this}}">{{this}}</a>
+        </li>
+        {{/each}}
+
+        <li class="{{#unless pagination.hasNext}}disabled{{/unless}}">
+          <a href="?page={{pagination.nextPage}}">Next</a>
+        </li>
+        <li class="{{#unless pagination.hasNext}}disabled{{/unless}}">
+          <a href="?page={{pagination.totalPages}}">Last</a>
+        </li>
+      </ul>
     </div>
     {{else}}
     <div class='empty-message'>

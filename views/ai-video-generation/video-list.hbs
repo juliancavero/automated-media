@@ -27,7 +27,7 @@
 
     .description {
       max-width: 400px;
-      overflow: hidden;
+      overflow: hid;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -38,7 +38,7 @@
 
     .url {
       max-width: 200px;
-      overflow: hidden;
+      overflow: hid;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -172,6 +172,67 @@
       background-color: #fff9c4;
       /* Light yellow pastel */
     }
+
+    /* Responsive table styles */
+    @media screen and (max-width: 767px) {
+
+      table,
+      thead,
+      tbody,
+      th,
+      td,
+      tr {
+        display: block;
+      }
+
+      .hid {
+        display: none;
+      }
+
+      thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+
+      tr {
+        border: 1px solid #ccc;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+        min-height: 30px;
+      }
+
+      td:before {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        content: attr(data-label);
+      }
+
+      .clickable-row td:last-child {
+        border-bottom: none;
+      }
+
+      .description {
+        max-width: 100%;
+      }
+
+      .url {
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 
@@ -206,26 +267,26 @@
       <thead>
         <tr>
           <th>Texto</th>
-          <th>Series</th>
-          <th>Fecha de Creación</th>
-          <th>URL</th>
-          <th>Estado</th>
+          <th class="hid">Series</th>
+          <th class="hid">Fecha de Creación</th>
+          <th class="hid">URL</th>
+          <th class="hid">Estado</th>
         </tr>
       </thead>
       <tbody>
         {{#each videoGenerations}}
         <tr class="clickable-row {{#if (eq status 'uploaded')}}status-uploaded{{/if}}" data-href="/videos/list/{{_id}}">
-          <td class='description'>{{truncate texts.[0] 40}}</td>
-          <td>{{series}}</td>
-          <td class='date'>{{formatDate createdAt}}</td>
-          <td class='url'>
+          <td class='description' data-label="Texto">{{truncate texts.[0] 40}}</td>
+          <td class="hid" data-label="Series">{{series}}</td>
+          <td class='date hid' data-label="Fecha de Creación">{{formatDate createdAt}}</td>
+          <td class='url hid' data-label="URL">
             {{#if url}}
             <a href='{{url}}' target='_blank'>Ver Video</a>
             {{else}}
             <span class='pending'>...pendiente</span>
             {{/if}}
           </td>
-          <td>{{status}}</td>
+          <td class="hid" data-label="Estado">{{status}}</td>
         </tr>
         {{/each}}
       </tbody>

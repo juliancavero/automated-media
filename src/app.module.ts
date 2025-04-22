@@ -12,6 +12,7 @@ import { CloudinaryModule } from './automated-media/cloudinary/cloudinary.module
 import { GoogleAIUploadModule } from './automated-media/google-ai-upload/google-ai-upload.module';
 import { SchedulerModule } from './automated-media/scheduler/scheduler.module';
 import { AutomatedMediaModule } from './automated-media/videos/automated-media.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { AutomatedMediaModule } from './automated-media/videos/automated-media.m
     QueueModule,
     ExternalModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
   exports: [],
 })

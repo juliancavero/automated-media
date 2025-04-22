@@ -119,9 +119,36 @@
             border: 1px solid #dee2e6;
         }
 
-        .voice-settings h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
+        /* Collapsible section styles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+        }
+
+        .toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            max-height: 1000px;
+        }
+
+        .section-content.collapsed {
+            max-height: 0;
         }
 
         .selector-row {
@@ -199,6 +226,72 @@
             font-size: 0.9em;
             color: #6c757d;
         }
+
+        /* Templates section styles */
+        .templates-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .template-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: white;
+        }
+
+        .template-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .template-title {
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .template-preview {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 100px;
+        }
+
+        .copy-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background-color: #0069d9;
+        }
+
+        .copied-message {
+            display: none;
+            color: #28a745;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
     </style>
 </head>
 
@@ -212,30 +305,41 @@
         <div class='form-container'>
             <!-- Voice and language selectors -->
             <div class="voice-settings">
-                <h3>Voice Settings</h3>
-                <div class="selector-row">
-                    <div class="selector-container">
-                        <label for="languageSelect">Language:</label>
-                        <select id="languageSelect" class="form-control">
-                            <option value="">Select a language</option>
-                        </select>
-                    </div>
-                    <div class="selector-container">
-                        <label for="voiceSelect">Voice:</label>
-                        <select id="voiceSelect" class="form-control" disabled>
-                            <option value="">Select a voice</option>
-                        </select>
-                    </div>
+                <div class="section-header" onclick="toggleSection('voiceSettings')">
+                    <h3>Voice Settings</h3>
+                    <span class="toggle-icon collapsed" id="voiceSettingsIcon">↑</span>
                 </div>
-                <button id="saveConfigBtn" class="btn save-config-btn" disabled>Save Configuration</button>
-                <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
+                <div class="section-content collapsed" id="voiceSettingsContent">
+                    <div class="selector-row">
+                        <div class="selector-container">
+                            <label for="languageSelect">Language:</label>
+                            <select id="languageSelect" class="form-control">
+                                <option value="">Select a language</option>
+                            </select>
+                        </div>
+                        <div class="selector-container">
+                            <label for="voiceSelect">Voice:</label>
+                            <select id="voiceSelect" class="form-control" disabled>
+                                <option value="">Select a voice</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="saveConfigBtn" class="btn save-config-btn" disabled>Save Configuration</button>
+                    <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
+                </div>
             </div>
 
             <!-- Series input section -->
             <div class="series-input">
-                <h3>Series (Optional)</h3>
-                <p>Add a series name to group related videos together. You can filter by series in the video list.</p>
-                <input type="text" id="seriesInput" class="form-control" placeholder="Enter series name (optional)">
+                <div class="section-header" onclick="toggleSection('seriesInput')">
+                    <h3>Series (Optional)</h3>
+                    <span class="toggle-icon collapsed" id="seriesInputIcon">↑</span>
+                </div>
+                <div class="section-content collapsed" id="seriesInputContent">
+                    <p>Add a series name to group related videos together. You can filter by series in the video list.
+                    </p>
+                    <input type="text" id="seriesInput" class="form-control" placeholder="Enter series name (optional)">
+                </div>
             </div>
 
             <!-- Batch import section -->
@@ -294,6 +398,21 @@
             <h3>Error</h3>
             <p id='errorMessage'></p>
         </div>
+
+        <!-- Templates section -->
+        <div class="templates-container">
+            <div class="section-header" onclick="toggleSection('templates')">
+                <h3>Prompt Templates</h3>
+                <span class="toggle-icon collapsed" id="templatesIcon">↑</span>
+            </div>
+            <div class="section-content collapsed" id="templatesContent">
+                <p>Select a template to use as a starting point for your prompts. Click to copy to clipboard.</p>
+                <div class="templates-grid" id="templatesGrid">
+                    <!-- Templates will be loaded here -->
+                    <div class="loading-templates">Loading templates...</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -323,10 +442,21 @@
                         updateVoiceOptions(currentConfig.languageCode, currentConfig.voiceId);
                     }
                 }
+
+                // Load templates
+                loadTemplates();
             } catch (error) {
                 console.warn('No existing configuration found:', error);
             }
         });
+
+        function toggleSection(sectionId) {
+            const content = document.getElementById(`${sectionId}Content`);
+            const icon = document.getElementById(`${sectionId}Icon`);
+
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        }
 
         document.getElementById('languageSelect').addEventListener('change', function () {
             const selectedLanguage = this.value;
@@ -546,6 +676,69 @@
                 console.error('Error parsing batch import JSON:', error);
             }
         });
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/templates');
+                if (!response.ok) throw new Error('Failed to fetch templates');
+
+                const templates = await response.json();
+                const templatesGrid = document.getElementById('templatesGrid');
+                templatesGrid.innerHTML = '';
+
+                if (Object.keys(templates).length === 0) {
+                    templatesGrid.innerHTML = '<p>No templates found.</p>';
+                    return;
+                }
+
+                // Loop through the template object
+                Object.entries(templates).forEach(([key, content]) => {
+                    const templateCard = document.createElement('div');
+                    templateCard.className = 'template-card';
+
+                    // Format the key for display (replace underscores with spaces)
+                    const displayName = key.replace(/_/g, ' ');
+
+                    templateCard.innerHTML = `
+                        <div class="template-header">
+                            <h4 class="template-title">${displayName}</h4>
+                            <button class="copy-btn" onclick="copyTemplateContent('${key}', this)">Copy</button>
+                        </div>
+                        <div class="template-preview">${String(content).substring(0, 100)}...</div>
+                        <span class="copied-message">Copied to clipboard!</span>
+                    `;
+                    templatesGrid.appendChild(templateCard);
+                });
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                document.getElementById('templatesGrid').innerHTML =
+                    '<p>Error loading templates. Please try again later.</p>';
+            }
+        }
+
+        async function copyTemplateContent(templateKey, button) {
+            try {
+                const response = await fetch('/templates');
+                if (!response.ok) throw new Error('Failed to fetch templates');
+
+                const templates = await response.json();
+                const content = templates[templateKey];
+
+                if (!content) throw new Error('Template content not found');
+
+                await navigator.clipboard.writeText(String(content));
+
+                // Show copied message
+                const copiedMessage = button.parentElement.parentElement.querySelector('.copied-message');
+                copiedMessage.style.display = 'inline';
+                setTimeout(() => {
+                    copiedMessage.style.display = 'none';
+                }, 2000);
+            } catch (error) {
+                console.error('Error copying template:', error);
+                alert('Failed to copy template. Please try again.');
+            }
+        }
     </script>
 </body>
 

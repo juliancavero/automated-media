@@ -28,8 +28,20 @@ export class ImageService {
     });
   }
 
-  async getAllImages(): Promise<Image[]> {
-    return await this.imageModel.find().sort({ createdAt: -1 }).exec();
+  async getAllImages(page = 1, limit = 10): Promise<{ images: Image[], total: number, pages: number }> {
+    const skip = (page - 1) * limit;
+    const [images, total] = await Promise.all([
+      this.imageModel.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.imageModel.countDocuments()
+    ]);
+
+    const pages = Math.ceil(total / limit);
+
+    return { images, total, pages };
   }
 
   async getImageById(id: string): Promise<Image | null> {

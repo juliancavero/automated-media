@@ -7,6 +7,7 @@ import {
   Render,
   Post,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ImageService } from '../services/image.service';
@@ -61,11 +62,24 @@ export class ImageController {
   // Views
   @Get('list')
   @Render('ai-video-generation/image-list')
-  async getImagesListView(@Res() res: Response) {
-    const images = await this.imageService.getAllImages();
+  async getImagesListView(@Query('page') page = '1', @Query('limit') limit = '10', @Res() res: Response) {
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10) || 100;
+
+    const { images, total, pages } = await this.imageService.getAllImages(pageNumber, limitNumber);
+
     return {
       title: 'Image List',
       images,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages: pages,
+        totalItems: total,
+        hasNext: pageNumber < pages,
+        hasPrev: pageNumber > 1,
+        nextPage: pageNumber + 1,
+        prevPage: pageNumber - 1,
+      }
     };
   }
 

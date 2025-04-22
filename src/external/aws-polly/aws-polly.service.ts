@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as AWS from 'aws-sdk';
-import { SynthesizeSpeechInput } from 'aws-sdk/clients/polly';
+import {
+  PollyClient,
+  SynthesizeSpeechCommand,
+  SynthesizeSpeechCommandInput
+} from '@aws-sdk/client-polly';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { TextToSpeechOptions } from './interfaces/text-to-speech-options.interface';
@@ -17,7 +20,7 @@ const DEFAULT_CONFIG: TextToSpeechOptions = {
 @Injectable()
 export class AwsPollyService {
   private readonly logger = new Logger(AwsPollyService.name);
-  private readonly polly: AWS.Polly;
+  private readonly polly: PollyClient;
   private readonly isConfigured: boolean;
 
   constructor(
@@ -26,7 +29,9 @@ export class AwsPollyService {
   ) {
     // Initialize AWS configuration
     this.isConfigured = this.initializeAWS();
-    this.polly = new AWS.Polly({ apiVersion: '2016-06-10' });
+    this.polly = new PollyClient({
+      region: this.configService.get<string>('AWS_REGION', 'us-east-1')
+    });
   }
 
   /**
@@ -52,7 +57,8 @@ export class AwsPollyService {
         return false;
       }
 
-      AWS.config.update({ accessKeyId, secretAccessKey, region });
+      // The credentials will be picked up automatically from environment variables
+      // by the SDK v3, no need to explicitly configure them
 
       // Validate the configuration
       validateAWSConfig()
@@ -122,8 +128,7 @@ export class AwsPollyService {
     }
 
     this.logger.log(
-      `Converting text to speech: "${text.substring(0, 50)}${
-        text.length > 50 ? '...' : ''
+      `Converting text to speech: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''
       }"`,
     );
 
@@ -155,8 +160,8 @@ export class AwsPollyService {
    */
   private mapOptionsToPollyParams(
     options: TextToSpeechOptions,
-  ): SynthesizeSpeechInput {
-    const params: SynthesizeSpeechInput = {
+  ): SynthesizeSpeechCommandInput {
+    const params: SynthesizeSpeechCommandInput = {
       Text: '', // Will be set for each text
       OutputFormat: options.outputFormat || 'mp3',
       VoiceId: options.voiceId || 'Joanna',
@@ -166,7 +171,7 @@ export class AwsPollyService {
     };
 
     // Add SampleRate only for audio formats
-    if (['mp3', 'ogg_vorbis', 'pcm'].includes(params.OutputFormat)) {
+    if (['mp3', 'ogg_vorbis', 'pcm'].includes(params.OutputFormat || '')) {
       params.SampleRate = '22050';
     }
 
@@ -199,23 +204,38 @@ export class AwsPollyService {
    */
   private async synthesizeSpeech(
     text: string,
-    baseParams: SynthesizeSpeechInput,
+    baseParams: SynthesizeSpeechCommandInput,
   ): Promise<Buffer> {
     // Create params with the current text
-    const params: SynthesizeSpeechInput = {
+    const params: SynthesizeSpeechCommandInput = {
       ...baseParams,
       Text: text,
     };
 
     try {
-      // Request speech synthesis
-      const data = await this.polly.synthesizeSpeech(params).promise();
+      // Request speech synthesis using v3 SDK
+      const command = new SynthesizeSpeechCommand(params);
+      const response = await this.polly.send(command);
 
       // Return audio stream
-      if (data.AudioStream instanceof Buffer) {
-        return data.AudioStream;
+      if (response.AudioStream) {
+        // Convert the Uint8Array or Blob to Buffer
+        // The AudioStream is actually a Readable stream in node.js environment
+        // or a Blob in browser environment
+        if (response.AudioStream instanceof Uint8Array) {
+          return Buffer.from(response.AudioStream);
+        } else {
+          // For Node.js environment, we need to read the stream
+          const stream = response.AudioStream as unknown as NodeJS.ReadableStream;
+          return new Promise<Buffer>((resolve, reject) => {
+            const chunks: Buffer[] = [];
+            stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+            stream.on('error', (err) => reject(err));
+            stream.on('end', () => resolve(Buffer.concat(chunks)));
+          });
+        }
       } else {
-        throw new Error('Audio stream is not a Buffer');
+        throw new Error('Audio stream is empty or not available');
       }
     } catch (error) {
       this.logger.error(`AWS Polly error: ${error.message}`, error.stack);

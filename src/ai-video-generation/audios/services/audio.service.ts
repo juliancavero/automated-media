@@ -57,8 +57,20 @@ export class AudioService {
     this.logger.log(`Deleted audio from database: ${id}`);
   }
 
-  async getAllAudios(): Promise<Audio[]> {
-    return await this.audioModel.find().sort({ createdAt: -1 }).exec();
+  async getAllAudios(page = 1, limit = 10): Promise<{ audios: Audio[], total: number, pages: number }> {
+    const skip = (page - 1) * limit;
+    const [audios, total] = await Promise.all([
+      this.audioModel.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.audioModel.countDocuments()
+    ]);
+
+    const pages = Math.ceil(total / limit);
+
+    return { audios, total, pages };
   }
 
   async findByVideoId(videoId: string): Promise<Audio[]> {
@@ -89,5 +101,22 @@ export class AudioService {
     for (const audio of failedAudios) {
       await this.audioQueueService.addAudioGenerationJob(audio);
     }
+  }
+
+  async regenerateAudio(id: string): Promise<void> {
+    const audio = await this.audioModel.findById(id);
+    if (!audio) {
+      throw new Error('Audio not found');
+    }
+
+    // Reset the audio status to pending
+    await this.audioModel.findByIdAndUpdate(
+      id,
+      { status: 'pending', url: null, publicId: null },
+      { runValidators: true }
+    ).exec();
+
+    // Add to the queue
+    await this.audioQueueService.addAudioGenerationJob(audio);
   }
 }
