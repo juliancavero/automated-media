@@ -38,15 +38,14 @@ export class AiService {
       );
 
       try {
-        const model = this.ai.getGenerativeModel({ model: 'gemini-1.5-pro' });
-
+        this.logger.log(`Generating description for video: ${file.name}`);
+        const model = this.ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const fileDataPart = {
           fileData: {
             mimeType: file.mimeType,
             fileUri: file.uri,
           },
         };
-
         const textPart = { text: VIDEO_DESCRIPTION_PROMPT };
 
         const result = await model.generateContent([fileDataPart, textPart]);
