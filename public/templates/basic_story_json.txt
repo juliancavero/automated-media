@@ -14,6 +14,7 @@ The total length should allow the reading to last between 1 and 2 minutes maximu
 
 Associated Images:
 After each paragraph, create a concrete, detailed, and visual description (in English) of an image that faithfully represents the scene of that paragraph. The description must be rich in detail, describing lighting, predominant colors, atmosphere (dark, warm, cold), character expressions, and background or setting elements.
+Don’t be stingy with the image description — you can be as detailed and extensive as you want so the image turns out perfect.
 
 Image Style:
 Realistic, with natural lighting, melancholic or mysterious tones (avoid cartoon or caricature styles).

@@ -126,6 +126,47 @@
       vertical-align: middle;
       text-align: center;
     }
+
+    .description-card {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .description-content {
+      position: relative;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      font-style: italic;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #6c757d;
+    }
+
+    .copy-btn:hover {
+      color: #0d6efd;
+    }
+
+    .copy-success {
+      color: #198754;
+    }
+
+    .description-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .regenerate-btn {
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 
@@ -168,6 +209,31 @@
             <source src="{{videoGeneration.url}}" type="video/mp4">
             Your browser does not support the video tag.
           </video>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if videoGeneration.url}}
+    <div class="card description-card">
+      <div class="card-header description-header">
+        <h5>AI Generated Description</h5>
+        <button id="regenerate-description-btn" class="btn btn-outline-primary btn-sm regenerate-btn">
+          <i class="fas fa-sync-alt"></i> Regenerate Description
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="description-container">
+          {{#if videoGeneration.description}}
+          <div class="description-content" id="video-description">
+            {{videoGeneration.description}}
+            <button class="copy-btn" id="copy-description-btn" title="Copy to clipboard">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+          {{else}}
+          <div class="alert alert-info">No description available. Click "Regenerate Description" to create one.</div>
+          {{/if}}
         </div>
       </div>
     </div>
@@ -512,6 +578,71 @@
           } catch (error) {
             alert(`Error: ${error.message}`);
           }
+        });
+      }
+
+      // Regenerate description functionality
+      const regenerateBtn = document.getElementById('regenerate-description-btn');
+      if (regenerateBtn) {
+        regenerateBtn.addEventListener('click', async function () {
+          try {
+            const videoId = '{{videoGeneration._id}}';
+            regenerateBtn.disabled = true;
+            regenerateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            document.getElementById('description-container').innerHTML =
+              '<div class="alert alert-info">Generating new description. This may take a moment...</div>';
+
+            const response = await fetch(`/videos/${videoId}/regenerate-description`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              document.getElementById('generate-status').innerHTML =
+                '<div class="alert alert-success">Description regenerated successfully!</div>';
+
+              // Reload the page to show the new description
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              regenerateBtn.disabled = false;
+              regenerateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Description';
+
+              document.getElementById('generate-status').innerHTML =
+                `<div class="alert alert-danger">Error: ${result.message || 'Failed to regenerate description'}</div>`;
+            }
+          } catch (error) {
+            regenerateBtn.disabled = false;
+            regenerateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Regenerate Description';
+
+            document.getElementById('generate-status').innerHTML =
+              `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+
+      // Copy description functionality
+      const copyBtn = document.getElementById('copy-description-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          const descriptionText = document.getElementById('video-description').innerText.replace('copy', '').trim();
+          navigator.clipboard.writeText(descriptionText)
+            .then(() => {
+              copyBtn.innerHTML = '<i class="fas fa-check copy-success"></i>';
+              setTimeout(() => {
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+              }, 2000);
+            })
+            .catch(err => {
+              console.error('Error copying text: ', err);
+              alert('Failed to copy description. Please try again.');
+            });
         });
       }
     });

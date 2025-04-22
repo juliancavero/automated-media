@@ -68,6 +68,20 @@ export class VideoController {
     }
   }
 
+  @Post(':id/regenerate-description')
+  async regenerateVideoDescription(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await this.videoGenerationService.regenerateVideoDescription(id);
+      if (!result) {
+        return { success: false, message: 'Video not found or description generation failed' };
+      }
+      return { success: true, message: 'Video description generated successfully' };
+    } catch (error) {
+      this.logger.error(`Error regenerating video description: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
   @Delete(':id')
   async deleteVideo(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
     try {

@@ -22,6 +22,9 @@ export class Video {
   @Prop()
   series?: string;
 
+  @Prop()
+  description?: string;
+
   @Prop({ default: Date.now })
   createdAt: Date;
   @Prop({ default: Date.now })

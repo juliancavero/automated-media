@@ -8,6 +8,7 @@ import { Audio } from '../../audios/schemas/audio.schema';
 import axios from 'axios';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { VideoGenerationService } from './video-generation.service';
+import { AiService } from 'src/external/ai/ai.service';
 
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
@@ -34,6 +35,7 @@ export class VideoService {
   constructor(
     private readonly cloudinaryService: CloudinaryService,
     private readonly videoGenerationService: VideoGenerationService,
+    private readonly aiService: AiService,
   ) {
     this.logger.log('VideoService inicializado');
   }
@@ -86,6 +88,17 @@ export class VideoService {
       if (!video) {
         this.logger.error('Error al guardar el video en la base de datos');
         throw new Error('Error al guardar el video en la base de datos');
+      }
+
+      // Generar descripción del video con IA
+      try {
+        this.logger.log('Generando descripción del video con IA...');
+        const description = await this.aiService.generateVideoDescription(uploadResult.url);
+        await this.videoGenerationService.setVideoDescription(videoId, description);
+        this.logger.log('Descripción del video generada exitosamente');
+      } catch (descriptionError) {
+        this.logger.error('Error al generar la descripción del video:', descriptionError);
+        // No interrumpimos el flujo principal si falla la generación de la descripción
       }
 
       return video.url ?? '';
@@ -268,11 +281,6 @@ export class VideoService {
       // Verificar duración del audio concatenado final
       const finalAudioDuration = await this.getAudioDuration(concatAudioPath);
       this.logger.log(`Duración del audio concatenado: ${finalAudioDuration} segundos`);
-
-      // Calcular cuánto tiempo debe mostrarse cada imagen
-      const totalSilenceDuration = Math.max(0, audioFiles.length - 1); // 1 segundo por cada silencio
-      const totalDuration = finalAudioDuration;
-      const silenceCount = audioFiles.length - 1;
 
       // Crear archivo de segmentos para las imágenes
       const segmentsFile = path.join(tempDir, 'segments.txt');

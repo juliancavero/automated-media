@@ -8,6 +8,7 @@ import { VideoGenerationService } from './services/video-generation.service';
 import { CloudinaryModule } from 'src/external/cloudinary/cloudinary.module';
 import { VideoController } from './controllers/video.controller';
 import { VideoGenerationController } from './controllers/video-generation.controller';
+import { AiModule } from 'src/external/ai/ai.module';
 
 @Module({
   imports: [
@@ -16,9 +17,10 @@ import { VideoGenerationController } from './controllers/video-generation.contro
     ImageModule,
     AudioModule,
     CloudinaryModule,
+    AiModule
   ],
   controllers: [VideoController, VideoGenerationController],
   providers: [VideoService, VideoGenerationService],
   exports: [VideoService, VideoGenerationService],
 })
-export class VideoModule {}
+export class VideoModule { }
