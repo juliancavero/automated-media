@@ -197,4 +197,15 @@ export class VideoGenerationService {
     await this.videoGenerationModel.findByIdAndDelete(id).exec();
     this.logger.log(`Deleted video from database: ${id}`);
   }
+
+  async findVideosWithoutDescription(): Promise<Video[]> {
+    return this.videoGenerationModel.find({
+      $or: [
+        { description: { $exists: false } },
+        { description: null },
+        { description: "" }
+      ],
+      url: { $exists: true, $ne: null }  // Only videos that have a URL
+    }).exec();
+  }
 }

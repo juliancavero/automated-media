@@ -233,6 +233,55 @@
         max-width: 100%;
       }
     }
+
+    .action-buttons {
+      margin: 15px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-button {
+      padding: 8px 15px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .action-button:hover {
+      background-color: #e0e0e0;
+    }
+
+    .action-button.primary {
+      background-color: #0275d8;
+      color: white;
+      border-color: #0275d8;
+    }
+
+    .action-button.primary:hover {
+      background-color: #025aa5;
+    }
+
+    #actionResponseMessage {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .success-message {
+      background-color: #dff0d8;
+      color: #3c763d;
+      border: 1px solid #d6e9c6;
+    }
+
+    .error-message {
+      background-color: #f2dede;
+      color: #a94442;
+      border: 1px solid #ebccd1;
+    }
   </style>
 </head>
 
@@ -261,6 +310,15 @@
       </div>
       {{/if}}
     </div>
+
+    <!-- Action buttons section -->
+    <div class="action-buttons">
+      <button id="relaunchMissingDescriptionsBtn" class="action-button primary">
+        Generate Missing Descriptions
+      </button>
+    </div>
+
+    <div id="actionResponseMessage"></div>
 
     {{#if videoGenerations.length}}
     <table>
@@ -366,6 +424,49 @@
             window.location.href = href;
           }
         });
+      });
+
+      // Add handler for the relaunch missing descriptions button
+      const relaunchBtn = document.getElementById('relaunchMissingDescriptionsBtn');
+      const responseMessage = document.getElementById('actionResponseMessage');
+
+      relaunchBtn.addEventListener('click', async function () {
+        relaunchBtn.disabled = true;
+        relaunchBtn.innerText = 'Processing...';
+
+        try {
+          const response = await fetch('/videos/relaunch-missing-descriptions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          const result = await response.json();
+
+          responseMessage.classList.remove('error-message', 'success-message');
+          if (result.success) {
+            responseMessage.classList.add('success-message');
+            responseMessage.textContent = `${result.message} (${result.count} videos)`;
+          } else {
+            responseMessage.classList.add('error-message');
+            responseMessage.textContent = result.message;
+          }
+
+          responseMessage.style.display = 'block';
+
+          // Hide message after 5 seconds
+          setTimeout(() => {
+            responseMessage.style.display = 'none';
+          }, 5000);
+        } catch (error) {
+          responseMessage.classList.add('error-message');
+          responseMessage.textContent = `Error: ${error.message}`;
+          responseMessage.style.display = 'block';
+        } finally {
+          relaunchBtn.disabled = false;
+          relaunchBtn.innerText = 'Generate Missing Descriptions';
+        }
       });
     });
   </script>

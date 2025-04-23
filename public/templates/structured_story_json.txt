@@ -13,6 +13,7 @@ Rules:
 - Use simple, clear, conversational English suitable for social media.
 - Maintain visual and emotional consistency across all parts.
 - Make each paragraph focus on a single emotion, action, or moment.
+- Avoid using words or phrases that might be censored or flagged on social media platforms. Do not use terms related to violence, harm, or fatal outcomes. Use neutral, suggestive, or implied language instead, suitable for all audiences.
 - For recurring objects, characters, or settings, keep their visual traits consistent (same clothes, atmosphere, weather, etc.).
 - The overall tone must remain immersive, mysterious, nostalgic, or unsettling depending on the story's emotion.
 
@@ -32,6 +33,8 @@ Label Each Output:
 - (and so on, until the full story is adapted)
 
 Entire response must be in English.
+
+Next, I will provide you with the original story you must process following all the instructions above:
 <story>
 
 </story>

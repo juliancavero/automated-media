@@ -15,6 +15,7 @@ import { VideoGenerationService } from '../services/video-generation.service';
 import { GenerateVideoDto } from '../dto/generate-video.dto';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
+import { VideoQueueService } from '../queues/video-queue.service';
 
 @Controller('videos')
 export class VideoController {
@@ -24,6 +25,7 @@ export class VideoController {
     private readonly videoGenerationService: VideoGenerationService,
     private readonly imageService: ImageService,
     private readonly audioService: AudioService,
+    private readonly videoQueueService: VideoQueueService,
   ) { }
 
   @Post('create-video-job')
@@ -79,6 +81,30 @@ export class VideoController {
     } catch (error) {
       this.logger.error(`Error regenerating video description: ${error.message}`);
       return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Post('relaunch-missing-descriptions')
+  async relaunchMissingDescriptions(): Promise<{ success: boolean; message: string; count: number }> {
+    try {
+      const videos = await this.videoGenerationService.findVideosWithoutDescription();
+
+      if (videos.length === 0) {
+        return { success: true, message: 'No videos without descriptions found', count: 0 };
+      }
+
+      for (const video of videos) {
+        await this.videoQueueService.addVideoDescriptionGenerationJob(video._id.toString());
+      }
+
+      return {
+        success: true,
+        message: `Queued description generation for ${videos.length} videos`,
+        count: videos.length
+      };
+    } catch (error) {
+      this.logger.error(`Error relaunching missing descriptions: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}`, count: 0 };
     }
   }
 
