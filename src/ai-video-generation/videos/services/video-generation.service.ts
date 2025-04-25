@@ -37,6 +37,8 @@ export class VideoGenerationService {
 
     if (typeFilter) {
       query = { ...query, type: typeFilter };
+    } else {
+      query = { ...query, type: { $ne: 'structured' } }; // Exclude structured videos by default
     }
 
     if (statusFilter) {

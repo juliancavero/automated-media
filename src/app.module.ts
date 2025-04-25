@@ -7,12 +7,11 @@ import { ImageModule } from './ai-video-generation/images/image.module';
 import { QueueModule } from './ai-video-generation/queue/queue.module';
 import { VideoModule } from './ai-video-generation/videos/video.module';
 import { ExternalModule } from './external/external.module';
-/* import { AiModule } from './automated-media/ai/ai.module';
-import { CloudinaryModule } from './automated-media/cloudinary/cloudinary.module';
-import { GoogleAIUploadModule } from './automated-media/google-ai-upload/google-ai-upload.module';
-import { SchedulerModule } from './automated-media/scheduler/scheduler.module';
-import { AutomatedMediaModule } from './automated-media/videos/automated-media.module'; */
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { InitAdminService } from './auth/init-admin.service';
 
 @Module({
   imports: [
@@ -20,20 +19,22 @@ import { AppController } from './app.controller';
       envFilePath: ['.env.local', '.env'],
     }),
     MongooseModule.forRoot(process.env.MONGO_URI ?? ''),
-    //AutomatedMediaModule,
-    //AiModule,
-    //SchedulerModule,
-    //CloudinaryModule,
-    //GoogleAIUploadModule,
     VideoModule,
     AwsPollyModule,
     ImageModule,
     AudioModule,
     QueueModule,
     ExternalModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    InitAdminService,
+  ],
   exports: [],
 })
 export class AppModule { }

@@ -2,11 +2,13 @@ import { Controller, Get, Render, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { Public } from './auth/decorators/public.decorator';
 
 @Controller('')
 export class AppController {
     constructor() { }
 
+    @Public()
     @Get()
     async redirectToVideosList(@Res() res: Response) {
         return res.redirect('/videos/list');

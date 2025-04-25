@@ -7,6 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as hbs from 'hbs';
 import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
 
 // Helper function to create directories safely
 function ensureDirectoryExists(dir: string, logger: Logger): void {
@@ -40,6 +41,9 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Use cookie parser to extract cookies
+  app.use(cookieParser());
 
   const config = new DocumentBuilder()
     .setTitle('Cats example')
