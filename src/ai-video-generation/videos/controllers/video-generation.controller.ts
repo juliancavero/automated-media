@@ -5,11 +5,13 @@ import {
   HttpStatus,
   HttpException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { VideoService } from '../services/video.service';
 import { CrearVideoDto } from '../dto/crear-video.dto';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
+import { VideoGenerationService } from '../services/video-generation.service';
 
 @Controller('video-generation')
 export class VideoGenerationController {
@@ -19,6 +21,7 @@ export class VideoGenerationController {
     private readonly videoService: VideoService,
     private readonly imageService: ImageService,
     private readonly audioService: AudioService,
+    private readonly videoGenerationService: VideoGenerationService,
   ) { }
 
   @Post()
@@ -68,5 +71,69 @@ export class VideoGenerationController {
       statusCode: HttpStatus.OK,
       message: 'Video generation tasks created successfully',
     };
+  }
+
+  @Post('generate-script')
+  async generateScript(@Body() body: { type: string }) {
+    if (!body.type) {
+      throw new BadRequestException('Script type is required');
+    }
+
+    const validTypes = ['basic', 'structured', 'real'];
+    if (!validTypes.includes(body.type)) {
+      throw new BadRequestException(
+        `Invalid script type. Must be one of: ${validTypes.join(', ')}`
+      );
+    }
+
+    try {
+      const script = await this.videoGenerationService.generateScript(body.type);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Script generated successfully',
+        data: { script }
+      };
+    } catch (error) {
+      this.logger.error(`Failed to generate script: ${error.message}`, error.stack);
+      throw new HttpException(
+        `Failed to generate script: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('generate-script-json')
+  async generateScriptJson(@Body() body: { type: string, text: string }) {
+    if (!body.type) {
+      throw new BadRequestException('Script type is required');
+    }
+
+    if (!body.text) {
+      throw new BadRequestException('Text is required');
+    }
+
+    const validTypes = ['basic', 'structured', 'real'];
+    if (!validTypes.includes(body.type)) {
+      throw new BadRequestException(
+        `Invalid script type. Must be one of: ${validTypes.join(', ')}`
+      );
+    }
+
+    try {
+      const script = await this.videoGenerationService.generateScriptJson(body.type, body.text);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'JSON script generated successfully',
+        data: { script }
+      };
+    } catch (error) {
+      this.logger.error(`Failed to generate JSON script: ${error.message}`, error.stack);
+      throw new HttpException(
+        `Failed to generate JSON script: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }

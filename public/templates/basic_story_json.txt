@@ -50,6 +50,4 @@ Do not write as if it were a Reddit post, and do not mention that it is a dream 
 Your entire response must be in English.
 
 Next, I will provide you with the original story you must process following all the instructions above:
-<story>
-
-</story>
+<story></story>

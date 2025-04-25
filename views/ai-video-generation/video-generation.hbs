@@ -110,15 +110,6 @@
             color: #721c24;
         }
 
-        /* Voice settings styles */
-        .voice-settings {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            border: 1px solid #dee2e6;
-        }
-
         /* Collapsible section styles */
         .section-header {
             display: flex;
@@ -292,6 +283,49 @@
             font-size: 0.9em;
             margin-left: 10px;
         }
+
+        /* Script generation button styles */
+        #generateScriptBtn,
+        #generateCustomScriptBtn {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        /* Textarea copy button styles */
+        .textarea-wrapper {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .copy-textarea-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 5px 8px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        .copy-textarea-btn:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+
+        .copy-success-message {
+            position: absolute;
+            bottom: 10px;
+            right: 45px;
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 
@@ -303,58 +337,30 @@
         <h1>AI Video Generation</h1>
 
         <div class='form-container'>
-            <!-- Voice and language selectors -->
-            <div class="voice-settings">
-                <div class="section-header" onclick="toggleSection('voiceSettings')">
-                    <h3>Voice Settings</h3>
-                    <span class="toggle-icon collapsed" id="voiceSettingsIcon">↑</span>
+            <!-- Combined Series and Video Type section -->
+            <div class="series-input">
+                <div class="section-header" onclick="toggleSection('videoSettings')">
+                    <h3>Video Settings</h3>
+                    <span class="toggle-icon collapsed" id="videoSettingsIcon">↑</span>
                 </div>
-                <div class="section-content collapsed" id="voiceSettingsContent">
-                    <div class="selector-row">
-                        <div class="selector-container">
-                            <label for="languageSelect">Language:</label>
-                            <select id="languageSelect" class="form-control">
-                                <option value="">Select a language</option>
-                            </select>
-                        </div>
-                        <div class="selector-container">
-                            <label for="voiceSelect">Voice:</label>
-                            <select id="voiceSelect" class="form-control" disabled>
-                                <option value="">Select a voice</option>
-                            </select>
-                        </div>
+                <div class="section-content collapsed" id="videoSettingsContent">
+                    <div class="form-group mb-3">
+                        <label>Series Name (Optional)</label>
+                        <p class="small text-muted">Add a series name to group related videos together. You can filter
+                            by series in the video list.</p>
+                        <input type="text" id="seriesInput" class="form-control"
+                            placeholder="Enter series name (optional)">
                     </div>
-                    <button id="saveConfigBtn" class="btn save-config-btn" disabled>Save Configuration</button>
-                    <span id="saveSuccess" class="save-success">✓ Configuration saved!</span>
-                </div>
-            </div>
 
-            <!-- Series input section -->
-            <div class="series-input">
-                <div class="section-header" onclick="toggleSection('seriesInput')">
-                    <h3>Series (Optional)</h3>
-                    <span class="toggle-icon collapsed" id="seriesInputIcon">↑</span>
-                </div>
-                <div class="section-content collapsed" id="seriesInputContent">
-                    <p>Add a series name to group related videos together. You can filter by series in the video list.
-                    </p>
-                    <input type="text" id="seriesInput" class="form-control" placeholder="Enter series name (optional)">
-                </div>
-            </div>
-
-            <!-- Video type selection -->
-            <div class="series-input">
-                <div class="section-header" onclick="toggleSection('videoType')">
-                    <h3>Video Type</h3>
-                    <span class="toggle-icon collapsed" id="videoTypeIcon">↑</span>
-                </div>
-                <div class="section-content collapsed" id="videoTypeContent">
-                    <p>Select the type of video you want to create.</p>
-                    <select id="videoTypeSelect" class="form-control">
-                        <option value="basic" selected>Basic</option>
-                        <option value="structured">Structured</option>
-                        <option value="real">Real</option>
-                    </select>
+                    <div class="form-group">
+                        <label>Video Type</label>
+                        <p class="small text-muted">Select the type of video you want to create.</p>
+                        <select id="videoTypeSelect" class="form-control">
+                            <option value="basic" selected>Basic</option>
+                            <option value="structured">Structured</option>
+                            <option value="real">Real</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -397,6 +403,40 @@
             <div class='submit-container'>
                 <button id='generateBtn' class='btn btn-primary' onclick='generateVideo()'>Generate Video</button>
             </div>
+
+            <!-- Combined Script Generation section -->
+            <div class="series-input">
+                <div class="section-header" onclick="toggleSection('allScriptGeneration')">
+                    <h3>Script Generation</h3>
+                    <span class="toggle-icon collapsed" id="allScriptGenerationIcon">↑</span>
+                </div>
+                <div class="section-content collapsed" id="allScriptGenerationContent">
+                    <!-- Standard Script Generation -->
+                    <div class="mb-4">
+                        <h4>Generate script</h4>
+                        <button id="generateScriptBtn" class="btn btn-primary">Generate Script</button>
+                        <div class="textarea-wrapper">
+                            <textarea id="scriptOutput" class="form-control mt-2" rows="15"></textarea>
+                            <button class="copy-textarea-btn" onclick="copyToClipboard('scriptOutput')">Copy</button>
+                            <span class="copy-success-message">Copied!</span>
+                        </div>
+                    </div>
+
+                    <!-- Custom Script Generation -->
+                    <div>
+                        <h4>Generate JSON from script</h4>
+                        <textarea id="customScriptInput" class="form-control mb-2" rows="2"
+                            placeholder="Enter your custom story idea or topic here..."></textarea>
+                        <button id="generateCustomScriptBtn" class="btn btn-primary">Generate Custom Script</button>
+                        <div class="textarea-wrapper">
+                            <textarea id="customScriptOutput" class="form-control mt-2" rows="15"></textarea>
+                            <button class="copy-textarea-btn"
+                                onclick="copyToClipboard('customScriptOutput')">Copy</button>
+                            <span class="copy-success-message">Copied!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id='loadingIndicator' class='loading'>
@@ -414,21 +454,6 @@
             <h3>Error</h3>
             <p id='errorMessage'></p>
         </div>
-
-        <!-- Templates section -->
-        <div class="templates-container">
-            <div class="section-header" onclick="toggleSection('templates')">
-                <h3>Prompt Templates</h3>
-                <span class="toggle-icon collapsed" id="templatesIcon">↑</span>
-            </div>
-            <div class="section-content collapsed" id="templatesContent">
-                <p>Select a template to use as a starting point for your prompts. Click to copy to clipboard.</p>
-                <div class="templates-grid" id="templatesGrid">
-                    <!-- Templates will be loaded here -->
-                    <div class="loading-templates">Loading templates...</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -437,30 +462,10 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const voicesResponse = await fetch('/polly-config/voices');
-                if (!voicesResponse.ok) throw new Error('Failed to fetch voices');
-                allVoices = await voicesResponse.json();
-
-                const languages = [...new Set(allVoices.map(voice => voice.language))].sort();
-                const languageSelect = document.getElementById('languageSelect');
-                languages.forEach(language => {
-                    const option = document.createElement('option');
-                    option.value = language;
-                    option.textContent = language;
-                    languageSelect.appendChild(option);
-                });
-
-                const configResponse = await fetch('/polly-config');
-                if (configResponse.ok) {
-                    currentConfig = await configResponse.json();
-                    if (currentConfig.languageCode) {
-                        languageSelect.value = currentConfig.languageCode;
-                        updateVoiceOptions(currentConfig.languageCode, currentConfig.voiceId);
-                    }
+                // Load templates if the element exists
+                if (document.getElementById('templatesGrid')) {
+                    loadTemplates();
                 }
-
-                // Load templates
-                loadTemplates();
             } catch (error) {
                 console.warn('No existing configuration found:', error);
             }
@@ -474,18 +479,32 @@
             icon.classList.toggle('collapsed');
         }
 
-        document.getElementById('languageSelect').addEventListener('change', function () {
+        // Add safe event listener that checks if element exists first
+        function addSafeEventListener(elementId, event, callback) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener(event, callback);
+            }
+        }
+
+        // Replace direct event listeners with safe versions
+        addSafeEventListener('languageSelect', 'change', function () {
             const selectedLanguage = this.value;
             updateVoiceOptions(selectedLanguage);
         });
 
-        document.getElementById('voiceSelect').addEventListener('change', function () {
+        addSafeEventListener('voiceSelect', 'change', function () {
             updateSaveButtonState();
         });
 
-        document.getElementById('saveConfigBtn').addEventListener('click', async function () {
-            const languageCode = document.getElementById('languageSelect').value;
-            const voiceId = document.getElementById('voiceSelect').value;
+        addSafeEventListener('saveConfigBtn', 'click', async function () {
+            const languageSelect = document.getElementById('languageSelect');
+            const voiceSelect = document.getElementById('voiceSelect');
+
+            if (!languageSelect || !voiceSelect) return;
+
+            const languageCode = languageSelect.value;
+            const voiceId = voiceSelect.value;
             if (!languageCode || !voiceId) return;
 
             try {
@@ -518,6 +537,8 @@
 
         function updateVoiceOptions(language, selectedVoice = null) {
             const voiceSelect = document.getElementById('voiceSelect');
+            if (!voiceSelect) return;
+
             if (!language) {
                 voiceSelect.disabled = true;
                 while (voiceSelect.options.length > 1) {
@@ -550,6 +571,8 @@
             const voiceSelect = document.getElementById('voiceSelect');
             const saveButton = document.getElementById('saveConfigBtn');
 
+            if (!languageSelect || !voiceSelect || !saveButton) return;
+
             saveButton.disabled = !languageSelect.value || !voiceSelect.value;
         }
 
@@ -575,9 +598,6 @@
             document.getElementById('errorContainer').style.display = 'none';
             document.getElementById('generateBtn').disabled = true;
 
-            const voiceId = document.getElementById('voiceSelect').value || "Joanna";
-            const languageCode = document.getElementById('languageSelect').value || "en-US";
-
             try {
                 const response = await fetch('/videos/create-video-job', {
                     method: 'POST',
@@ -585,17 +605,10 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        languageCode,
                         texts,
                         images,
                         series,
                         type,
-                        options: {
-                            voiceId,
-                            outputFormat: "mp3",
-                            languageCode,
-                            engine: "standard"
-                        }
                     })
                 });
 
@@ -649,11 +662,17 @@
             }
         }
 
-        document.getElementById('transformBtn').addEventListener('click', function () {
-            const batchImportText = document.getElementById('batchImportText').value.trim();
+        addSafeEventListener('transformBtn', 'click', function () {
+            let batchImportText = document.getElementById('batchImportText').value.trim();
             if (!batchImportText) {
                 alert('Please paste a JSON array.');
                 return;
+            }
+
+            // Extract content between square brackets
+            const bracketMatch = batchImportText.match(/\[.*\]/s);
+            if (bracketMatch) {
+                batchImportText = bracketMatch[0];
             }
 
             try {
@@ -695,6 +714,70 @@
             }
         });
 
+        // Add script generation functionality
+        addSafeEventListener('generateScriptBtn', 'click', async function () {
+            try {
+                const type = document.getElementById('videoTypeSelect').value;
+                document.getElementById('scriptOutput').value = 'Generating script...';
+                document.getElementById('generateScriptBtn').disabled = true;
+
+                const response = await fetch('/video-generation/generate-script', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to generate script: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                document.getElementById('scriptOutput').value = result.data.script;
+            } catch (error) {
+                console.error('Error generating script:', error);
+                document.getElementById('scriptOutput').value = `Error: ${error.message}`;
+            } finally {
+                document.getElementById('generateScriptBtn').disabled = false;
+            }
+        });
+
+        // Add custom script generation functionality
+        addSafeEventListener('generateCustomScriptBtn', 'click', async function () {
+            try {
+                const type = document.getElementById('videoTypeSelect').value;
+                const customText = document.getElementById('customScriptInput').value.trim();
+                if (!customText) {
+                    alert('Please enter a custom story idea or topic.');
+                    return;
+                }
+
+                document.getElementById('customScriptOutput').value = 'Generating custom script...';
+                document.getElementById('generateCustomScriptBtn').disabled = true;
+
+                const response = await fetch('/video-generation/generate-script-json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type, text: customText })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to generate custom script: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                document.getElementById('customScriptOutput').value = result.data.script;
+            } catch (error) {
+                console.error('Error generating custom script:', error);
+                document.getElementById('customScriptOutput').value = `Error: ${error.message}`;
+            } finally {
+                document.getElementById('generateCustomScriptBtn').disabled = false;
+            }
+        });
+
         async function loadTemplates() {
             try {
                 const response = await fetch('/templates');
@@ -702,6 +785,13 @@
 
                 const templates = await response.json();
                 const templatesGrid = document.getElementById('templatesGrid');
+
+                // Check if templatesGrid element exists
+                if (!templatesGrid) {
+                    console.warn('Templates grid element not found in the DOM');
+                    return;
+                }
+
                 templatesGrid.innerHTML = '';
 
                 if (Object.keys(templates).length === 0) {
@@ -729,8 +819,10 @@
                 });
             } catch (error) {
                 console.error('Error loading templates:', error);
-                document.getElementById('templatesGrid').innerHTML =
-                    '<p>Error loading templates. Please try again later.</p>';
+                const templatesGrid = document.getElementById('templatesGrid');
+                if (templatesGrid) {
+                    templatesGrid.innerHTML = '<p>Error loading templates. Please try again later.</p>';
+                }
             }
         }
 
@@ -756,6 +848,19 @@
                 console.error('Error copying template:', error);
                 alert('Failed to copy template. Please try again.');
             }
+        }
+
+        function copyToClipboard(textareaId) {
+            const textarea = document.getElementById(textareaId);
+            const successMessage = textarea.nextElementSibling;
+
+            textarea.select();
+            document.execCommand('copy');
+
+            successMessage.style.display = 'inline';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 2000);
         }
     </script>
 </body>

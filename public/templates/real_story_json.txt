@@ -40,6 +40,4 @@ Respond using an array of objects in JSON format. Each object must include:
 - "image": the visual description
 
 The tone should feel like you’re telling a real mystery, not a made-up fantasy. Leave space for doubt. The story should feel *almost explainable… but not quite.*
-<story>
-
-</story>
+<story></story>

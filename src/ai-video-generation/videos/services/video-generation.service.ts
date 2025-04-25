@@ -9,6 +9,8 @@ import { ImageService } from 'src/ai-video-generation/images/services/image.serv
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class VideoGenerationService {
@@ -25,7 +27,7 @@ export class VideoGenerationService {
     private readonly videoGenerationModel: Model<VideoDocument>,
   ) { }
 
-  async findAll(seriesFilter?: string, typeFilter?: string, page = 1, limit = 10): Promise<{ videos: Video[], total: number, totalPages: number }> {
+  async findAll(seriesFilter?: string, typeFilter?: string, statusFilter?: string, page = 1, limit = 10): Promise<{ videos: Video[], total: number, totalPages: number }> {
     const skip = (page - 1) * limit;
 
     let query = {};
@@ -35,6 +37,10 @@ export class VideoGenerationService {
 
     if (typeFilter) {
       query = { ...query, type: typeFilter };
+    }
+
+    if (statusFilter) {
+      query = { ...query, status: statusFilter };
     }
 
     const [videos, total] = await Promise.all([
@@ -212,5 +218,78 @@ export class VideoGenerationService {
       ],
       url: { $exists: true, $ne: null }  // Only videos that have a URL
     }).exec();
+  }
+
+  async generateScript(type: string): Promise<string> {
+    try {
+      this.logger.log(`Generating script with type: ${type}`);
+
+      let templatePath: string;
+
+      switch (type) {
+        case 'basic':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story.txt');
+          break;
+        case 'structured':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story.txt');
+          break;
+        case 'real':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_story.txt');
+          break;
+        default:
+          throw new Error(`Invalid script type: ${type}`);
+      }
+
+      // Read the template file
+      const promptTemplate = await fs.readFile(templatePath, 'utf-8');
+      this.logger.log(`Template loaded successfully from ${templatePath}`);
+
+      // Generate the script using AI
+      const generatedScript = await this.aiService.generateTextFromPrompt(promptTemplate);
+      this.logger.log('Script generated successfully');
+
+      return generatedScript;
+    } catch (error) {
+      this.logger.error(`Error generating script: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  async generateScriptJson(type: string, text: string): Promise<string> {
+    try {
+      this.logger.log(`Generating script JSON with type: ${type} and text: ${text}`);
+
+      let templatePath: string;
+
+      switch (type) {
+        case 'basic':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_json.txt');
+          break;
+        case 'structured':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_json.txt');
+          break;
+        case 'real':
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_story_json.txt');
+          break;
+        default:
+          throw new Error(`Invalid script type: ${type}`);
+      }
+
+      // Read the template file
+      let promptTemplate = await fs.readFile(templatePath, 'utf-8');
+      this.logger.log(`Template loaded successfully from ${templatePath}`);
+
+      // Insert the user's text between <story></story> tags
+      promptTemplate = promptTemplate.replace('<story></story>', `<story>${text}</story>`);
+
+      // Generate the script using AI
+      const generatedScript = await this.aiService.generateTextFromPrompt(promptTemplate);
+      this.logger.log('Script JSON generated successfully');
+
+      return generatedScript;
+    } catch (error) {
+      this.logger.error(`Error generating script JSON: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

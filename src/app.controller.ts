@@ -1,4 +1,4 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Render, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -37,6 +37,15 @@ export class AppController {
                 message: 'Error reading template files',
                 error: error.message
             });
+        }
+    }
+
+    @Get('settings')
+    @Render('ai-video-generation/settings')
+    async getSettings(@Res() res: Response) {
+        return {
+            title: 'Settings',
+            description: 'Settings for the AI Video Generation application'
         }
     }
 }

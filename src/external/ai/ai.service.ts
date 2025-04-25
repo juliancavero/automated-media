@@ -70,4 +70,30 @@ export class AiService {
       throw error;
     }
   }
+
+  async generateTextFromPrompt(prompt: string): Promise<string> {
+    this.logger.log(`Generating text for prompt: ${prompt}`);
+
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      throw new UnauthorizedException('GOOGLE_AI_API_KEY is not set');
+    }
+
+    try {
+      const model = this.ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await model.generateContent(prompt);
+
+      const response = result.response.text();
+      if (!response) {
+        throw new Error('Could not generate text from the provided prompt');
+      }
+
+      return response;
+    } catch (error) {
+      this.logger.error(
+        `Error generating text from prompt: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 }

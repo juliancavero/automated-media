@@ -309,6 +309,15 @@
             <option value="real" {{#if (eq currentTypeFilter 'real' )}}selected{{/if}}>Real</option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="statusFilter">Filter by Status</label>
+          <select id="statusFilter" name="status" class="form-control">
+            <option value="">All Status</option>
+            <option value="pending" {{#if (eq currentStatusFilter 'pending' )}}selected{{/if}}>Pending</option>
+            <option value="finished" {{#if (eq currentStatusFilter 'finished' )}}selected{{/if}}>Finished</option>
+            <option value="uploaded" {{#if (eq currentStatusFilter 'uploaded' )}}selected{{/if}}>Uploaded</option>
+          </select>
+        </div>
         <button type="button" id="applySeriesFilter" class="btn btn-primary">Filter Series</button>
       </form>
 
@@ -316,24 +325,22 @@
       <div class="filter-info">
         Currently showing videos in series: <strong>{{currentSeriesFilter}}</strong>
         {{#if currentTypeFilter}}and type: <strong>{{currentTypeFilter}}</strong>{{/if}}
+        {{#if currentStatusFilter}}and status: <strong>{{currentStatusFilter}}</strong>{{/if}}
         <a href="/videos/list" class="clear-filter">Clear filter</a>
       </div>
       {{else if currentTypeFilter}}
       <div class="filter-info">
         Currently showing videos of type: <strong>{{currentTypeFilter}}</strong>
+        {{#if currentStatusFilter}}and status: <strong>{{currentStatusFilter}}</strong>{{/if}}
+        <a href="/videos/list" class="clear-filter">Clear filter</a>
+      </div>
+      {{else if currentStatusFilter}}
+      <div class="filter-info">
+        Currently showing videos with status: <strong>{{currentStatusFilter}}</strong>
         <a href="/videos/list" class="clear-filter">Clear filter</a>
       </div>
       {{/if}}
     </div>
-
-    <!-- Action buttons section -->
-    <div class="action-buttons">
-      <button id="relaunchMissingDescriptionsBtn" class="action-button primary">
-        Generate Missing Descriptions
-      </button>
-    </div>
-
-    <div id="actionResponseMessage"></div>
 
     {{#if videoGenerations.length}}
     <table>
@@ -376,11 +383,11 @@
         {{#if pagination.hasPrev}}
         <li>
           <a
-            href="/videos/list?page=1{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">First</a>
+            href="/videos/list?page=1{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">First</a>
         </li>
         <li>
           <a
-            href="/videos/list?page={{pagination.prevPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Previous</a>
+            href="/videos/list?page={{pagination.prevPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Previous</a>
         </li>
         {{else}}
         <li class="disabled">
@@ -394,18 +401,18 @@
         {{#each (generatePageNumbers pagination.currentPage pagination.totalPages)}}
         <li {{#if (eq this ../pagination.currentPage)}}class="active" {{/if}}>
           <a
-            href="/videos/list?page={{this}}{{#if ../currentSeriesFilter}}&series={{../currentSeriesFilter}}{{/if}}{{#if ../currentTypeFilter}}&type={{../currentTypeFilter}}{{/if}}">{{this}}</a>
+            href="/videos/list?page={{this}}{{#if ../currentSeriesFilter}}&series={{../currentSeriesFilter}}{{/if}}{{#if ../currentTypeFilter}}&type={{../currentTypeFilter}}{{/if}}{{#if ../currentStatusFilter}}&status={{../currentStatusFilter}}{{/if}}">{{this}}</a>
         </li>
         {{/each}}
 
         {{#if pagination.hasNext}}
         <li>
           <a
-            href="/videos/list?page={{pagination.nextPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Next</a>
+            href="/videos/list?page={{pagination.nextPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Next</a>
         </li>
         <li>
           <a
-            href="/videos/list?page={{pagination.totalPages}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Last</a>
+            href="/videos/list?page={{pagination.totalPages}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Last</a>
         </li>
         {{else}}
         <li class="disabled">
@@ -442,78 +449,41 @@
         });
       });
 
-      // Add handler for the relaunch missing descriptions button
-      const relaunchBtn = document.getElementById('relaunchMissingDescriptionsBtn');
-      const responseMessage = document.getElementById('actionResponseMessage');
-
-      relaunchBtn.addEventListener('click', async function () {
-        relaunchBtn.disabled = true;
-        relaunchBtn.innerText = 'Processing...';
-
-        try {
-          const response = await fetch('/videos/relaunch-missing-descriptions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-
-          const result = await response.json();
-
-          responseMessage.classList.remove('error-message', 'success-message');
-          if (result.success) {
-            responseMessage.classList.add('success-message');
-            responseMessage.textContent = `${result.message} (${result.count} videos)`;
-          } else {
-            responseMessage.classList.add('error-message');
-            responseMessage.textContent = result.message;
-          }
-
-          responseMessage.style.display = 'block';
-
-          // Hide message after 5 seconds
-          setTimeout(() => {
-            responseMessage.style.display = 'none';
-          }, 5000);
-        } catch (error) {
-          responseMessage.classList.add('error-message');
-          responseMessage.textContent = `Error: ${error.message}`;
-          responseMessage.style.display = 'block';
-        } finally {
-          relaunchBtn.disabled = false;
-          relaunchBtn.innerText = 'Generate Missing Descriptions';
-        }
-      });
-
       // Add handlers for filters
       const seriesFilter = document.getElementById('seriesFilter');
       const typeFilter = document.getElementById('typeFilter');
+      const statusFilter = document.getElementById('statusFilter');
       const applySeriesFilterBtn = document.getElementById('applySeriesFilter');
 
       function applyAllFilters() {
         const series = seriesFilter.value;
         const type = typeFilter.value;
+        const status = statusFilter.value;
 
         let url = '/videos/list?';
         if (series) url += `series=${encodeURIComponent(series)}&`;
         if (type) url += `type=${encodeURIComponent(type)}&`;
+        if (status) url += `status=${encodeURIComponent(status)}&`;
 
         window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
       }
 
-      function applyTypeFilter() {
+      function applyTypeAndStatusFilter() {
         const series = seriesFilter.value;
         const type = typeFilter.value;
+        const status = statusFilter.value;
 
         let url = '/videos/list?';
         if (series) url += `series=${encodeURIComponent(series)}&`;
         if (type) url += `type=${encodeURIComponent(type)}&`;
+        if (status) url += `status=${encodeURIComponent(status)}&`;
 
         window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
       }
 
-      // Apply type filter automatically on change
-      typeFilter.addEventListener('change', applyTypeFilter);
+      // Apply type and status filters automatically on change
+      typeFilter.addEventListener('change', applyTypeAndStatusFilter);
+      statusFilter.addEventListener('change', applyTypeAndStatusFilter);
 
       // Apply series filter only on button click
       applySeriesFilterBtn.addEventListener('click', applyAllFilters);

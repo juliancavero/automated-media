@@ -149,6 +149,12 @@ export class VideoController {
     required: false
   })
   @ApiQuery({
+    name: "status",
+    type: String,
+    description: "Status of video (pending, finished, uploaded)",
+    required: false
+  })
+  @ApiQuery({
     name: "page",
     type: Number,
     description: "Page number",
@@ -163,19 +169,21 @@ export class VideoController {
   async renderVideoGenerationsList(
     @Query('series') series?: string,
     @Query('type') type?: string,
+    @Query('status') status?: string,
     @Query('page') pageQuery?: string,
     @Query('limit') limitQuery?: string,
   ) {
     const page = pageQuery ? parseInt(pageQuery, 10) : 1;
     const limit = limitQuery ? parseInt(limitQuery, 10) : 10;
 
-    const { videos, total, totalPages } = await this.videoGenerationService.findAll(series, type, page, limit);
+    const { videos, total, totalPages } = await this.videoGenerationService.findAll(series, type, status, page, limit);
 
     return {
       title: 'Video Generations List',
       videoGenerations: videos,
       currentSeriesFilter: series || '',
       currentTypeFilter: type || '',
+      currentStatusFilter: status || '',
       pagination: {
         currentPage: page,
         totalPages,
