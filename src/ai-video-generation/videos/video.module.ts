@@ -18,7 +18,6 @@ import { VideoQueueService } from './queues/video-queue.service';
     BullModule.registerQueue({
       name: 'video-processing',
     }),
-    VideoModule,
     ImageModule,
     AudioModule,
     CloudinaryModule,

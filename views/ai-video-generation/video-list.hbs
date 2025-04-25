@@ -300,12 +300,27 @@
           <input type="text" id="seriesFilter" name="series" class="form-control" placeholder="Enter series name"
             value="{{currentSeriesFilter}}">
         </div>
-        <button type="submit" class="btn btn-primary">Filter</button>
+        <div class="form-group">
+          <label for="typeFilter">Filter by Type</label>
+          <select id="typeFilter" name="type" class="form-control">
+            <option value="">All Types</option>
+            <option value="basic" {{#if (eq currentTypeFilter 'basic' )}}selected{{/if}}>Basic</option>
+            <option value="structured" {{#if (eq currentTypeFilter 'structured' )}}selected{{/if}}>Structured</option>
+            <option value="real" {{#if (eq currentTypeFilter 'real' )}}selected{{/if}}>Real</option>
+          </select>
+        </div>
+        <button type="button" id="applySeriesFilter" class="btn btn-primary">Filter Series</button>
       </form>
 
       {{#if currentSeriesFilter}}
       <div class="filter-info">
         Currently showing videos in series: <strong>{{currentSeriesFilter}}</strong>
+        {{#if currentTypeFilter}}and type: <strong>{{currentTypeFilter}}</strong>{{/if}}
+        <a href="/videos/list" class="clear-filter">Clear filter</a>
+      </div>
+      {{else if currentTypeFilter}}
+      <div class="filter-info">
+        Currently showing videos of type: <strong>{{currentTypeFilter}}</strong>
         <a href="/videos/list" class="clear-filter">Clear filter</a>
       </div>
       {{/if}}
@@ -360,11 +375,12 @@
       <ul class="pagination">
         {{#if pagination.hasPrev}}
         <li>
-          <a href="/videos/list?page=1{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}">First</a>
+          <a
+            href="/videos/list?page=1{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">First</a>
         </li>
         <li>
           <a
-            href="/videos/list?page={{pagination.prevPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}">Previous</a>
+            href="/videos/list?page={{pagination.prevPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Previous</a>
         </li>
         {{else}}
         <li class="disabled">
@@ -378,18 +394,18 @@
         {{#each (generatePageNumbers pagination.currentPage pagination.totalPages)}}
         <li {{#if (eq this ../pagination.currentPage)}}class="active" {{/if}}>
           <a
-            href="/videos/list?page={{this}}{{#if ../currentSeriesFilter}}&series={{../currentSeriesFilter}}{{/if}}">{{this}}</a>
+            href="/videos/list?page={{this}}{{#if ../currentSeriesFilter}}&series={{../currentSeriesFilter}}{{/if}}{{#if ../currentTypeFilter}}&type={{../currentTypeFilter}}{{/if}}">{{this}}</a>
         </li>
         {{/each}}
 
         {{#if pagination.hasNext}}
         <li>
           <a
-            href="/videos/list?page={{pagination.nextPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}">Next</a>
+            href="/videos/list?page={{pagination.nextPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Next</a>
         </li>
         <li>
           <a
-            href="/videos/list?page={{pagination.totalPages}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}">Last</a>
+            href="/videos/list?page={{pagination.totalPages}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}">Last</a>
         </li>
         {{else}}
         <li class="disabled">
@@ -467,6 +483,54 @@
           relaunchBtn.disabled = false;
           relaunchBtn.innerText = 'Generate Missing Descriptions';
         }
+      });
+
+      // Add handlers for filters
+      const seriesFilter = document.getElementById('seriesFilter');
+      const typeFilter = document.getElementById('typeFilter');
+      const applySeriesFilterBtn = document.getElementById('applySeriesFilter');
+
+      function applyAllFilters() {
+        const series = seriesFilter.value;
+        const type = typeFilter.value;
+
+        let url = '/videos/list?';
+        if (series) url += `series=${encodeURIComponent(series)}&`;
+        if (type) url += `type=${encodeURIComponent(type)}&`;
+
+        window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
+      }
+
+      function applyTypeFilter() {
+        const series = seriesFilter.value;
+        const type = typeFilter.value;
+
+        let url = '/videos/list?';
+        if (series) url += `series=${encodeURIComponent(series)}&`;
+        if (type) url += `type=${encodeURIComponent(type)}&`;
+
+        window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
+      }
+
+      // Apply type filter automatically on change
+      typeFilter.addEventListener('change', applyTypeFilter);
+
+      // Apply series filter only on button click
+      applySeriesFilterBtn.addEventListener('click', applyAllFilters);
+
+      // Apply series filter on Enter key in the input
+      seriesFilter.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // Prevent form submission
+          applyAllFilters();
+        }
+      });
+
+      // Handle form submission to prevent default behavior
+      const form = document.getElementById('seriesFilterForm');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        applyAllFilters();
       });
     });
   </script>

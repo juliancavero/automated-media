@@ -40,6 +40,11 @@ export class VideoController {
       );
     }
 
+    // Ensure type is one of the allowed values, default to 'basic'
+    if (!generateVideoDto.type || !['basic', 'structured', 'real'].includes(generateVideoDto.type)) {
+      generateVideoDto.type = 'basic';
+    }
+
     this.logger.log('Generating video with texts:', generateVideoDto.texts);
     const result =
       await this.videoGenerationService.createVideoJob(generateVideoDto);
@@ -138,6 +143,12 @@ export class VideoController {
     required: false
   })
   @ApiQuery({
+    name: "type",
+    type: String,
+    description: "Type of video (basic, structured, real)",
+    required: false
+  })
+  @ApiQuery({
     name: "page",
     type: Number,
     description: "Page number",
@@ -151,18 +162,20 @@ export class VideoController {
   })
   async renderVideoGenerationsList(
     @Query('series') series?: string,
+    @Query('type') type?: string,
     @Query('page') pageQuery?: string,
     @Query('limit') limitQuery?: string,
   ) {
     const page = pageQuery ? parseInt(pageQuery, 10) : 1;
     const limit = limitQuery ? parseInt(limitQuery, 10) : 10;
 
-    const { videos, total, totalPages } = await this.videoGenerationService.findAll(series, page, limit);
+    const { videos, total, totalPages } = await this.videoGenerationService.findAll(series, type, page, limit);
 
     return {
       title: 'Video Generations List',
       videoGenerations: videos,
       currentSeriesFilter: series || '',
+      currentTypeFilter: type || '',
       pagination: {
         currentPage: page,
         totalPages,

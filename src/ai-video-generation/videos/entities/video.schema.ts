@@ -25,6 +25,9 @@ export class Video {
   @Prop()
   description?: string;
 
+  @Prop({ default: 'basic', enum: ['basic', 'structured', 'real'] })
+  type: string;
+
   @Prop({ default: Date.now })
   createdAt: Date;
   @Prop({ default: Date.now })

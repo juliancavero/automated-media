@@ -342,6 +342,22 @@
                 </div>
             </div>
 
+            <!-- Video type selection -->
+            <div class="series-input">
+                <div class="section-header" onclick="toggleSection('videoType')">
+                    <h3>Video Type</h3>
+                    <span class="toggle-icon collapsed" id="videoTypeIcon">↑</span>
+                </div>
+                <div class="section-content collapsed" id="videoTypeContent">
+                    <p>Select the type of video you want to create.</p>
+                    <select id="videoTypeSelect" class="form-control">
+                        <option value="basic" selected>Basic</option>
+                        <option value="structured">Structured</option>
+                        <option value="real">Real</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Batch import section -->
             <div class="batch-import">
                 <h3>Batch Import</h3>
@@ -547,6 +563,7 @@
                 .map(input => input.value.trim())
                 .filter(image => image);
             const series = document.getElementById('seriesInput').value.trim();
+            const type = document.getElementById('videoTypeSelect').value;
 
             if (texts.length === 0) {
                 alert('Please enter at least one text prompt.');
@@ -572,6 +589,7 @@
                         texts,
                         images,
                         series,
+                        type,
                         options: {
                             voiceId,
                             outputFormat: "mp3",

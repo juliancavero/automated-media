@@ -21,12 +21,16 @@ export class AppController {
             const basic_story_json = readFileSync(join(templatesPath, 'basic_story_json.txt'), 'utf8');
             const structured_story = readFileSync(join(templatesPath, 'structured_story.txt'), 'utf8');
             const structured_story_json = readFileSync(join(templatesPath, 'structured_story_json.txt'), 'utf8');
+            const real_story = readFileSync(join(templatesPath, 'real_story.txt'), 'utf8');
+            const real_story_json = readFileSync(join(templatesPath, 'real_story_json.txt'), 'utf8');
 
             return res.status(200).json({
                 basic_story,
                 basic_story_json,
                 structured_story,
                 structured_story_json,
+                real_story,
+                real_story_json
             });
         } catch (error) {
             return res.status(500).json({

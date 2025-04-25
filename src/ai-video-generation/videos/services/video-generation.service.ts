@@ -25,12 +25,16 @@ export class VideoGenerationService {
     private readonly videoGenerationModel: Model<VideoDocument>,
   ) { }
 
-  async findAll(seriesFilter?: string, page = 1, limit = 10): Promise<{ videos: Video[], total: number, totalPages: number }> {
+  async findAll(seriesFilter?: string, typeFilter?: string, page = 1, limit = 10): Promise<{ videos: Video[], total: number, totalPages: number }> {
     const skip = (page - 1) * limit;
 
     let query = {};
     if (seriesFilter) {
       query = { series: seriesFilter };
+    }
+
+    if (typeFilter) {
+      query = { ...query, type: typeFilter };
     }
 
     const [videos, total] = await Promise.all([
@@ -56,11 +60,12 @@ export class VideoGenerationService {
 
   async createVideoJob(generateVideoDto: GenerateVideoDto): Promise<boolean> {
     try {
-      const { texts, images, series } = generateVideoDto;
+      const { texts, images, series, type } = generateVideoDto;
       // Create and save VideoGeneration entity
       const videoGeneration = await this.videoGenerationModel.create({
         texts,
         series, // Add the series property
+        type: type || 'basic', // Set the type with default
       });
 
       const videoId = String(videoGeneration._id);

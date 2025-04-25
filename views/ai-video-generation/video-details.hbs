@@ -73,6 +73,10 @@
       vertical-align: middle;
     }
 
+    .type-badge {
+      background-color: #007bff;
+    }
+
     .series-link {
       color: white;
       text-decoration: none;
@@ -195,6 +199,11 @@
       <span class="series-badge">
         Series: <a href="/videos/list?series={{videoGeneration.series}}"
           class="series-link">{{videoGeneration.series}}</a>
+      </span>
+      {{/if}}
+      {{#if videoGeneration.type}}
+      <span class="series-badge type-badge">
+        Type: <a href="/videos/list?type={{videoGeneration.type}}" class="series-link">{{videoGeneration.type}}</a>
       </span>
       {{/if}}
     </h1>
