@@ -6,6 +6,7 @@ import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as hbs from 'hbs';
 import * as express from 'express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 // Helper function to create directories safely
 function ensureDirectoryExists(dir: string, logger: Logger): void {
@@ -39,6 +40,16 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('Cats example')
+    .setDescription('The cats API description')
+    .setVersion('1.0')
+    .setExternalDoc('Postman Collection', 'api-json')
+    .addTag('cats')
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
 
   // Serve static files from the public directory
   app.use('/videos', express.static(path.join(process.cwd(), 'public/videos')));

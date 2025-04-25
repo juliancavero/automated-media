@@ -28,3 +28,5 @@ Output format:
   - Part 2  
   - Part 3  
   - (and so on, until the story naturally concludes)
+  
+Important: Don't end your answer until all the parts of the story are written. Don't leave your answer incomplete.

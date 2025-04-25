@@ -16,6 +16,7 @@ import { GenerateVideoDto } from '../dto/generate-video.dto';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { VideoQueueService } from '../queues/video-queue.service';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('videos')
 export class VideoController {
@@ -130,6 +131,24 @@ export class VideoController {
 
   @Get('list')
   @Render('ai-video-generation/video-list')
+  @ApiQuery({
+    name: "series",
+    type: String,
+    description: "Name of the series",
+    required: false
+  })
+  @ApiQuery({
+    name: "page",
+    type: Number,
+    description: "Page number",
+    required: false
+  })
+  @ApiQuery({
+    name: "limit",
+    type: Number,
+    description: "Number of items per page",
+    required: false
+  })
   async renderVideoGenerationsList(
     @Query('series') series?: string,
     @Query('page') pageQuery?: string,

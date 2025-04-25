@@ -19,9 +19,13 @@ const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
+const toBeContinuedUrl = "https://res.cloudinary.com/dkequ9kzt/image/upload/v1745508219/automated-media/k4ytllsqujwdymbomfnn.png";
+const theEndUrl = "https://res.cloudinary.com/dkequ9kzt/image/upload/v1745512154/automated-media/fkuedi0iqajs36lh2kmg.png";
 interface VideoOptions {
-  duration: number; // Duración en segundos por imagen (solo usado si no hay audios)
+  duration?: number; // Duración en segundos por imagen (solo usado si no hay audios)
   format?: string; // Formato del video (mp4, avi, etc.)
+  addToBeContinued?: boolean; // Agregar "To Be Continued" al final del video
+  addTheEnd?: boolean; // Agregar "The End" al final del video
 }
 
 @Injectable()
@@ -30,6 +34,8 @@ export class VideoService {
   private readonly DEFAULT_VIDEO_OPTIONS: VideoOptions = {
     duration: 5,
     format: 'mp4',
+    addToBeContinued: false,
+    addTheEnd: false,
   };
 
   constructor(
@@ -178,6 +184,106 @@ export class VideoService {
         }),
       );
 
+      // Preparar la imagen de "To Be Continued" si es necesario
+      let toBeContinuedImagePath = '';
+      if (options.addToBeContinued) {
+        const imageExt = this.getExtensionFromUrl(toBeContinuedUrl);
+        toBeContinuedImagePath = path.join(tempDir, `toBeContinued.${imageExt}`);
+
+        try {
+          // Descargar la imagen "To Be Continued"
+          const toBeContinuedImageData = await this.downloadFile(toBeContinuedUrl);
+          await promisify(fs.writeFile)(toBeContinuedImagePath, toBeContinuedImageData);
+
+          // Verificar que la imagen existe y tiene tamaño
+          const fileStats = await promisify(fs.stat)(toBeContinuedImagePath);
+          this.logger.log(`Imagen "To Be Continued" descargada: ${toBeContinuedImagePath}, tamaño: ${fileStats.size} bytes`);
+
+          if (fileStats.size === 0) {
+            throw new Error('La imagen "To Be Continued" tiene tamaño cero');
+          }
+
+          tempFiles.push(toBeContinuedImagePath);
+
+          // Convertir PNG a JPG para evitar problemas de transparencia
+          const jpgImagePath = path.join(tempDir, `toBeContinued.jpg`);
+          tempFiles.push(jpgImagePath);
+
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg()
+              .input(toBeContinuedImagePath)
+              .outputOptions([
+                '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
+                '-pix_fmt', 'yuv420p'
+              ])
+              .output(jpgImagePath)
+              .on('end', resolve)
+              .on('error', (err) => {
+                this.logger.error(`Error al convertir PNG a JPG: ${err.message}`);
+                reject(err);
+              })
+              .run();
+          });
+
+          // Usar la imagen convertida
+          toBeContinuedImagePath = jpgImagePath;
+          this.logger.log('Imagen "To Be Continued" convertida a JPG correctamente');
+        } catch (err) {
+          this.logger.error(`Error al preparar la imagen "To Be Continued": ${err.message}`);
+          options.addToBeContinued = false;
+        }
+      }
+
+      // Preparar la imagen de "The End" si es necesario
+      let theEndImagePath = '';
+      if (options.addTheEnd) {
+        const imageExt = this.getExtensionFromUrl(theEndUrl);
+        theEndImagePath = path.join(tempDir, `theEnd.${imageExt}`);
+
+        try {
+          // Descargar la imagen "The End"
+          const theEndImageData = await this.downloadFile(theEndUrl);
+          await promisify(fs.writeFile)(theEndImagePath, theEndImageData);
+
+          // Verificar que la imagen existe y tiene tamaño
+          const fileStats = await promisify(fs.stat)(theEndImagePath);
+          this.logger.log(`Imagen "The End" descargada: ${theEndImagePath}, tamaño: ${fileStats.size} bytes`);
+
+          if (fileStats.size === 0) {
+            throw new Error('La imagen "The End" tiene tamaño cero');
+          }
+
+          tempFiles.push(theEndImagePath);
+
+          // Convertir PNG a JPG para evitar problemas de transparencia
+          const jpgImagePath = path.join(tempDir, `theEnd.jpg`);
+          tempFiles.push(jpgImagePath);
+
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg()
+              .input(theEndImagePath)
+              .outputOptions([
+                '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
+                '-pix_fmt', 'yuv420p'
+              ])
+              .output(jpgImagePath)
+              .on('end', resolve)
+              .on('error', (err) => {
+                this.logger.error(`Error al convertir PNG a JPG: ${err.message}`);
+                reject(err);
+              })
+              .run();
+          });
+
+          // Usar la imagen convertida
+          theEndImagePath = jpgImagePath;
+          this.logger.log('Imagen "The End" convertida a JPG correctamente');
+        } catch (err) {
+          this.logger.error(`Error al preparar la imagen "The End": ${err.message}`);
+          options.addTheEnd = false;
+        }
+      }
+
       // Crear archivos temporales para los audios
       const audioFiles = await Promise.all(
         audios.map(async (audio, index) => {
@@ -238,9 +344,27 @@ export class VideoService {
           .run();
       });
 
-      // Enfoque mejorado: Preparar para un proceso de dos etapas
-      // 1. Primero concatenamos todos los audios con silencios
-      // 2. Luego creamos un video con las imágenes sincronizadas al audio
+      // Para "To Be Continued" o "The End", necesitamos un silencio de 2 segundos
+      let silence2SecPath = '';
+      if (options.addToBeContinued || options.addTheEnd) {
+        silence2SecPath = path.join(tempDir, 'silence2sec.mp3');
+        tempFiles.push(silence2SecPath);
+
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg()
+            .input('anullsrc')
+            .inputFormat('lavfi')
+            .audioFrequency(44100)
+            .audioBitrate('192k')
+            .audioChannels(2)
+            .duration(2)
+            .output(silence2SecPath)
+            .on('end', resolve)
+            .on('error', reject)
+            .run();
+        });
+        this.logger.log('Silencio de 2 segundos generado para imagen final');
+      }
 
       // Archivo con lista de audios para concatenar (incluyendo silencios)
       const audioListFile = path.join(tempDir, 'audiolist.txt');
@@ -255,6 +379,11 @@ export class VideoService {
           audioListContent += `file '${silenceFilePath}'\n`;
         }
       });
+
+      // Modificar el contenido de la lista de audios para incluir el silencio de 2 segundos al final si es necesario
+      if (options.addToBeContinued || options.addTheEnd) {
+        audioListContent += `file '${silence2SecPath}'\n`;
+      }
 
       await promisify(fs.writeFile)(audioListFile, audioListContent);
       tempFiles.push(audioListFile);
@@ -282,11 +411,10 @@ export class VideoService {
       const finalAudioDuration = await this.getAudioDuration(concatAudioPath);
       this.logger.log(`Duración del audio concatenado: ${finalAudioDuration} segundos`);
 
-      // Crear archivo de segmentos para las imágenes
+      // Crear archivo de segmentos para las imágenes (sin incluir ToBeContinued)
       const segmentsFile = path.join(tempDir, 'segments.txt');
       let segmentsContent = '';
 
-      let currentPosition = 0;
       for (let i = 0; i < audioFiles.length; i++) {
         const imageFile = imageFiles[Math.min(i, imageFiles.length - 1)];
         const audioDuration = audioDurations[i];
@@ -295,84 +423,110 @@ export class VideoService {
         segmentsContent += `file '${imageFile.path}'\n`;
         segmentsContent += `duration ${audioDuration}\n`;
 
-        currentPosition += audioDuration;
-
         // Añadir silencio si no es el último audio
         if (i < audioFiles.length - 1) {
           segmentsContent += `file '${imageFile.path}'\n`;
           segmentsContent += `duration 1\n`;
-          currentPosition += 1;
         }
       }
 
       // Añadir la última imagen una vez más (necesario para el último segmento)
       if (imageFiles.length > 0) {
         segmentsContent += `file '${imageFiles[Math.min(audioFiles.length - 1, imageFiles.length - 1)].path}'\n`;
+        // No añadimos duración aquí para que sea el último fotograma
       }
 
       await promisify(fs.writeFile)(segmentsFile, segmentsContent);
       tempFiles.push(segmentsFile);
 
-      // Crear el video final con las imágenes y el audio concatenado
+      // Generar el video base primero (sin ToBeContinued ni TheEnd)
+      const baseVideoPath = path.join(tempDir, `base_video.${options.format}`);
+      tempFiles.push(baseVideoPath);
+
       await new Promise<void>((resolve, reject) => {
-        // Establecer un tiempo de espera máximo para el proceso
-        const timeoutDuration = 3600000; // 1 hora en milisegundos
-        let ffmpegCommand = ffmpeg()
+        ffmpeg()
           .input(segmentsFile)
           .inputOptions('-f', 'concat', '-safe', '0')
           .input(concatAudioPath)
           .outputOptions([
             '-pix_fmt', 'yuv420p',
             '-c:v', 'libx264',
-            '-preset', 'medium', // Balance entre velocidad y calidad
+            '-preset', 'medium',
             '-profile:v', 'high',
-            '-crf', '23', // Calidad visual (menor número = mejor calidad)
+            '-crf', '23',
             '-c:a', 'aac',
             '-b:a', '192k',
-            '-ar', '44100', // Sample rate de audio
-            '-s', '720x1280', // Cambiado a formato 9:16 (vertical)
+            '-ar', '44100',
+            '-s', '720:1280',
             '-r', '30',
-            '-shortest',
-            '-max_muxing_queue_size', '9999' // Evita errores de buffer para videos largos
+            '-max_muxing_queue_size', '9999'
           ])
-          .output(outputVideoPath)
-          .outputOption('-threads', '0'); // Usar todos los núcleos disponibles
-
-        // Variable para almacenar el proceso de ffmpeg
-        let ffmpegProcess = null;
-
-        // Crear un timeout para abortar el proceso si toma demasiado tiempo
-        const timeoutId = setTimeout(() => {
-          this.logger.warn('El proceso de FFmpeg está tomando demasiado tiempo, abortando');
-          if (ffmpegCommand && typeof ffmpegCommand.kill === 'function') {
-            ffmpegCommand.kill();
-          }
-          reject(new Error('El proceso de FFmpeg ha excedido el tiempo máximo permitido'));
-        }, timeoutDuration);
-
-        ffmpegCommand
-          .on('start', (commandLine) => {
-            this.logger.log(`Ejecutando comando FFmpeg: ${commandLine}`);
-          })
-          .on('progress', (progress) => {
-            if (progress.percent) {
-              this.logger.log(`Progreso: ${Math.floor(progress.percent)}%`);
-            } else if (progress.frames) {
-              this.logger.log(`Frames procesados: ${progress.frames}`);
-            }
-          })
-          .on('end', () => {
-            clearTimeout(timeoutId); // Limpiar el timeout ya que terminó correctamente
-            this.logger.log('Video generado exitosamente');
-            resolve();
-          })
+          .output(baseVideoPath)
+          .on('end', resolve)
           .on('error', (err) => {
-            clearTimeout(timeoutId); // Limpiar el timeout ya que terminó con error
-            this.logger.error('Error al generar el video:', err);
+            this.logger.error(`Error al generar video base: ${err.message}`);
             reject(err);
           })
           .run();
       });
+
+      // Crear el video final, añadiendo ToBeContinued o TheEnd si es necesario
+      if ((options.addToBeContinued && toBeContinuedImagePath) || (options.addTheEnd && theEndImagePath)) {
+        await new Promise<void>((resolve, reject) => {
+          // Obtener la duración del video base
+          ffmpeg.ffprobe(baseVideoPath, (err, metadata) => {
+            if (err) {
+              this.logger.error(`Error al obtener duración del video base: ${err.message}`);
+              return reject(err);
+            }
+
+            const baseDuration = metadata.format.duration;
+            const overlayStart = Math.max(0, baseDuration - 2); // Mostrar overlay en los últimos 2 segundos
+
+            let overlayImage = '';
+            let overlayType = '';
+
+            if (options.addToBeContinued && toBeContinuedImagePath) {
+              overlayImage = toBeContinuedImagePath;
+              overlayType = 'To Be Continued';
+            } else if (options.addTheEnd && theEndImagePath) {
+              overlayImage = theEndImagePath;
+              overlayType = 'The End';
+            }
+
+            ffmpeg()
+              .input(baseVideoPath)
+              .input(overlayImage)
+              .complexFilter([
+                // Overlay de la imagen en los últimos 2 segundos
+                `[0:v][1:v]overlay=0:0:enable='between(t,${overlayStart},${baseDuration})'[outv]`
+              ])
+              .outputOptions([
+                '-map', '[outv]',
+                '-map', '0:a',
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-crf', '23',
+                '-c:a', 'copy'
+              ])
+              .output(outputVideoPath)
+              .on('end', () => {
+                this.logger.log(`Video con "${overlayType}" generado exitosamente`);
+                resolve();
+              })
+              .on('error', (err) => {
+                this.logger.error(`Error al añadir "${overlayType}": ${err.message}`);
+                // Si falla, usamos el video base
+                fs.copyFileSync(baseVideoPath, outputVideoPath);
+                resolve();
+              })
+              .run();
+          });
+        });
+      } else {
+        // Si no añadimos ninguna imagen final, simplemente usamos el video base
+        fs.copyFileSync(baseVideoPath, outputVideoPath);
+      }
 
       // Verificar que el video se generó correctamente
       const videoStats = await promisify(fs.stat)(outputVideoPath);

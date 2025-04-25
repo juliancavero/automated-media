@@ -58,6 +58,10 @@ export class VideoGenerationController {
       crearVideoDto.videoId,
       chosenImages,
       chosenAudios,
+      {
+        addToBeContinued: crearVideoDto.addToBeContinued,
+        addTheEnd: crearVideoDto.addTheEnd,
+      }
     );
 
     return {
