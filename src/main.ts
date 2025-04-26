@@ -98,6 +98,10 @@ async function bootstrap() {
     if (!text) return '';
     return text.length > length ? text.substring(0, length) + '...' : text;
   });
+  hbs.registerHelper('truncateShort', function (text, length) {
+    if (!text) return '';
+    return text.length > length ? text.substring(0, length) : text;
+  });
 
   hbs.registerHelper('formatDate', function (date) {
     return new Date(date).toLocaleString('es-ES', {
@@ -107,6 +111,16 @@ async function bootstrap() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  });
+
+  hbs.registerHelper('formatDateInput', function (date) {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  });
+
+  hbs.registerHelper('now', function () {
+    return new Date();
   });
 
   const port = process.env.PORT ?? 3000;

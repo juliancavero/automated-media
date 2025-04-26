@@ -32,6 +32,8 @@ export class Video {
   createdAt: Date;
   @Prop({ default: Date.now })
   updatedAt: Date;
+  @Prop()
+  uploadedAt?: Date;
 }
 
 export const VideoSchema = SchemaFactory.createForClass(Video);

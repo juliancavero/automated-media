@@ -167,6 +167,14 @@ export class VideoGenerationService {
     );
   }
 
+  async setVideoUploadDate(id: string, uploadDate: Date): Promise<Video | null> {
+    return await this.videoGenerationModel.findByIdAndUpdate(
+      id,
+      { uploadedAt: uploadDate },
+      { new: true, runValidators: true },
+    );
+  }
+
   async deleteVideo(id: string): Promise<void> {
     const video = await this.videoGenerationModel.findById(id).exec();
     if (!video) {
@@ -293,5 +301,17 @@ export class VideoGenerationService {
       this.logger.error(`Error generating script JSON: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  async getVideosByUploadedAtMonth(month: number, year: number): Promise<Video[]> {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
+
+    return this.videoGenerationModel.find({
+      uploadedAt: {
+        $gte: startDate,
+        $lt: endDate,
+      },
+    });
   }
 }

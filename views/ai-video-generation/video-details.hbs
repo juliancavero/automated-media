@@ -273,6 +273,31 @@
     </div>
     {{/if}}
 
+    {{#if videoGeneration.url}}
+    <div class="card detail-card">
+      <div class="card-header description-header">
+        <h5>Set Upload Date</h5>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+              <input type="date" id="upload-date-picker" class="form-control"
+                value="{{#if videoGeneration.uploadedAt}}{{formatDateInput videoGeneration.uploadedAt}}{{else}}{{formatDateInput (now)}}{{/if}}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <button id="set-upload-date-btn" class="btn btn-primary">
+              <i class="fas fa-save"></i> Set Upload Date
+            </button>
+            <div id="upload-date-status" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
     {{#if videoGeneration.texts.length}}
     <div class="card detail-card">
       <div class="card-header">
@@ -682,6 +707,58 @@
               console.error('Error copying text: ', err);
               alert('Failed to copy description. Please try again.');
             });
+        });
+      }
+
+      // Upload date functionality
+      const setUploadDateBtn = document.getElementById('set-upload-date-btn');
+      const uploadDatePicker = document.getElementById('upload-date-picker');
+
+      if (setUploadDateBtn && uploadDatePicker) {
+        setUploadDateBtn.addEventListener('click', async function () {
+          const videoId = '{{videoGeneration._id}}';
+          const uploadDate = uploadDatePicker.value;
+
+          if (!uploadDate) {
+            document.getElementById('upload-date-status').innerHTML =
+              '<span class="text-danger">Please select a date</span>';
+            return;
+          }
+
+          try {
+            setUploadDateBtn.disabled = true;
+            setUploadDateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            const response = await fetch(`/videos/${videoId}/upload-date`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ uploadDate })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              document.getElementById('upload-date-status').innerHTML =
+                '<span class="text-success">Upload date set successfully</span>';
+
+              // Reload after a short delay to show updated data
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              document.getElementById('upload-date-status').innerHTML =
+                `<span class="text-danger">Error: ${result.message}</span>`;
+              setUploadDateBtn.disabled = false;
+              setUploadDateBtn.innerHTML = '<i class="fas fa-save"></i> Set Upload Date';
+            }
+          } catch (error) {
+            document.getElementById('upload-date-status').innerHTML =
+              `<span class="text-danger">Error: ${error.message}</span>`;
+            setUploadDateBtn.disabled = false;
+            setUploadDateBtn.innerHTML = '<i class="fas fa-save"></i> Set Upload Date';
+          }
         });
       }
     });

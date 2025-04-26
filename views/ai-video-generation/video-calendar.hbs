@@ -1,0 +1,385 @@
+<html lang='en'>
+
+<head>
+    {{> head}}
+    <style>
+        .calendar-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .calendar-navigation {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .month-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+        }
+
+        .calendar-navigation button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .calendar-navigation button:hover {
+            background-color: #0056b3;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-bottom: 1px solid #ddd;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            border-right: 1px solid #ddd;
+            background-color: #f8f9fa;
+        }
+
+        .calendar-day {
+            min-height: 100px;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            position: relative;
+        }
+
+        .calendar-day:nth-child(7n) {
+            border-right: none;
+        }
+
+        .day-number {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: rgba(245, 245, 245, 0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .other-month .day-number,
+        .other-month .video-item {
+            display: none;
+        }
+
+        .today {
+            border: 3px solid #2c3e50 !important;
+            box-shadow: inset 0 0 5px rgba(44, 62, 80, 0.3);
+        }
+
+        .video-item {
+            margin-top: 30px;
+            /* Increased to make room for larger day number */
+            padding: 5px;
+            font-size: 0.85em;
+            background-color: #e9f5ff;
+            border-radius: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .video-item:hover {
+            background-color: #cce5ff;
+        }
+
+        .other-month {
+            background-color: #f8f9fa;
+            color: #aaa;
+        }
+
+        .past-day {
+            background-color: #f5f5f5;
+            /* Subtle light gray for past days */
+        }
+
+        .future-empty-day {
+            background-color: #ffebee;
+            /* Very subtle light red for future days without videos */
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1000;
+            transition: opacity 0.5s;
+            display: none;
+        }
+
+        .success {
+            background-color: #28a745;
+        }
+
+        .error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='container'>
+        {{> navmenu}}
+
+        <div class="header-container">
+            <h1>Video Calendar</h1>
+        </div>
+
+        <div id="notification" class="notification"></div>
+
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <div class="calendar-navigation">
+                    <button id="prev-month">&lt; Previous</button>
+                    <h3 id="current-month" class="month-display">{{currentMonth}}</h3>
+                    <button id="next-month">Next &gt;</button>
+                </div>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="calendar-day-header">Monday</div>
+                <div class="calendar-day-header">Tuesday</div>
+                <div class="calendar-day-header">Wednesday</div>
+                <div class="calendar-day-header">Thursday</div>
+                <div class="calendar-day-header">Friday</div>
+                <div class="calendar-day-header">Saturday</div>
+                <div class="calendar-day-header">Sunday</div>
+
+                {{#each calendarDays}}
+                <div class="calendar-day {{#if otherMonth}}other-month{{/if}} {{#if isToday}}today{{/if}}"
+                    data-date="{{date}}">
+                    <div class="day-number"></div>
+                    {{#each videos}}
+                    <div class="video-item" data-video-id="{{_id}}">
+                        {{type}} - {{truncateShort description 7}}
+                    </div>
+                    {{/each}}
+                </div>
+                {{/each}}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.video-item').forEach(video => {
+            video.addEventListener('click', function () {
+                const videoId = this.getAttribute('data-video-id');
+                window.location.href = '/videos/list/' + videoId;
+            });
+        });
+
+        // Update the month display when the page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            updateMonthDisplay();
+            markOtherMonthDays();
+            populateDayNumbers();
+            markPastDays();
+        });
+
+        document.getElementById('prev-month').addEventListener('click', function () {
+            navigateMonth(-1);
+        });
+
+        document.getElementById('next-month').addEventListener('click', function () {
+            navigateMonth(1);
+        });
+
+        function updateMonthDisplay() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let month = parseInt(urlParams.get('month')) || new Date().getMonth() + 1;
+            let year = parseInt(urlParams.get('year')) || new Date().getFullYear();
+
+            const monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+
+            const formattedMonth = monthNames[month - 1] + ' ' + year;
+            document.getElementById('current-month').textContent = formattedMonth;
+        }
+
+        function navigateMonth(direction) {
+            const urlParams = new URLSearchParams(window.location.search);
+            let month = parseInt(urlParams.get('month') || new Date().getMonth() + 1);
+            let year = parseInt(urlParams.get('year') || new Date().getFullYear());
+
+            month += direction;
+
+            if (month > 12) {
+                month = 1;
+                year++;
+            } else if (month < 1) {
+                month = 12;
+                year--;
+            }
+
+            window.location.href = `?month=${month}&year=${year}`;
+        }
+
+        function showNotification(message, isSuccess) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                    notification.style.opacity = '1';
+                }, 500);
+            }, 3000);
+        }
+
+        // Function to mark past days with gray background
+        function markPastDays() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Helper function to check if two dates are the same day
+            function isSameDay(date1, date2) {
+                return date1.getFullYear() === date2.getFullYear() &&
+                    date1.getMonth() === date2.getMonth() &&
+                    date1.getDate() === date2.getDate();
+            }
+
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                const dateStr = day.getAttribute('data-date');
+
+                if (dateStr) {
+                    // Directly create a date object from the ISO string
+                    const dayDate = new Date(dateStr);
+
+                    // Check if this day is today
+                    const isThisToday = isSameDay(dayDate, today);
+
+                    // Get existing classes
+                    const isOtherMonth = day.classList.contains('other-month');
+
+                    // Remove any existing special class to avoid conflicts
+                    day.classList.remove('past-day', 'future-empty-day');
+
+                    // Add today class if it's today
+                    if (isThisToday) {
+                        day.classList.add('today');
+                    }
+                    // If the date is before today and not in another month, mark as past
+                    else if (dayDate < today && !isOtherMonth) {
+                        day.classList.add('past-day');
+                    }
+                    // If the date is after today, not in another month
+                    else if (dayDate > today && !isOtherMonth) {
+                        // Check if the day has any video items
+                        const hasVideos = day.querySelector('.video-item') !== null;
+
+                        if (!hasVideos) {
+                            day.classList.add('future-empty-day');
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to populate day numbers from data-date attributes
+        function populateDayNumbers() {
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                const dateStr = day.getAttribute('data-date');
+                if (dateStr) {
+                    try {
+                        // Extract the day number from the date string
+                        const dayDate = new Date(dateStr);
+                        const dayNumber = dayDate.getDate();
+
+                        // Set the day number in the element
+                        const dayNumberElement = day.querySelector('.day-number');
+                        if (dayNumberElement) {
+                            dayNumberElement.textContent = dayNumber;
+                        }
+                    } catch (e) {
+                        console.error("Error extracting day number:", e);
+                    }
+                }
+            });
+        }
+
+        // Function to mark days from other months
+        function markOtherMonthDays() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let currentMonth = parseInt(urlParams.get('month')) || new Date().getMonth() + 1;
+            let currentYear = parseInt(urlParams.get('year')) || new Date().getFullYear();
+
+            // Convert to zero-based month for JS Date (Jan=0, Feb=1, etc)
+            currentMonth = currentMonth - 1;
+
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                const dateStr = day.getAttribute('data-date');
+                if (dateStr) {
+                    try {
+                        const dayDate = new Date(dateStr);
+                        const dayMonth = dayDate.getMonth();
+                        const dayYear = dayDate.getFullYear();
+
+                        // If the day belongs to a different month than the current view
+                        if (dayMonth !== currentMonth || dayYear !== currentYear) {
+                            day.classList.add('other-month');
+                        } else {
+                            day.classList.remove('other-month');
+                        }
+                    } catch (e) {
+                        console.error("Error checking month:", e);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

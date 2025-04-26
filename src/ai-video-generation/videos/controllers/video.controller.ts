@@ -10,6 +10,7 @@ import {
   Param,
   Query,
   Delete,
+  Put,
 } from '@nestjs/common';
 import { VideoGenerationService } from '../services/video-generation.service';
 import { GenerateVideoDto } from '../dto/generate-video.dto';
@@ -17,7 +18,15 @@ import { ImageService } from 'src/ai-video-generation/images/services/image.serv
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { VideoQueueService } from '../queues/video-queue.service';
 import { ApiQuery } from '@nestjs/swagger';
+import { Video } from '../entities/video.schema';
 
+interface CalendarDay {
+  day: number;
+  date: Date;
+  inCurrentMonth: boolean;
+  isNewRow: boolean;
+  videos: Video[];
+}
 @Controller('videos')
 export class VideoController {
   private readonly logger = new Logger(VideoController.name);
@@ -125,6 +134,31 @@ export class VideoController {
     }
   }
 
+  @Put(':id/upload-date')
+  async setVideoUploadDate(
+    @Param('id') id: string,
+    @Body() body: { uploadDate: string }
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const uploadDate = new Date(body.uploadDate);
+
+      if (isNaN(uploadDate.getTime())) {
+        return { success: false, message: 'Invalid date format' };
+      }
+
+      const video = await this.videoGenerationService.setVideoUploadDate(id, uploadDate);
+
+      if (!video) {
+        return { success: false, message: 'Video not found' };
+      }
+
+      return { success: true, message: 'Upload date set successfully' };
+    } catch (error) {
+      this.logger.error(`Error setting video upload date: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
   // Views
   @Get('create')
   @Render('ai-video-generation/video-generation')
@@ -217,5 +251,117 @@ export class VideoController {
       images,
       audio,
     };
+  }
+
+  @Get('calendar')
+  @Render('ai-video-generation/video-calendar')
+  async renderVideoCalendar(
+    @Query('month') monthParam?: string,
+    @Query('year') yearParam?: string,
+  ) {
+    // Use current month/year if not provided
+    const currentDate = new Date();
+    const month = monthParam ? parseInt(monthParam, 10) : currentDate.getMonth() + 1; // JS months are 0-indexed
+    const year = yearParam ? parseInt(yearParam, 10) : currentDate.getFullYear();
+
+    // Get videos for the selected month
+    const videos = await this.videoGenerationService.getVideosByUploadedAtMonth(month, year);
+
+    // Generate calendar data
+    const calendarDays = this.generateCalendarDays(month, year, videos);
+
+    // Calculate previous and next month
+    const prevMonth = month === 1
+      ? { month: 12, year: year - 1 }
+      : { month: month - 1, year };
+
+    const nextMonth = month === 12
+      ? { month: 1, year: year + 1 }
+      : { month: month + 1, year };
+
+    // Get month name
+    const monthName = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' });
+
+    return {
+      title: 'Video Calendar',
+      videos,
+      month,
+      year,
+      monthName,
+      prevMonth,
+      nextMonth,
+      calendarDays,
+    };
+  }
+
+  private generateCalendarDays(month: number, year: number, videos: Video[]) {
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Calculate days from previous month to fill first row
+    const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevMonthYear = month === 1 ? year - 1 : year;
+
+    // Calculate days for next month to complete last row
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextMonthYear = month === 12 ? year + 1 : year;
+
+    // Define the type for calendar day objects
+
+    const calendarDays: CalendarDay[] = [];
+
+    // Add days from previous month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      const day = prevMonthLastDay - startingDayOfWeek + i + 1;
+      calendarDays.push({
+        day,
+        date: new Date(prevMonthYear, prevMonth - 1, day),
+        inCurrentMonth: false,
+        isNewRow: i === 0 && calendarDays.length > 0,
+        videos: [] as Video[]
+      });
+    }
+
+    // Add days from current month with their videos
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+
+      // Filter videos for this day
+      const dayVideos = videos.filter(video => {
+        if (!video.uploadedAt) return false;
+
+        const videoDate = new Date(video.uploadedAt);
+        return videoDate.getDate() === day &&
+          videoDate.getMonth() === month - 1 &&
+          videoDate.getFullYear() === year;
+      });
+
+      calendarDays.push({
+        day,
+        date,
+        inCurrentMonth: true,
+        isNewRow: (startingDayOfWeek + day - 1) % 7 === 0 && day !== 1,
+        videos: dayVideos
+      });
+    }
+
+    // Add days from next month to complete the last row
+    const remainingDays = 7 - (calendarDays.length % 7);
+    if (remainingDays < 7) {
+      for (let day = 1; day <= remainingDays; day++) {
+        calendarDays.push({
+          day,
+          date: new Date(nextMonthYear, nextMonth - 1, day),
+          inCurrentMonth: false,
+          isNewRow: false,
+          videos: [] as Video[]
+        });
+      }
+    }
+
+    return calendarDays;
   }
 }
