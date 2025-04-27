@@ -240,13 +240,13 @@
             </div>
 
             <div class="calendar-grid">
+                <div class="calendar-day-header">Sunday</div>
                 <div class="calendar-day-header">Monday</div>
                 <div class="calendar-day-header">Tuesday</div>
                 <div class="calendar-day-header">Wednesday</div>
                 <div class="calendar-day-header">Thursday</div>
                 <div class="calendar-day-header">Friday</div>
                 <div class="calendar-day-header">Saturday</div>
-                <div class="calendar-day-header">Sunday</div>
 
                 {{#each calendarDays}}
                 <div class="calendar-day {{#if otherMonth}}other-month{{/if}} {{#if isToday}}today{{/if}}"
@@ -261,7 +261,7 @@
                         <span>&#9203;</span> {{! Clock icon - HTML entity code }}
                         {{/unless}}
                         {{/if}}
-                        {{type}} - {{truncateShort description 7}}
+                        {{type}}
                     </div>
                     {{/each}}
                 </div>
@@ -398,6 +398,7 @@
                     try {
                         // Extract the day number from the date string
                         const dayDate = new Date(dateStr);
+                        dayDate.setDate(dayDate.getDate()); // Subtract one day
                         const dayNumber = dayDate.getDate();
 
                         // Set the day number in the element
