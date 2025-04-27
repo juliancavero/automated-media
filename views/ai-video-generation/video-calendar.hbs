@@ -110,6 +110,10 @@
             transition: background-color 0.3s;
         }
 
+        .pending-upload {
+            background-color: yellow;
+        }
+
         .other-month {
             background-color: #f8f9fa;
             color: #aaa;
@@ -249,7 +253,14 @@
                     data-date="{{date}}">
                     <div class="day-number"></div>
                     {{#each videos}}
-                    <div class="video-item" data-video-id="{{_id}}">
+                    <div class="video-item 
+                    {{#if uploadedAt}}
+                        {{#unless (eq status 'uploaded')}} pending-upload {{/unless}} {{/if}}" data-video-id="{{_id}}">
+                        {{#if uploadedAt}}
+                        {{#unless (eq status "uploaded")}}
+                        <span>&#9203;</span> {{! Clock icon - HTML entity code }}
+                        {{/unless}}
+                        {{/if}}
                         {{type}} - {{truncateShort description 7}}
                     </div>
                     {{/each}}

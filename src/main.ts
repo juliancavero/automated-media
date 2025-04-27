@@ -102,6 +102,9 @@ async function bootstrap() {
     if (!text) return '';
     return text.length > length ? text.substring(0, length) : text;
   });
+  hbs.registerHelper('neq', function (a, b) {
+    return a !== b;
+  });
 
   hbs.registerHelper('formatDate', function (date) {
     return new Date(date).toLocaleString('es-ES', {
