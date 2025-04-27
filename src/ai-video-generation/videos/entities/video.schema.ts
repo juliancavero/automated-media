@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, ObjectId } from 'mongoose';
+import { VideoType } from '../dto/video-types';
 
 export type VideoDocument = Video & Document;
 
@@ -25,7 +26,7 @@ export class Video {
   @Prop()
   description?: string;
 
-  @Prop({ default: 'basic', enum: ['basic', 'structured', 'real'] })
+  @Prop({ default: 'basic', enum: VideoType })
   type: string;
 
   @Prop({ default: Date.now })

@@ -49,11 +49,6 @@ export class VideoController {
       );
     }
 
-    // Ensure type is one of the allowed values, default to 'basic'
-    if (!generateVideoDto.type || !['basic', 'structured', 'real'].includes(generateVideoDto.type)) {
-      generateVideoDto.type = 'basic';
-    }
-
     this.logger.log('Generating video with texts:', generateVideoDto.texts);
     const result =
       await this.videoGenerationService.createVideoJob(generateVideoDto);

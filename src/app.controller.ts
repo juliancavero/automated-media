@@ -4,6 +4,19 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Public } from './auth/decorators/public.decorator';
 
+const files = {
+    basic_story_step1: 'basic_story_step1.txt',
+    basic_story_step2: 'basic_story_step2.txt',
+    hidden_beasts_step1: 'hidden_beasts_step1.txt',
+    hidden_beasts_step2: 'hidden_beasts_step2.txt',
+    hidden_files_step1: 'hidden_files_step1.txt',
+    hidden_files_step2: 'hidden_files_step2.txt',
+    real_stories_step1: 'real_stories_step1.txt',
+    real_stories_step2: 'real_stories_step2.txt',
+    structured_story_step1: 'structured_story_step1.txt',
+    structured_story_step2: 'structured_story_step2.txt',
+};
+
 @Controller('')
 export class AppController {
     constructor() { }
@@ -19,20 +32,27 @@ export class AppController {
         try {
             const templatesPath = join(process.cwd(), 'public', 'templates');
 
-            const basic_story = readFileSync(join(templatesPath, 'basic_story.txt'), 'utf8');
-            const basic_story_json = readFileSync(join(templatesPath, 'basic_story_json.txt'), 'utf8');
-            const structured_story = readFileSync(join(templatesPath, 'structured_story.txt'), 'utf8');
-            const structured_story_json = readFileSync(join(templatesPath, 'structured_story_json.txt'), 'utf8');
-            const real_story = readFileSync(join(templatesPath, 'real_story.txt'), 'utf8');
-            const real_story_json = readFileSync(join(templatesPath, 'real_story_json.txt'), 'utf8');
-
+            const basic_story_step1 = readFileSync(join(templatesPath, files.basic_story_step1), 'utf-8');
+            const basic_story_step2 = readFileSync(join(templatesPath, files.basic_story_step2), 'utf-8');
+            const hidden_beasts_step1 = readFileSync(join(templatesPath, files.hidden_beasts_step1), 'utf-8');
+            const hidden_beasts_step2 = readFileSync(join(templatesPath, files.hidden_beasts_step2), 'utf-8');
+            const hidden_files_step1 = readFileSync(join(templatesPath, files.hidden_files_step1), 'utf-8');
+            const hidden_files_step2 = readFileSync(join(templatesPath, files.hidden_files_step2), 'utf-8');
+            const real_stories_step1 = readFileSync(join(templatesPath, files.real_stories_step1), 'utf-8');
+            const real_stories_step2 = readFileSync(join(templatesPath, files.real_stories_step2), 'utf-8');
+            const structured_story_step1 = readFileSync(join(templatesPath, files.structured_story_step1), 'utf-8');
+            const structured_story_step2 = readFileSync(join(templatesPath, files.structured_story_step2), 'utf-8');
             return res.status(200).json({
-                basic_story,
-                basic_story_json,
-                structured_story,
-                structured_story_json,
-                real_story,
-                real_story_json
+                basic_story_step1,
+                basic_story_step2,
+                hidden_beasts_step1,
+                hidden_beasts_step2,
+                hidden_files_step1,
+                hidden_files_step2,
+                real_stories_step1,
+                real_stories_step2,
+                structured_story_step1,
+                structured_story_step2,
             });
         } catch (error) {
             return res.status(500).json({

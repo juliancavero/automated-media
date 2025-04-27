@@ -11,6 +11,7 @@ import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { VideoType } from '../dto/video-types';
 
 @Injectable()
 export class VideoGenerationService {
@@ -230,21 +231,27 @@ export class VideoGenerationService {
     }).exec();
   }
 
-  async generateScript(type: string): Promise<string> {
+  async generateScript(type: VideoType): Promise<string> {
     try {
       this.logger.log(`Generating script with type: ${type}`);
 
       let templatePath: string;
 
       switch (type) {
-        case 'basic':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story.txt');
+        case VideoType.BASIC:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_step1.txt');
           break;
-        case 'structured':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story.txt');
+        case VideoType.STRUCTURED:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_step1.txt');
           break;
-        case 'real':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_story.txt');
+        case VideoType.REAL:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_stories_step1.txt');
+          break;
+        case VideoType.HIDDEN_BEASTS:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_beasts_step1.txt');
+          break;
+        case VideoType.HIDDEN_FILES:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_files_step1.txt');
           break;
         default:
           throw new Error(`Invalid script type: ${type}`);
@@ -265,21 +272,27 @@ export class VideoGenerationService {
     }
   }
 
-  async generateScriptJson(type: string, text: string): Promise<string> {
+  async generateScriptJson(type: VideoType, text: string): Promise<string> {
     try {
       this.logger.log(`Generating script JSON with type: ${type} and text: ${text}`);
 
       let templatePath: string;
 
       switch (type) {
-        case 'basic':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_json.txt');
+        case VideoType.BASIC:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_step2.txt');
           break;
-        case 'structured':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_json.txt');
+        case VideoType.STRUCTURED:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_step2.txt');
           break;
-        case 'real':
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_story_json.txt');
+        case VideoType.REAL:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_stories_step2.txt');
+          break;
+        case VideoType.HIDDEN_BEASTS:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_beasts_step2.txt');
+          break;
+        case VideoType.HIDDEN_FILES:
+          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_files_step2.txt');
           break;
         default:
           throw new Error(`Invalid script type: ${type}`);
