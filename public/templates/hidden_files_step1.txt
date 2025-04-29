@@ -25,12 +25,4 @@ Suggested Structure for Each Entry:
 1. Hook
 2. Context and Verified Facts
 3. Unanswered Questions and Theories
-4. Closing with Question or ReflectioN
-
-These are the stories that you have already created, do not repeat them:
-- The Dyatlov Pass Incident
-- Amelia Earhart
-- The Wow! Signal
-- The Disappearance of the Flannan Isles Lighthouse Keepers
-- The Hinterkaifeck Murders
-- The Oak Island Money Pit
+4. Closing with Question or Reflection

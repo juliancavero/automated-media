@@ -11,6 +11,7 @@ import { VideoGenerationController } from './controllers/video-generation.contro
 import { AiModule } from 'src/external/ai/ai.module';
 import { BullModule } from '@nestjs/bullmq';
 import { VideoQueueService } from './queues/video-queue.service';
+import { CreatedStoriesModule } from '../created-stories/created-stories.module';
 
 @Module({
   imports: [
@@ -21,10 +22,11 @@ import { VideoQueueService } from './queues/video-queue.service';
     ImageModule,
     AudioModule,
     CloudinaryModule,
-    AiModule
+    AiModule,
+    CreatedStoriesModule,
   ],
   controllers: [VideoController, VideoGenerationController],
   providers: [VideoService, VideoGenerationService, VideoQueueService],
   exports: [VideoService, VideoGenerationService, VideoQueueService],
 })
-export class VideoModule { }
+export class VideoModule {}

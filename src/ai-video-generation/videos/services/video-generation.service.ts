@@ -11,7 +11,8 @@ import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { VideoType } from '../dto/video-types';
+import { VideoType } from 'src/ai-video-generation/types';
+import { CreatedStoriesService } from 'src/ai-video-generation/created-stories/services/created-stories.service';
 
 @Injectable()
 export class VideoGenerationService {
@@ -24,11 +25,18 @@ export class VideoGenerationService {
     private readonly audioService: AudioService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly aiService: AiService,
+    private readonly createdStoriesService: CreatedStoriesService,
     @InjectModel(Video.name)
     private readonly videoGenerationModel: Model<VideoDocument>,
-  ) { }
+  ) {}
 
-  async findAll(seriesFilter?: string, typeFilter?: string, statusFilter?: string, page = 1, limit = 10): Promise<{ videos: Video[], total: number, totalPages: number }> {
+  async findAll(
+    seriesFilter?: string,
+    typeFilter?: string,
+    statusFilter?: string,
+    page = 1,
+    limit = 10,
+  ): Promise<{ videos: Video[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;
 
     let query = {};
@@ -47,11 +55,12 @@ export class VideoGenerationService {
     }
 
     const [videos, total] = await Promise.all([
-      this.videoGenerationModel.find(query)
+      this.videoGenerationModel
+        .find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      this.videoGenerationModel.countDocuments(query)
+      this.videoGenerationModel.countDocuments(query),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -59,7 +68,7 @@ export class VideoGenerationService {
     return {
       videos,
       total,
-      totalPages
+      totalPages,
     };
   }
 
@@ -79,7 +88,11 @@ export class VideoGenerationService {
 
       const videoId = String(videoGeneration._id);
       for (const [index, prompt] of images.entries()) {
-        const image = await this.imageService.createImage(prompt, videoId, index);
+        const image = await this.imageService.createImage(
+          prompt,
+          videoId,
+          index,
+        );
         this.logger.log(`Created image entity with ID: ${image._id}`);
         // Add image generation job to the queue
         await this.imageQueue.addImageGenerationJob(image);
@@ -90,9 +103,7 @@ export class VideoGenerationService {
         const audio = await this.audioService.createAudio(text, videoId, index);
 
         await this.audioQueue.addAudioGenerationJob(audio);
-        this.logger.log(
-          `Created audio entity with ID: ${audio._id}`
-        );
+        this.logger.log(`Created audio entity with ID: ${audio._id}`);
       }
 
       this.logger.log(`Saved VideoGeneration entity with ID: ${videoId}`);
@@ -130,7 +141,10 @@ export class VideoGenerationService {
     );
   }
 
-  async setVideoDescription(id: string, description: string): Promise<Video | null> {
+  async setVideoDescription(
+    id: string,
+    description: string,
+  ): Promise<Video | null> {
     return await this.videoGenerationModel.findByIdAndUpdate(
       id,
       { description },
@@ -148,14 +162,19 @@ export class VideoGenerationService {
       }
 
       this.logger.log(`Regenerating description for video ${id}`);
-      const description = await this.aiService.generateVideoDescription(video.url);
+      const description = await this.aiService.generateVideoDescription(
+        video.url,
+      );
 
       await this.setVideoDescription(id, description);
       this.logger.log(`Successfully regenerated description for video ${id}`);
 
       return true;
     } catch (error) {
-      this.logger.error(`Error regenerating video description: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error regenerating video description: ${error.message}`,
+        error.stack,
+      );
       return false;
     }
   }
@@ -168,7 +187,10 @@ export class VideoGenerationService {
     );
   }
 
-  async setVideoUploadDate(id: string, uploadDate: Date): Promise<Video | null> {
+  async setVideoUploadDate(
+    id: string,
+    uploadDate: Date,
+  ): Promise<Video | null> {
     return await this.videoGenerationModel.findByIdAndUpdate(
       id,
       { uploadedAt: uploadDate },
@@ -191,7 +213,9 @@ export class VideoGenerationService {
       try {
         await this.imageService.deleteImage(image._id.toString());
       } catch (error) {
-        this.logger.error(`Error deleting image ${image._id}: ${error.message}`);
+        this.logger.error(
+          `Error deleting image ${image._id}: ${error.message}`,
+        );
       }
     }
 
@@ -201,7 +225,9 @@ export class VideoGenerationService {
       try {
         await this.audioService.deleteAudio(audio._id.toString());
       } catch (error) {
-        this.logger.error(`Error deleting audio ${audio._id}: ${error.message}`);
+        this.logger.error(
+          `Error deleting audio ${audio._id}: ${error.message}`,
+        );
       }
     }
 
@@ -209,9 +235,13 @@ export class VideoGenerationService {
     if (video.publicId) {
       try {
         await this.cloudinaryService.deleteFile(video.publicId, 'video');
-        this.logger.log(`Deleted video file from Cloudinary: ${video.publicId}`);
+        this.logger.log(
+          `Deleted video file from Cloudinary: ${video.publicId}`,
+        );
       } catch (error) {
-        this.logger.error(`Failed to delete video from Cloudinary: ${error.message}`);
+        this.logger.error(
+          `Failed to delete video from Cloudinary: ${error.message}`,
+        );
       }
     }
 
@@ -221,14 +251,16 @@ export class VideoGenerationService {
   }
 
   async findVideosWithoutDescription(): Promise<Video[]> {
-    return this.videoGenerationModel.find({
-      $or: [
-        { description: { $exists: false } },
-        { description: null },
-        { description: "" }
-      ],
-      url: { $exists: true, $ne: null }  // Only videos that have a URL
-    }).exec();
+    return this.videoGenerationModel
+      .find({
+        $or: [
+          { description: { $exists: false } },
+          { description: null },
+          { description: '' },
+        ],
+        url: { $exists: true, $ne: null }, // Only videos that have a URL
+      })
+      .exec();
   }
 
   async generateScript(type: VideoType): Promise<string> {
@@ -239,19 +271,44 @@ export class VideoGenerationService {
 
       switch (type) {
         case VideoType.BASIC:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_step1.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'basic_story_step1.txt',
+          );
           break;
         case VideoType.STRUCTURED:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_step1.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'structured_story_step1.txt',
+          );
           break;
         case VideoType.REAL:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_stories_step1.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'real_stories_step1.txt',
+          );
           break;
         case VideoType.HIDDEN_BEASTS:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_beasts_step1.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'hidden_beasts_step1.txt',
+          );
           break;
         case VideoType.HIDDEN_FILES:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_files_step1.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'hidden_files_step1.txt',
+          );
           break;
         default:
           throw new Error(`Invalid script type: ${type}`);
@@ -261,38 +318,84 @@ export class VideoGenerationService {
       const promptTemplate = await fs.readFile(templatePath, 'utf-8');
       this.logger.log(`Template loaded successfully from ${templatePath}`);
 
+      // Get all previously created stories of this type
+      const existingStories = await this.createdStoriesService.findByType(type);
+
+      // Prepare the final prompt
+      let finalPrompt = promptTemplate;
+
+      // If there are existing stories, append a warning to not repeat them
+      if (existingStories && existingStories.titles.length > 0) {
+        const existingTitles = existingStories.titles.join(', ');
+        finalPrompt += `\n\nThese are the stories that you have already created, do not repeat them: ${existingTitles}`;
+        this.logger.log(
+          `Added ${existingStories.titles.length} existing story titles to prompt`,
+        );
+      }
+
       // Generate the script using AI
-      const generatedScript = await this.aiService.generateTextFromPrompt(promptTemplate);
+      const generatedScript =
+        await this.aiService.generateTextFromPrompt(finalPrompt);
       this.logger.log('Script generated successfully');
 
       return generatedScript;
     } catch (error) {
-      this.logger.error(`Error generating script: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error generating script: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
   async generateScriptJson(type: VideoType, text: string): Promise<string> {
     try {
-      this.logger.log(`Generating script JSON with type: ${type} and text: ${text}`);
+      this.logger.log(
+        `Generating script JSON with type: ${type} and text: ${text}`,
+      );
 
       let templatePath: string;
 
       switch (type) {
         case VideoType.BASIC:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'basic_story_step2.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'basic_story_step2.txt',
+          );
           break;
         case VideoType.STRUCTURED:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'structured_story_step2.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'structured_story_step2.txt',
+          );
           break;
         case VideoType.REAL:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'real_stories_step2.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'real_stories_step2.txt',
+          );
           break;
         case VideoType.HIDDEN_BEASTS:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_beasts_step2.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'hidden_beasts_step2.txt',
+          );
           break;
         case VideoType.HIDDEN_FILES:
-          templatePath = path.join(process.cwd(), 'public', 'templates', 'hidden_files_step2.txt');
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'hidden_files_step2.txt',
+          );
           break;
         default:
           throw new Error(`Invalid script type: ${type}`);
@@ -303,20 +406,30 @@ export class VideoGenerationService {
       this.logger.log(`Template loaded successfully from ${templatePath}`);
 
       // Insert the user's text between <story></story> tags
-      promptTemplate = promptTemplate.replace('<story></story>', `<story>${text}</story>`);
+      promptTemplate = promptTemplate.replace(
+        '<story></story>',
+        `<story>${text}</story>`,
+      );
 
       // Generate the script using AI
-      const generatedScript = await this.aiService.generateTextFromPrompt(promptTemplate);
+      const generatedScript =
+        await this.aiService.generateTextFromPrompt(promptTemplate);
       this.logger.log('Script JSON generated successfully');
 
       return generatedScript;
     } catch (error) {
-      this.logger.error(`Error generating script JSON: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error generating script JSON: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
-  async getVideosByUploadedAtMonth(month: number, year: number): Promise<Video[]> {
+  async getVideosByUploadedAtMonth(
+    month: number,
+    year: number,
+  ): Promise<Video[]> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 1);
 

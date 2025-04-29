@@ -237,6 +237,27 @@
             font-size: 0.9em;
             margin-left: 10px;
         }
+
+        /* Created Stories Section Styles */
+        .created-stories-container {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .titles-textarea {
+            width: 100%;
+            min-height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .story-type-select {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
@@ -300,6 +321,26 @@
             </div>
         </div>
 
+        <!-- Created Stories section -->
+        <div class="created-stories-container">
+            <div class="section-header" onclick="toggleSection('createdStories')">
+                <h3>Created Stories Manager</h3>
+                <span class="toggle-icon" id="createdStoriesIcon">↑</span>
+            </div>
+            <div class="section-content" id="createdStoriesContent">
+                <p>Manage your created stories by type. Enter one title per line.</p>
+                <div class="form-group story-type-select">
+                    <label for="storyTypeSelect">Select Story Type:</label>
+                    <select id="storyTypeSelect" class="form-control">
+                        <option value="">Select a type</option>
+                    </select>
+                </div>
+                <textarea id="titlesList" class="titles-textarea" placeholder="Enter one title per line"></textarea>
+                <button id="saveStoriesBtn" class="btn action-button" disabled>Save Stories</button>
+                <span id="storiesSaveSuccess" class="save-success">✓ Stories saved!</span>
+            </div>
+        </div>
+
         <div class="mt-4">
             <a href="/videos/list" class="btn btn-secondary">Back to Videos</a>
         </div>
@@ -339,6 +380,9 @@
 
                 // Setup action buttons event listeners
                 setupActionButtons();
+
+                // Initialize created stories section
+                initCreatedStoriesSection();
             } catch (error) {
                 console.warn('Initialization error:', error);
             }
@@ -604,6 +648,98 @@
                     notification.style.display = 'block';
                 }
             });
+        }
+
+        async function initCreatedStoriesSection() {
+            // Load story types
+            try {
+                const response = await fetch('/created-stories/types');
+                if (!response.ok) throw new Error('Failed to fetch story types');
+
+                const data = await response.json();
+                const storyTypeSelect = document.getElementById('storyTypeSelect');
+
+                // Clear existing options (except the placeholder)
+                while (storyTypeSelect.options.length > 1) {
+                    storyTypeSelect.remove(1);
+                }
+
+                // Add types from the API
+                data.types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                    storyTypeSelect.appendChild(option);
+                });
+
+                // Set up event listeners
+                storyTypeSelect.addEventListener('change', loadStoryTitles);
+                document.getElementById('saveStoriesBtn').addEventListener('click', saveStoryTitles);
+
+                // Enable textarea if type is selected
+                storyTypeSelect.addEventListener('change', function () {
+                    const titlesList = document.getElementById('titlesList');
+                    titlesList.disabled = !this.value;
+                    document.getElementById('saveStoriesBtn').disabled = !this.value;
+                });
+            } catch (error) {
+                console.error('Error loading story types:', error);
+            }
+        }
+
+        async function loadStoryTitles() {
+            const selectedType = document.getElementById('storyTypeSelect').value;
+            if (!selectedType) return;
+
+            try {
+                const response = await fetch(`/created-stories?type=${selectedType}`);
+                if (!response.ok) throw new Error('Failed to fetch stories');
+
+                const data = await response.json();
+                const titlesList = document.getElementById('titlesList');
+
+                // Display titles, one per line
+                titlesList.value = data.titles ? data.titles.join('\n') : '';
+            } catch (error) {
+                console.error('Error loading story titles:', error);
+                alert('Failed to load story titles. Please try again.');
+            }
+        }
+
+        async function saveStoryTitles() {
+            const selectedType = document.getElementById('storyTypeSelect').value;
+            if (!selectedType) return;
+
+            const titleText = document.getElementById('titlesList').value;
+            const titles = titleText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            try {
+                const response = await fetch('/created-stories', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: selectedType,
+                        titles: titles
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save stories');
+
+                // Show success message
+                const saveSuccess = document.getElementById('storiesSaveSuccess');
+                saveSuccess.style.display = 'inline';
+                setTimeout(() => {
+                    saveSuccess.style.display = 'none';
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error saving story titles:', error);
+                alert('Failed to save story titles. Please try again.');
+            }
         }
     </script>
 </body>

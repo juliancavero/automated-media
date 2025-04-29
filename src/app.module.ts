@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { InitAdminService } from './auth/init-admin.service';
+import { CreatedStoriesModule } from './ai-video-generation/created-stories/created-stories.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { InitAdminService } from './auth/init-admin.service';
     AwsPollyModule,
     ImageModule,
     AudioModule,
+    CreatedStoriesModule,
     QueueModule,
     ExternalModule,
     AuthModule,
@@ -37,4 +39,4 @@ import { InitAdminService } from './auth/init-admin.service';
   ],
   exports: [],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,4 +1,4 @@
-import { VideoType } from "./video-types";
+import { VideoType } from "src/ai-video-generation/types";
 
 export class GenerateVideoDto {
   texts: string[];

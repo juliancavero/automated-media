@@ -12,7 +12,8 @@ import { CrearVideoDto } from '../dto/crear-video.dto';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { VideoGenerationService } from '../services/video-generation.service';
-import { VideoType } from '../dto/video-types';
+import { VideoType } from 'src/ai-video-generation/types';
+
 
 @Controller('video-generation')
 export class VideoGenerationController {
