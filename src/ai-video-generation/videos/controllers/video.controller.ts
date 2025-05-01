@@ -189,6 +189,36 @@ export class VideoController {
     }
   }
 
+  @Get('available-for-date/:date')
+  async getAvailableVideosForDate(@Param('date') dateStr: string) {
+    try {
+      // Parse date from dd-mm-yyyy format
+      const [day, month, year] = dateStr
+        .split('-')
+        .map((num) => parseInt(num, 10));
+      const date = new Date(year, month - 1, day);
+
+      if (isNaN(date.getTime())) {
+        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      }
+
+      const videos = await this.videoService.findLatestVideosByType();
+
+      return {
+        success: true,
+        date: dateStr,
+        videos,
+      };
+    } catch (error) {
+      this.logger.error(`Error getting available videos: ${error.message}`);
+      return {
+        success: false,
+        message: `Error: ${error.message}`,
+        videos: [],
+      };
+    }
+  }
+
   // Views
   @Get('create')
   @Render('ai-video-generation/video-generation')

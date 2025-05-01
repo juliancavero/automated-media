@@ -217,6 +217,110 @@
                 border-right: 1px solid #ddd;
             }
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-header h4 {
+            margin: 0;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        .video-option {
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .video-option:hover {
+            background-color: #f0f0f0;
+        }
+
+        .video-option.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+
+        .modal-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: right;
+        }
+
+        .btn-assign {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-assign:hover {
+            background-color: #45a049;
+        }
+
+        .btn-assign:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .video-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .no-videos-message {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -261,11 +365,37 @@
                         <span>&#9203;</span> {{! Clock icon - HTML entity code }}
                         {{/unless}}
                         {{/if}}
+                        {{#if (eq type "basic")}}
+                        Básico
+                        {{else if (eq type "real")}}
+                        Real
+                        {{else if (eq type "hidden_files")}}
+                        Misterios
+                        {{else if (eq type "hidden_beasts")}}
+                        Animales
+                        {{else}}
                         {{type}}
+                        {{/if}}
                     </div>
                     {{/each}}
                 </div>
                 {{/each}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for assigning videos -->
+    <div id="video-assign-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Assign Video to <span id="selected-date"></span></h4>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div id="video-list" class="video-list">
+                <!-- Videos will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button id="assign-video-btn" class="btn-assign" disabled>Assign Video</button>
             </div>
         </div>
     </div>
@@ -284,6 +414,153 @@
             markOtherMonthDays();
             populateDayNumbers();
             markPastDays();
+
+            // Video assignment modal functionality
+            const modal = document.getElementById('video-assign-modal');
+            const closeModalBtn = document.querySelector('.close-modal');
+            const videoList = document.getElementById('video-list');
+            const selectedDateSpan = document.getElementById('selected-date');
+            const assignVideoBtn = document.getElementById('assign-video-btn');
+
+            let selectedVideo = null;
+            let selectedDateStr = '';
+
+            // Add click event to calendar days that are in current month
+            document.querySelectorAll('.calendar-day:not(.other-month)').forEach(day => {
+                day.addEventListener('click', function (e) {
+                    // Don't trigger if clicking on a video item
+                    if (e.target.classList.contains('video-item')) return;
+
+                    const dateObj = new Date(this.getAttribute('data-date'));
+                    const day = dateObj.getDate();
+                    const month = dateObj.getMonth() + 1;
+                    const year = dateObj.getFullYear();
+
+                    // Format as dd-mm-yyyy
+                    selectedDateStr = `${day.toString().padStart(2, '0')}-${month.toString().padStart(2, '0')}-${year}`;
+                    selectedDateSpan.textContent = selectedDateStr;
+
+                    // Reset selected video
+                    selectedVideo = null;
+                    assignVideoBtn.disabled = true;
+
+                    // Fetch available videos
+                    fetchAvailableVideos(selectedDateStr);
+
+                    // Show modal
+                    modal.style.display = 'block';
+                });
+            });
+
+            // Close modal when clicking X
+            closeModalBtn.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Assign video button click
+            assignVideoBtn.addEventListener('click', function () {
+                if (selectedVideo) {
+                    assignVideoToDate(selectedVideo, selectedDateStr);
+                }
+            });
+
+            // Function to fetch available videos
+            function fetchAvailableVideos(dateStr) {
+                videoList.innerHTML = '<div class="no-videos-message">Loading available videos...</div>';
+
+                fetch(`/videos/available-for-date/${dateStr}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.videos.length > 0) {
+                            displayVideos(data.videos);
+                        } else {
+                            videoList.innerHTML = '<div class="no-videos-message">No available videos found.</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching available videos:', error);
+                        videoList.innerHTML = '<div class="no-videos-message">Error loading videos. Please try again.</div>';
+                    });
+            }
+
+            // Function to display videos in the modal
+            function displayVideos(videos) {
+                videoList.innerHTML = '';
+
+                videos.forEach(video => {
+                    const videoElement = document.createElement('div');
+                    videoElement.className = 'video-option';
+                    videoElement.dataset.id = video._id;
+
+                    // Display video type and anything else useful
+                    videoElement.innerHTML = `
+                        <strong>Type:</strong> ${video.type}
+                        ${video.series ? `<br><strong>Series:</strong> ${video.series}` : ''}
+                        <br><small>Created: ${new Date(video.createdAt).toLocaleDateString()}</small>
+                    `;
+
+                    videoElement.addEventListener('click', function () {
+                        // Remove selected class from all video options
+                        document.querySelectorAll('.video-option').forEach(el => {
+                            el.classList.remove('selected');
+                        });
+
+                        // Add selected class to clicked video
+                        this.classList.add('selected');
+
+                        // Store the selected video ID
+                        selectedVideo = this.dataset.id;
+
+                        // Enable assign button
+                        assignVideoBtn.disabled = false;
+                    });
+
+                    videoList.appendChild(videoElement);
+                });
+            }
+
+            // Function to assign video to selected date
+            function assignVideoToDate(videoId, dateStr) {
+                // Convert date string from dd-mm-yyyy to yyyy-mm-dd for API
+                const [day, month, year] = dateStr.split('-');
+                const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+                fetch(`/videos/${videoId}/upload-date`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ uploadDate: formattedDate })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success notification
+                            showNotification('Video assigned to date successfully!', true);
+
+                            // Close modal
+                            modal.style.display = 'none';
+
+                            // Reload the page after a short delay to show the updated calendar
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            showNotification(`Failed to assign video: ${data.message}`, false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error assigning video:', error);
+                        showNotification('Error assigning video. Please try again.', false);
+                    });
+            }
         });
 
         document.getElementById('prev-month').addEventListener('click', function () {

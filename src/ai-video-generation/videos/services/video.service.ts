@@ -474,4 +474,32 @@ export class VideoService {
         return 0.2;
     }
   }
+
+  async findLatestVideosByType(): Promise<Video[]> {
+    // Get all video types
+    const types = Object.values(VideoType);
+    const latestVideos: Video[] = [];
+
+    // For each type, find the latest video that meets our criteria
+    for (const type of types) {
+      if (type === VideoType.STRUCTURED) {
+        continue; // Skip structured videos
+      }
+      const video = await this.videoGenerationModel
+        .findOne({
+          type,
+          uploadedAt: { $exists: false },
+          status: 'finished',
+          url: { $exists: true, $ne: null }, // Ensure the video has a URL
+        })
+        .sort({ createdAt: -1 })
+        .exec();
+
+      if (video) {
+        latestVideos.push(video);
+      }
+    }
+
+    return latestVideos;
+  }
 }
