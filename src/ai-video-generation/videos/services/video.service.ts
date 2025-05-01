@@ -19,8 +19,10 @@ const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-const toBeContinuedUrl = "https://res.cloudinary.com/dkequ9kzt/image/upload/v1745508219/automated-media/k4ytllsqujwdymbomfnn.png";
-const theEndUrl = "https://res.cloudinary.com/dkequ9kzt/image/upload/v1745512154/automated-media/fkuedi0iqajs36lh2kmg.png";
+const toBeContinuedUrl =
+  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745508219/automated-media/k4ytllsqujwdymbomfnn.png';
+const theEndUrl =
+  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745512154/automated-media/fkuedi0iqajs36lh2kmg.png';
 interface VideoOptions {
   duration?: number; // Duración en segundos por imagen (solo usado si no hay audios)
   format?: string; // Formato del video (mp4, avi, etc.)
@@ -66,11 +68,27 @@ export class VideoService {
         `Creando video con ${imagenes.length} imágenes y ${audios.length} audios`,
       );
 
+      // Obtener la ruta de la música de fondo según el tipo de video
+      const backgroundMusicPath =
+        await this.videoGenerationService.getMusicByVideoId(videoId);
+      this.logger.log(`Usando música de fondo: ${backgroundMusicPath}`);
+
+      // Obtener el video para determinar el tipo y el volumen adecuado para la música
+      const video = await this.videoGenerationService.findById(videoId);
+      const musicVolume = this.videoGenerationService.getMusicVolumeByType(
+        video?.type || 'basic',
+      );
+      this.logger.log(
+        `Usando volumen de música: ${musicVolume} para tipo: ${video?.type}`,
+      );
+
       // Generar el video utilizando los datos en memoria
       const videoBuffer = await this.generateVideo(
         imagenes,
         audios,
         videoOptions,
+        backgroundMusicPath,
+        musicVolume,
       );
 
       this.logger.log(`Video generado exitosamente`);
@@ -83,15 +101,16 @@ export class VideoService {
 
       // Guardar el video en la base de datos
       const existingVideo = await this.videoGenerationService.findById(videoId);
-      const newStatus = existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
+      const newStatus =
+        existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
 
-      const video = await this.videoGenerationService.setVideoUrl(
+      const videoResult = await this.videoGenerationService.setVideoUrl(
         videoId,
         uploadResult.url,
         uploadResult.public_id,
-        newStatus
+        newStatus,
       );
-      if (!video) {
+      if (!videoResult) {
         this.logger.error('Error al guardar el video en la base de datos');
         throw new Error('Error al guardar el video en la base de datos');
       }
@@ -99,15 +118,23 @@ export class VideoService {
       // Generar descripción del video con IA
       try {
         this.logger.log('Generando descripción del video con IA...');
-        const description = await this.aiService.generateVideoDescription(uploadResult.url);
-        await this.videoGenerationService.setVideoDescription(videoId, description);
+        const description = await this.aiService.generateVideoDescription(
+          uploadResult.url,
+        );
+        await this.videoGenerationService.setVideoDescription(
+          videoId,
+          description,
+        );
         this.logger.log('Descripción del video generada exitosamente');
       } catch (descriptionError) {
-        this.logger.error('Error al generar la descripción del video:', descriptionError);
+        this.logger.error(
+          'Error al generar la descripción del video:',
+          descriptionError,
+        );
         // No interrumpimos el flujo principal si falla la generación de la descripción
       }
 
-      return video.url ?? '';
+      return videoResult.url ?? '';
     } catch (error) {
       this.logger.error('Error al crear el video:', error);
       throw error;
@@ -150,12 +177,16 @@ export class VideoService {
    * @param imagenes Array de imágenes generadas
    * @param audios Array de audios almacenados
    * @param options Opciones de configuración del video
+   * @param backgroundMusicPath Ruta del archivo de música de fondo
+   * @param musicVolume Volumen para la música de fondo
    * @returns Buffer con los datos del video generado
    */
   private async generateVideo(
     imagenes: Image[],
     audios: Audio[],
     options: VideoOptions,
+    backgroundMusicPath?: string,
+    musicVolume: number = 0.2,
   ): Promise<Buffer> {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'video-gen-'));
     const tempFiles: string[] = [];
@@ -188,16 +219,25 @@ export class VideoService {
       let toBeContinuedImagePath = '';
       if (options.addToBeContinued) {
         const imageExt = this.getExtensionFromUrl(toBeContinuedUrl);
-        toBeContinuedImagePath = path.join(tempDir, `toBeContinued.${imageExt}`);
+        toBeContinuedImagePath = path.join(
+          tempDir,
+          `toBeContinued.${imageExt}`,
+        );
 
         try {
           // Descargar la imagen "To Be Continued"
-          const toBeContinuedImageData = await this.downloadFile(toBeContinuedUrl);
-          await promisify(fs.writeFile)(toBeContinuedImagePath, toBeContinuedImageData);
+          const toBeContinuedImageData =
+            await this.downloadFile(toBeContinuedUrl);
+          await promisify(fs.writeFile)(
+            toBeContinuedImagePath,
+            toBeContinuedImageData,
+          );
 
           // Verificar que la imagen existe y tiene tamaño
           const fileStats = await promisify(fs.stat)(toBeContinuedImagePath);
-          this.logger.log(`Imagen "To Be Continued" descargada: ${toBeContinuedImagePath}, tamaño: ${fileStats.size} bytes`);
+          this.logger.log(
+            `Imagen "To Be Continued" descargada: ${toBeContinuedImagePath}, tamaño: ${fileStats.size} bytes`,
+          );
 
           if (fileStats.size === 0) {
             throw new Error('La imagen "To Be Continued" tiene tamaño cero');
@@ -213,13 +253,17 @@ export class VideoService {
             ffmpeg()
               .input(toBeContinuedImagePath)
               .outputOptions([
-                '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
-                '-pix_fmt', 'yuv420p'
+                '-vf',
+                'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
+                '-pix_fmt',
+                'yuv420p',
               ])
               .output(jpgImagePath)
               .on('end', resolve)
               .on('error', (err) => {
-                this.logger.error(`Error al convertir PNG a JPG: ${err.message}`);
+                this.logger.error(
+                  `Error al convertir PNG a JPG: ${err.message}`,
+                );
                 reject(err);
               })
               .run();
@@ -227,9 +271,13 @@ export class VideoService {
 
           // Usar la imagen convertida
           toBeContinuedImagePath = jpgImagePath;
-          this.logger.log('Imagen "To Be Continued" convertida a JPG correctamente');
+          this.logger.log(
+            'Imagen "To Be Continued" convertida a JPG correctamente',
+          );
         } catch (err) {
-          this.logger.error(`Error al preparar la imagen "To Be Continued": ${err.message}`);
+          this.logger.error(
+            `Error al preparar la imagen "To Be Continued": ${err.message}`,
+          );
           options.addToBeContinued = false;
         }
       }
@@ -247,7 +295,9 @@ export class VideoService {
 
           // Verificar que la imagen existe y tiene tamaño
           const fileStats = await promisify(fs.stat)(theEndImagePath);
-          this.logger.log(`Imagen "The End" descargada: ${theEndImagePath}, tamaño: ${fileStats.size} bytes`);
+          this.logger.log(
+            `Imagen "The End" descargada: ${theEndImagePath}, tamaño: ${fileStats.size} bytes`,
+          );
 
           if (fileStats.size === 0) {
             throw new Error('La imagen "The End" tiene tamaño cero');
@@ -263,13 +313,17 @@ export class VideoService {
             ffmpeg()
               .input(theEndImagePath)
               .outputOptions([
-                '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
-                '-pix_fmt', 'yuv420p'
+                '-vf',
+                'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=black',
+                '-pix_fmt',
+                'yuv420p',
               ])
               .output(jpgImagePath)
               .on('end', resolve)
               .on('error', (err) => {
-                this.logger.error(`Error al convertir PNG a JPG: ${err.message}`);
+                this.logger.error(
+                  `Error al convertir PNG a JPG: ${err.message}`,
+                );
                 reject(err);
               })
               .run();
@@ -279,7 +333,9 @@ export class VideoService {
           theEndImagePath = jpgImagePath;
           this.logger.log('Imagen "The End" convertida a JPG correctamente');
         } catch (err) {
-          this.logger.error(`Error al preparar la imagen "The End": ${err.message}`);
+          this.logger.error(
+            `Error al preparar la imagen "The End": ${err.message}`,
+          );
           options.addTheEnd = false;
         }
       }
@@ -320,10 +376,12 @@ export class VideoService {
           const duration = await this.getAudioDuration(audioFile.path);
           totalAudioDuration += duration;
           return duration;
-        })
+        }),
       );
 
-      this.logger.log(`Duración total de audio: ${totalAudioDuration} segundos`);
+      this.logger.log(
+        `Duración total de audio: ${totalAudioDuration} segundos`,
+      );
 
       // Crear un archivo de silencio de 1 segundo
       const silenceFilePath = path.join(tempDir, 'silence.mp3');
@@ -409,7 +467,142 @@ export class VideoService {
 
       // Verificar duración del audio concatenado final
       const finalAudioDuration = await this.getAudioDuration(concatAudioPath);
-      this.logger.log(`Duración del audio concatenado: ${finalAudioDuration} segundos`);
+      this.logger.log(
+        `Duración del audio concatenado: ${finalAudioDuration} segundos`,
+      );
+
+      // Verificar si existe el archivo de música de fondo
+      let backgroundMusicExists = false;
+      if (backgroundMusicPath) {
+        try {
+          await promisify(fs.access)(backgroundMusicPath);
+          // Verificar que el archivo es un audio válido
+          try {
+            const musicStats = await promisify(fs.stat)(backgroundMusicPath);
+            if (musicStats.size === 0) {
+              this.logger.warn(
+                `El archivo de música tiene tamaño cero: ${backgroundMusicPath}`,
+              );
+            } else {
+              // Verificar que es un archivo de audio válido
+              const musicInfo = await new Promise((resolve, reject) => {
+                ffmpeg.ffprobe(backgroundMusicPath, (err, info) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve(info);
+                  }
+                });
+              });
+              backgroundMusicExists = true;
+              this.logger.log(
+                `Archivo de música de fondo encontrado y validado: ${backgroundMusicPath}`,
+              );
+            }
+          } catch (probeErr) {
+            this.logger.warn(
+              `El archivo de música no es válido: ${backgroundMusicPath} - ${probeErr.message}`,
+            );
+          }
+        } catch (err) {
+          this.logger.warn(
+            `Archivo de música de fondo no encontrado: ${backgroundMusicPath}`,
+          );
+        }
+      }
+
+      // Archivo temporal para audio final (narración + música de fondo)
+      const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
+      tempFiles.push(finalAudioPath);
+
+      if (backgroundMusicExists) {
+        // Si tenemos música de fondo, mezclar con el audio narrado
+        try {
+          // Primero obtenemos la duración del audio concatenado
+          const concatDuration = await this.getAudioDuration(concatAudioPath);
+
+          // Nueva estrategia: más simple y directa para evitar problemas de compatibilidad
+          // Primero crear una versión de la música con volumen reducido y duración ajustada
+          const lowVolumeMusic = path.join(tempDir, 'background_music_low.mp3');
+          tempFiles.push(lowVolumeMusic);
+
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg()
+              .input(backgroundMusicPath)
+              .audioFilters(`volume=${musicVolume}`) // Usar el volumen específico para el tipo de video
+              .duration(concatDuration)
+              .outputOptions(['-c:a', 'libmp3lame', '-b:a', '128k'])
+              .output(lowVolumeMusic)
+              .on('stderr', (line) => {
+                if (line.includes('Error') || line.includes('error')) {
+                  this.logger.warn(`FFmpeg (music): ${line}`);
+                }
+              })
+              .on('end', resolve)
+              .on('error', (err) => {
+                this.logger.error(`Error al procesar música: ${err.message}`);
+                reject(err);
+              })
+              .run();
+          });
+
+          // Ahora una mezcla simple usando un comando más básico
+          await new Promise<void>((resolve, reject) => {
+            // Usamos un enfoque muy básico: simplemente mezclamos con ffmpeg usando filtro overlay
+            ffmpeg()
+              .input(concatAudioPath)
+              .input(lowVolumeMusic)
+              .outputOptions([
+                '-filter_complex',
+                '[0:a][1:a]amerge=inputs=2[a]',
+                '-map',
+                '[a]',
+                '-c:a',
+                'libmp3lame',
+                '-q:a',
+                '4',
+                '-shortest',
+              ])
+              .output(finalAudioPath)
+              .on('stderr', (line) => {
+                if (line.includes('Error') || line.includes('error')) {
+                  this.logger.warn(`FFmpeg (mix): ${line}`);
+                }
+              })
+              .on('end', () => {
+                this.logger.log('Audio mezclado correctamente');
+                resolve();
+              })
+              .on('error', (err) => {
+                this.logger.error(`Error en mezcla final: ${err.message}`);
+                // Si falla, usar el audio original
+                fs.copyFileSync(concatAudioPath, finalAudioPath);
+                resolve();
+              })
+              .run();
+          });
+
+          // Verificación final
+          if (
+            !fs.existsSync(finalAudioPath) ||
+            (await promisify(fs.stat)(finalAudioPath)).size === 0
+          ) {
+            this.logger.warn(
+              'Archivo de audio mezclado inválido, usando solo narración',
+            );
+            fs.copyFileSync(concatAudioPath, finalAudioPath);
+          }
+        } catch (mixError) {
+          this.logger.error(
+            `Falló el proceso de mezcla de audio: ${mixError.message}`,
+          );
+          // Si falla en cualquier punto, usar el audio narrado original
+          fs.copyFileSync(concatAudioPath, finalAudioPath);
+        }
+      } else {
+        // Si no hay música de fondo, usar el audio narrado original
+        fs.copyFileSync(concatAudioPath, finalAudioPath);
+      }
 
       // Crear archivo de segmentos para las imágenes (sin incluir ToBeContinued)
       const segmentsFile = path.join(tempDir, 'segments.txt');
@@ -439,7 +632,7 @@ export class VideoService {
       await promisify(fs.writeFile)(segmentsFile, segmentsContent);
       tempFiles.push(segmentsFile);
 
-      // Generar el video base primero (sin ToBeContinued ni TheEnd)
+      // Generar el video base usando el audio final (con música)
       const baseVideoPath = path.join(tempDir, `base_video.${options.format}`);
       tempFiles.push(baseVideoPath);
 
@@ -447,19 +640,30 @@ export class VideoService {
         ffmpeg()
           .input(segmentsFile)
           .inputOptions('-f', 'concat', '-safe', '0')
-          .input(concatAudioPath)
+          .input(finalAudioPath) // Usar el audio final con música
           .outputOptions([
-            '-pix_fmt', 'yuv420p',
-            '-c:v', 'libx264',
-            '-preset', 'medium',
-            '-profile:v', 'high',
-            '-crf', '23',
-            '-c:a', 'aac',
-            '-b:a', '192k',
-            '-ar', '44100',
-            '-s', '720:1280',
-            '-r', '30',
-            '-max_muxing_queue_size', '9999'
+            '-pix_fmt',
+            'yuv420p',
+            '-c:v',
+            'libx264',
+            '-preset',
+            'medium',
+            '-profile:v',
+            'high',
+            '-crf',
+            '23',
+            '-c:a',
+            'aac',
+            '-b:a',
+            '192k',
+            '-ar',
+            '44100',
+            '-s',
+            '720:1280',
+            '-r',
+            '30',
+            '-max_muxing_queue_size',
+            '9999',
           ])
           .output(baseVideoPath)
           .on('end', resolve)
@@ -471,12 +675,17 @@ export class VideoService {
       });
 
       // Crear el video final, añadiendo ToBeContinued o TheEnd si es necesario
-      if ((options.addToBeContinued && toBeContinuedImagePath) || (options.addTheEnd && theEndImagePath)) {
+      if (
+        (options.addToBeContinued && toBeContinuedImagePath) ||
+        (options.addTheEnd && theEndImagePath)
+      ) {
         await new Promise<void>((resolve, reject) => {
           // Obtener la duración del video base
           ffmpeg.ffprobe(baseVideoPath, (err, metadata) => {
             if (err) {
-              this.logger.error(`Error al obtener duración del video base: ${err.message}`);
+              this.logger.error(
+                `Error al obtener duración del video base: ${err.message}`,
+              );
               return reject(err);
             }
 
@@ -499,23 +708,33 @@ export class VideoService {
               .input(overlayImage)
               .complexFilter([
                 // Overlay de la imagen en los últimos 2 segundos
-                `[0:v][1:v]overlay=0:0:enable='between(t,${overlayStart},${baseDuration})'[outv]`
+                `[0:v][1:v]overlay=0:0:enable='between(t,${overlayStart},${baseDuration})'[outv]`,
               ])
               .outputOptions([
-                '-map', '[outv]',
-                '-map', '0:a',
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-crf', '23',
-                '-c:a', 'copy'
+                '-map',
+                '[outv]',
+                '-map',
+                '0:a',
+                '-c:v',
+                'libx264',
+                '-preset',
+                'medium',
+                '-crf',
+                '23',
+                '-c:a',
+                'copy',
               ])
               .output(outputVideoPath)
               .on('end', () => {
-                this.logger.log(`Video con "${overlayType}" generado exitosamente`);
+                this.logger.log(
+                  `Video con "${overlayType}" generado exitosamente`,
+                );
                 resolve();
               })
               .on('error', (err) => {
-                this.logger.error(`Error al añadir "${overlayType}": ${err.message}`);
+                this.logger.error(
+                  `Error al añadir "${overlayType}": ${err.message}`,
+                );
                 // Si falla, usamos el video base
                 fs.copyFileSync(baseVideoPath, outputVideoPath);
                 resolve();
@@ -530,7 +749,9 @@ export class VideoService {
 
       // Verificar que el video se generó correctamente
       const videoStats = await promisify(fs.stat)(outputVideoPath);
-      this.logger.log(`Video generado: ${outputVideoPath}, tamaño: ${videoStats.size} bytes`);
+      this.logger.log(
+        `Video generado: ${outputVideoPath}, tamaño: ${videoStats.size} bytes`,
+      );
 
       // Verificar duración del video final
       const videoDuration = await this.getVideoDuration(outputVideoPath);
@@ -575,7 +796,9 @@ export class VideoService {
     return new Promise((resolve, reject) => {
       ffmpeg.ffprobe(audioFilePath, (err, metadata) => {
         if (err) {
-          this.logger.error(`Error al obtener duración de audio: ${err.message}`);
+          this.logger.error(
+            `Error al obtener duración de audio: ${err.message}`,
+          );
           return reject(err);
         }
 
@@ -593,7 +816,9 @@ export class VideoService {
     return new Promise((resolve, reject) => {
       ffmpeg.ffprobe(videoFilePath, (err, metadata) => {
         if (err) {
-          this.logger.error(`Error al obtener duración de video: ${err.message}`);
+          this.logger.error(
+            `Error al obtener duración de video: ${err.message}`,
+          );
           return reject(err);
         }
 

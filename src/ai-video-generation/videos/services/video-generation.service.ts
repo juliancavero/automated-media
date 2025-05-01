@@ -440,4 +440,38 @@ export class VideoGenerationService {
       },
     });
   }
+
+  async getMusicByVideoId(videoId: string): Promise<string> {
+    try {
+      // Find the video by id
+      const video = await this.videoGenerationModel.findById(videoId);
+
+      if (!video) {
+        throw new NotFoundException(`Video with ID ${videoId} not found`);
+      }
+
+      // Get the video type and return the music path
+      return `public/music/${video.type}.mp3`;
+    } catch (error) {
+      this.logger.error(
+        `Error getting music for video ${videoId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  getMusicVolumeByType(type: string): number {
+    switch (type) {
+      case VideoType.HIDDEN_BEASTS:
+        return 0.05;
+      case VideoType.HIDDEN_FILES:
+        return 0.3;
+      case VideoType.BASIC:
+        return 0.25;
+      case VideoType.REAL:
+      default:
+        return 0.2;
+    }
+  }
 }
