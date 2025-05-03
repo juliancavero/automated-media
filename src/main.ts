@@ -126,8 +126,8 @@ async function bootstrap() {
     return new Date();
   });
 
-  const port = process.env.PORT ?? 8080;
-  const host = process.env.HOST ?? 'localhost';
+  const port = process.env.PORT ?? 10000;
+  const host = process.env.HOST ?? '0.0.0.0';
 
   await app.listen(port, host);
   logger.log(`Application is running on: http://${host}:${port}`);
