@@ -118,12 +118,8 @@ export class VideoController {
     @Param('id') id: string,
     @Body() body: { lang: Languages },
   ): Promise<{ success: boolean; message: string; newVideoId?: string }> {
-    const targetLanguage = getTargetLanguage(body.lang);
     try {
-      const result = await this.videoService.generateLanguageCopy(
-        id,
-        targetLanguage,
-      );
+      const result = await this.videoService.generateLanguageCopy(id);
       if (!result) {
         return {
           success: false,
@@ -233,8 +229,8 @@ export class VideoController {
       if (isNaN(date.getTime())) {
         throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
       }
-
-      const videos = await this.videoService.findLatestVideosByType();
+      const lang = Languages.EN;
+      const videos = await this.videoService.findLatestVideosByType(lang);
 
       return {
         success: true,
@@ -378,10 +374,12 @@ export class VideoController {
       ? parseInt(yearParam, 10)
       : currentDate.getFullYear();
 
+    const lang = Languages.EN;
     // Get videos for the selected month
     const videos = await this.videoService.getVideosByUploadedAtMonth(
       month,
       year,
+      lang,
     );
 
     // Generate calendar data

@@ -144,14 +144,13 @@ export class VideoService {
     });
   }
 
-  async generateLanguageCopy(
-    id: string,
-    lang: Languages,
-  ): Promise<Video | null> {
+  async generateLanguageCopy(id: string): Promise<Video | null> {
     const video = await this.videoModel.findById(id);
     if (!video) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
+
+    const lang = video.lang === Languages.EN ? Languages.ES : Languages.EN;
 
     const translatedTexts = await this.aiService.translateTexts(
       video.texts,
@@ -272,11 +271,24 @@ export class VideoService {
     id: string,
     uploadDate: Date,
   ): Promise<Video | null> {
-    return await this.videoModel.findByIdAndUpdate(
+    const videoToUpdate = await this.videoModel.findByIdAndUpdate(
       id,
       { uploadedAt: uploadDate },
       { new: true, runValidators: true },
     );
+    if (!videoToUpdate) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+    const relatedVideo = videoToUpdate.related;
+    if (relatedVideo) {
+      await this.videoModel.findByIdAndUpdate(
+        relatedVideo,
+        { uploadedAt: uploadDate },
+        { new: true, runValidators: true },
+      );
+    }
+
+    return videoToUpdate;
   }
 
   async deleteVideo(id: string): Promise<void> {
@@ -521,11 +533,13 @@ export class VideoService {
   async getVideosByUploadedAtMonth(
     month: number,
     year: number,
+    lang: Languages,
   ): Promise<Video[]> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 1);
 
     return this.videoModel.find({
+      lang,
       uploadedAt: {
         $gte: startDate,
         $lt: endDate,
@@ -567,7 +581,7 @@ export class VideoService {
     }
   }
 
-  async findLatestVideosByType(): Promise<Video[]> {
+  async findLatestVideosByType(lang: Languages): Promise<Video[]> {
     // Get all video types
     const types = Object.values(VideoType);
     const latestVideos: Video[] = [];
@@ -579,6 +593,7 @@ export class VideoService {
       }
       const video = await this.videoModel
         .findOne({
+          lang,
           type,
           uploadedAt: { $exists: false },
           status: 'finished',
