@@ -338,9 +338,9 @@
         <div class="calendar-container">
             <div class="calendar-header">
                 <div class="calendar-navigation">
-                    <button id="prev-month">&lt; Previous</button>
+                    <button id="prev-month" class="calendar-nav">&lt; Previous</button>
                     <h3 id="current-month" class="month-display">{{currentMonth}}</h3>
-                    <button id="next-month">Next &gt;</button>
+                    <button id="next-month" class="calendar-nav">Next &gt;</button>
                 </div>
             </div>
 
@@ -475,8 +475,8 @@
             // Function to fetch available videos
             function fetchAvailableVideos(dateStr) {
                 videoList.innerHTML = '<div class="no-videos-message">Loading available videos...</div>';
-
-                fetch(`/videos/available-for-date/${dateStr}`)
+                const lang = localStorage.getItem('lang') || 'en';
+                fetch(`/videos/available-for-date/${dateStr}?lang=${lang}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.videos.length > 0) {
@@ -590,7 +590,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             let month = parseInt(urlParams.get('month') || new Date().getMonth() + 1);
             let year = parseInt(urlParams.get('year') || new Date().getFullYear());
-
+            const lang = localStorage.getItem('lang') || 'en';
             month += direction;
 
             if (month > 12) {
@@ -601,7 +601,7 @@
                 year--;
             }
 
-            window.location.href = `?month=${month}&year=${year}`;
+            window.location.href = `/videos/calendar?month=${month}&year=${year}&lang=${lang}`;
         }
 
         function showNotification(message, isSuccess) {

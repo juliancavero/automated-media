@@ -218,7 +218,10 @@ export class VideoController {
   }
 
   @Get('available-for-date/:date')
-  async getAvailableVideosForDate(@Param('date') dateStr: string) {
+  async getAvailableVideosForDate(
+    @Param('date') dateStr: string,
+    @Query('lang') lang: Languages,
+  ) {
     try {
       // Parse date from dd-mm-yyyy format
       const [day, month, year] = dateStr
@@ -229,7 +232,6 @@ export class VideoController {
       if (isNaN(date.getTime())) {
         throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
       }
-      const lang = Languages.EN;
       const videos = await this.videoService.findLatestVideosByType(lang);
 
       return {
@@ -362,6 +364,7 @@ export class VideoController {
   @Get('calendar')
   @Render('ai-video-generation/video-calendar')
   async renderVideoCalendar(
+    @Query('lang') lang: Languages,
     @Query('month') monthParam?: string,
     @Query('year') yearParam?: string,
   ) {
@@ -374,7 +377,6 @@ export class VideoController {
       ? parseInt(yearParam, 10)
       : currentDate.getFullYear();
 
-    const lang = Languages.EN;
     // Get videos for the selected month
     const videos = await this.videoService.getVideosByUploadedAtMonth(
       month,

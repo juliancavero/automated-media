@@ -277,14 +277,14 @@ export class VideoService {
     if (!videoToUpdate) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
-    const relatedVideo = videoToUpdate.related;
+    /* const relatedVideo = videoToUpdate.related;
     if (relatedVideo) {
       await this.videoModel.findByIdAndUpdate(
         relatedVideo,
         { uploadedAt: uploadDate },
         { new: true, runValidators: true },
       );
-    }
+    } */
 
     return videoToUpdate;
   }
