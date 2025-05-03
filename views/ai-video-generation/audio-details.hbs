@@ -87,6 +87,7 @@
 
 <body>
   <div class='container'>
+    {{> languageselector}}
     {{> navmenu}}
 
     <div class='audio-container'>
@@ -126,6 +127,20 @@
           <div class='detail-label'>Video ID:</div>
           <div class='detail-value'>
             <a href='/videos/list/{{audio.videoId}}'>{{audio.videoId}}</a>
+          </div>
+        </div>
+        {{/if}}
+        {{#if audio.lang}}
+        <div class='detail-row'>
+          <div class='detail-label'>Language:</div>
+          <div class='detail-value'>
+            {{audio.lang}}
+            {{#if (eq audio.lang 'es')}}
+            <span style='margin-left: 5px;'>🇪🇸</span>
+            {{/if}}
+            {{#if (eq audio.lang 'en')}}
+            <span style='margin-left: 5px;'>🇬🇧</span>
+            {{/if}}
           </div>
         </div>
         {{/if}}

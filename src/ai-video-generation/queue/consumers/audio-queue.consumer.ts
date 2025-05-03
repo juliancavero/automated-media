@@ -2,10 +2,12 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AudioGenerationService } from '../../audios/services/audio-generation.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 interface AudioGenerationJob {
   text: string;
   id: string;
+  lang: Languages;
 }
 
 @Processor('audio-generation')
@@ -17,7 +19,7 @@ export class AudioQueueConsumer extends WorkerHost {
   }
 
   async process(job: Job<AudioGenerationJob>): Promise<any> {
-    const { text, id } = job.data;
+    const { text, id, lang } = job.data;
     this.logger.debug(
       `Processing audio generation for AUDIO ID ${id} for text: ${text.substring(0, 30)}...`,
     );
@@ -26,6 +28,7 @@ export class AudioQueueConsumer extends WorkerHost {
       const audioUrl = await this.audioGenerationService.generateAudioFromText(
         text,
         id,
+        lang,
       );
 
       this.logger.debug(

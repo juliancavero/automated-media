@@ -1,17 +1,16 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { GoogleAIUploadService } from '../google-ai-upload/google-ai-upload.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Languages } from 'src/ai-video-generation/types';
 
 const VIDEO_DESCRIPTION_PROMPT =
-  'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 40 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #shorthorror, #urbanlegend, #unusual, #stories, #story, and similar trending tags. Respond with only the caption text.';
+  'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 40 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #shorthorror, #urbanlegend, #unusual, #stories, #story, and similar trending tags in {{lang}}. Respond with only the caption text, written in {{lang}}.';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly ai: GoogleGenerativeAI;
 
-  constructor(
-    private readonly googleAIUploadService: GoogleAIUploadService,
-  ) {
+  constructor(private readonly googleAIUploadService: GoogleAIUploadService) {
     // Get API key from environment variable
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
@@ -22,7 +21,10 @@ export class AiService {
     this.ai = new GoogleGenerativeAI(apiKey || '');
   }
 
-  async generateVideoDescription(videoUrl: string): Promise<string> {
+  async generateVideoDescription(
+    videoUrl: string,
+    lang: Languages,
+  ): Promise<string> {
     this.logger.log(`Generating description for video URL: ${videoUrl}`);
 
     if (!process.env.GOOGLE_AI_API_KEY) {
@@ -33,9 +35,8 @@ export class AiService {
       // Upload the video URL directly to Google AI
       this.logger.log(`Uploading video to Google AI: ${videoUrl}`);
 
-      const file = await this.googleAIUploadService.uploadVideoFromUrl(
-        videoUrl,
-      );
+      const file =
+        await this.googleAIUploadService.uploadVideoFromUrl(videoUrl);
 
       try {
         this.logger.log(`Generating description for video: ${file.name}`);
@@ -46,7 +47,11 @@ export class AiService {
             fileUri: file.uri,
           },
         };
-        const textPart = { text: VIDEO_DESCRIPTION_PROMPT };
+        const promptWithLang = VIDEO_DESCRIPTION_PROMPT.replace(
+          '{{lang}}',
+          this.translateLanguage(lang),
+        );
+        const textPart = { text: promptWithLang };
 
         const result = await model.generateContent([fileDataPart, textPart]);
 
@@ -94,6 +99,60 @@ export class AiService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  async translateTexts(texts: string[], lang: Languages): Promise<string[]> {
+    this.logger.log(`Translating texts to ${lang}: ${texts}`);
+
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      throw new UnauthorizedException('GOOGLE_AI_API_KEY is not set');
+    }
+    if (!texts || texts.length === 0) {
+      this.logger.warn('No texts provided for translation');
+      return [];
+    }
+    if (!lang) {
+      this.logger.warn('No language provided for translation');
+      throw new Error('Language is required for translation');
+    }
+
+    try {
+      const model = this.ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const translatedLang = this.translateLanguage(lang);
+      const translationPrompt = `Translate the following text to ${translatedLang}. Return ONLY the translation, without any additional text or suggestions:`;
+
+      const translatedTexts: string[] = [];
+      for (const text of texts) {
+        const translation = await model.generateContent(
+          translationPrompt + text,
+        );
+        const translatedText = translation.response.text();
+        if (!translatedText) {
+          throw new Error(`Could not translate the text: ${text}`);
+        }
+        translatedTexts.push(translatedText);
+      }
+
+      this.logger.log(`Translated texts: ${translatedTexts}`);
+      return translatedTexts;
+    } catch (error) {
+      this.logger.error(
+        `Error translating texts: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  translateLanguage(lang: Languages): string {
+    switch (lang) {
+      case 'en':
+        return 'English';
+      case 'es':
+        return 'Spanish';
+      default:
+        throw new Error(`Unsupported language: ${lang}`);
     }
   }
 }

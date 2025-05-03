@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, ObjectId } from 'mongoose';
+import { Languages } from 'src/ai-video-generation/types';
 
 export type AudioDocument = Audio & Document;
 
@@ -9,6 +10,9 @@ export class Audio {
 
   @Prop({ required: true })
   text: string;
+
+  @Prop({ required: true, enum: Languages })
+  lang: string;
 
   @Prop()
   url?: string;

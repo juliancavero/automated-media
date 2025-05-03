@@ -1,0 +1,69 @@
+<style>
+    /* Posicionamiento y estilos */
+    #languageselector {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        display: flex;
+        gap: 10px;
+        z-index: 1000;
+    }
+
+    .language {
+        cursor: pointer;
+        font-size: 32px;
+    }
+
+    .selected {
+        border: 2px solid blue;
+        border-radius: 4px;
+        padding: 2px;
+    }
+</style>
+<div id="languageselector">
+    <span class="language" id="lang-es" data-lang="es">
+        <!-- Puedes reemplazar el contenido por una imagen si lo prefieres -->
+        🇪🇸
+    </span>
+    <span class="language" id="lang-en" data-lang="en">
+        <!-- Puedes reemplazar el contenido por una imagen si lo prefieres -->
+        🇬🇧
+    </span>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const lang = localStorage.getItem('lang') || 'en';
+        const currentUrl = new URL(window.location.href);
+        const params = new URLSearchParams(currentUrl.search);
+        params.set('lang', lang);
+        currentUrl.search = params.toString();
+        window.history.replaceState({}, '', currentUrl);
+
+        var langSpan = document.getElementById('lang-' + lang);
+        if (langSpan) {
+            langSpan.classList.add('selected');
+        }
+    });
+
+    (function () {
+        var langElements = document.querySelectorAll('.language');
+        function updateSelection() {
+            var currentLang = localStorage.getItem('lang') || 'en';
+            langElements.forEach(function (el) {
+                if (el.getAttribute('data-lang') === currentLang) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang;
+        }
+        langElements.forEach(function (el) {
+            el.addEventListener('click', async function () {
+                var newLang = el.getAttribute('data-lang');
+                localStorage.setItem('lang', newLang);
+                await updateSelection();
+            });
+        });
+    })();
+</script>

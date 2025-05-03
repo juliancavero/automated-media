@@ -11,7 +11,7 @@ import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { VideoType } from 'src/ai-video-generation/types';
+import { Languages, VideoType } from 'src/ai-video-generation/types';
 import { CreatedStoriesService } from 'src/ai-video-generation/created-stories/services/created-stories.service';
 
 @Injectable()
@@ -27,7 +27,7 @@ export class VideoService {
     private readonly aiService: AiService,
     private readonly createdStoriesService: CreatedStoriesService,
     @InjectModel(Video.name)
-    private readonly videoGenerationModel: Model<VideoDocument>,
+    private readonly videoModel: Model<VideoDocument>,
   ) {}
 
   async findAll(
@@ -36,6 +36,8 @@ export class VideoService {
     statusFilter?: string,
     page = 1,
     limit = 10,
+    lang: Languages = Languages.EN,
+    notRelated = false,
   ): Promise<{ videos: Video[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;
 
@@ -54,13 +56,21 @@ export class VideoService {
       query = { ...query, status: statusFilter };
     }
 
+    if (lang) {
+      query = { ...query, lang };
+    }
+
+    if (notRelated) {
+      query = { ...query, related: { $exists: false } };
+    }
+
     const [videos, total] = await Promise.all([
-      this.videoGenerationModel
+      this.videoModel
         .find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      this.videoGenerationModel.countDocuments(query),
+      this.videoModel.countDocuments(query),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -73,17 +83,18 @@ export class VideoService {
   }
 
   async findOne(id: string): Promise<Video | null> {
-    return this.videoGenerationModel.findById(id);
+    return this.videoModel.findById(id);
   }
 
   async createVideoJob(generateVideoDto: GenerateVideoDto): Promise<boolean> {
     try {
-      const { texts, images, series, type } = generateVideoDto;
+      const { texts, images, series, type, lang } = generateVideoDto;
       // Create and save VideoGeneration entity
-      const videoGeneration = await this.videoGenerationModel.create({
+      const videoGeneration = await this.videoModel.create({
         texts,
         series, // Add the series property
         type: type || 'basic', // Set the type with default
+        lang,
       });
 
       const videoId = String(videoGeneration._id);
@@ -100,7 +111,12 @@ export class VideoService {
 
       // Create audio generation tasks
       for (const [index, text] of texts.entries()) {
-        const audio = await this.audioService.createAudio(text, videoId, index);
+        const audio = await this.audioService.createAudio(
+          text,
+          videoId,
+          index,
+          lang,
+        );
 
         await this.audioQueue.addAudioGenerationJob(audio);
         this.logger.log(`Created audio entity with ID: ${audio._id}`);
@@ -119,13 +135,77 @@ export class VideoService {
   }
 
   async findById(id: string): Promise<Video | null> {
-    return this.videoGenerationModel.findById(id);
+    return this.videoModel.findById(id);
   }
 
   async update(id: string, videoGeneration: Video): Promise<Video | null> {
-    return this.videoGenerationModel.findByIdAndUpdate(id, videoGeneration, {
+    return this.videoModel.findByIdAndUpdate(id, videoGeneration, {
       new: true,
     });
+  }
+
+  async generateLanguageCopy(
+    id: string,
+    lang: Languages,
+  ): Promise<Video | null> {
+    const video = await this.videoModel.findById(id);
+    if (!video) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+
+    const translatedTexts = await this.aiService.translateTexts(
+      video.texts,
+      lang,
+    );
+
+    const newVideo = await this.videoModel.create({
+      ...video.toObject(),
+      _id: undefined, // Clear the ID to create a new document
+      url: undefined, // Clear the URL to create a new document
+      publicId: undefined, // Clear the publicId to create a new document
+      status: 'pending', // Set the status to pending
+      createdAt: undefined, // Clear the createdAt to create a new document
+      updatedAt: undefined, // Clear the updatedAt to create a new document
+      lang,
+      texts: translatedTexts,
+      related: video._id.toString(), // Set the related field to the original video ID
+    });
+    this.logger.log(`Created new video copy with ID: ${newVideo._id}`);
+
+    // Update the original video to set the related field
+    video.related = newVideo._id.toString();
+    await video.save();
+
+    const images = await this.imageService.findByVideoId(id);
+    for (const image of images) {
+      await this.imageService.copyImage(
+        image._id.toString(),
+        newVideo._id.toString(),
+      );
+    }
+
+    const audios = await this.audioService.findByVideoId(id);
+
+    audios.forEach(async (audio, index) => {
+      const newAudio = await this.audioService.copyAudio(
+        audio._id.toString(),
+        newVideo._id.toString(),
+        translatedTexts[index], // Use the translated text
+        lang,
+      );
+      if (!newAudio) {
+        this.logger.error(
+          `Failed to copy audio with ID ${audio._id} for new video ${newVideo._id}`,
+        );
+        return;
+      }
+      await this.audioQueue.addAudioGenerationJob(newAudio);
+    });
+
+    this.logger.log(
+      `Added image and audio generation jobs for new video with ID: ${newVideo._id}`,
+    );
+    return newVideo;
   }
 
   async setVideoUrl(
@@ -134,7 +214,7 @@ export class VideoService {
     publicId: string,
     status: string,
   ): Promise<Video | null> {
-    return await this.videoGenerationModel.findByIdAndUpdate(
+    return await this.videoModel.findByIdAndUpdate(
       id,
       { url, publicId, status },
       { new: true, runValidators: true },
@@ -145,7 +225,7 @@ export class VideoService {
     id: string,
     description: string,
   ): Promise<Video | null> {
-    return await this.videoGenerationModel.findByIdAndUpdate(
+    return await this.videoModel.findByIdAndUpdate(
       id,
       { description },
       { new: true, runValidators: true },
@@ -154,7 +234,7 @@ export class VideoService {
 
   async regenerateVideoDescription(id: string): Promise<boolean> {
     try {
-      const video = await this.videoGenerationModel.findById(id);
+      const video = await this.videoModel.findById(id);
 
       if (!video || !video.url) {
         this.logger.error(`Video with ID ${id} not found or has no URL`);
@@ -164,6 +244,7 @@ export class VideoService {
       this.logger.log(`Regenerating description for video ${id}`);
       const description = await this.aiService.generateVideoDescription(
         video.url,
+        video.lang as Languages,
       );
 
       await this.setVideoDescription(id, description);
@@ -180,7 +261,7 @@ export class VideoService {
   }
 
   async setVideoUploaded(id: string): Promise<Video | null> {
-    return await this.videoGenerationModel.findByIdAndUpdate(
+    return await this.videoModel.findByIdAndUpdate(
       id,
       { status: 'uploaded' },
       { new: true, runValidators: true },
@@ -191,7 +272,7 @@ export class VideoService {
     id: string,
     uploadDate: Date,
   ): Promise<Video | null> {
-    return await this.videoGenerationModel.findByIdAndUpdate(
+    return await this.videoModel.findByIdAndUpdate(
       id,
       { uploadedAt: uploadDate },
       { new: true, runValidators: true },
@@ -199,7 +280,7 @@ export class VideoService {
   }
 
   async deleteVideo(id: string): Promise<void> {
-    const video = await this.videoGenerationModel.findById(id).exec();
+    const video = await this.videoModel.findById(id).exec();
     if (!video) {
       throw new NotFoundException(`Video with ID ${id} not found`);
     }
@@ -246,12 +327,12 @@ export class VideoService {
     }
 
     // Delete the video record from database
-    await this.videoGenerationModel.findByIdAndDelete(id).exec();
+    await this.videoModel.findByIdAndDelete(id).exec();
     this.logger.log(`Deleted video from database: ${id}`);
   }
 
   async findVideosWithoutDescription(): Promise<Video[]> {
-    return this.videoGenerationModel
+    return this.videoModel
       .find({
         $or: [
           { description: { $exists: false } },
@@ -263,7 +344,7 @@ export class VideoService {
       .exec();
   }
 
-  async generateScript(type: VideoType): Promise<string> {
+  async generateScript(type: VideoType, lang: Languages): Promise<string> {
     try {
       this.logger.log(`Generating script with type: ${type}`);
 
@@ -333,6 +414,8 @@ export class VideoService {
         );
       }
 
+      finalPrompt = finalPrompt.replace('{{lang}}', this.translateLang(lang));
+
       // Generate the script using AI
       const generatedScript =
         await this.aiService.generateTextFromPrompt(finalPrompt);
@@ -348,7 +431,11 @@ export class VideoService {
     }
   }
 
-  async generateScriptJson(type: VideoType, text: string): Promise<string> {
+  async generateScriptJson(
+    type: VideoType,
+    text: string,
+    lang: Languages,
+  ): Promise<string> {
     try {
       this.logger.log(
         `Generating script JSON with type: ${type} and text: ${text}`,
@@ -411,6 +498,11 @@ export class VideoService {
         `<story>${text}</story>`,
       );
 
+      promptTemplate = promptTemplate.replace(
+        '{{lang}}',
+        this.translateLang(lang),
+      );
+
       // Generate the script using AI
       const generatedScript =
         await this.aiService.generateTextFromPrompt(promptTemplate);
@@ -433,7 +525,7 @@ export class VideoService {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 1);
 
-    return this.videoGenerationModel.find({
+    return this.videoModel.find({
       uploadedAt: {
         $gte: startDate,
         $lt: endDate,
@@ -444,7 +536,7 @@ export class VideoService {
   async getMusicByVideoId(videoId: string): Promise<string> {
     try {
       // Find the video by id
-      const video = await this.videoGenerationModel.findById(videoId);
+      const video = await this.videoModel.findById(videoId);
 
       if (!video) {
         throw new NotFoundException(`Video with ID ${videoId} not found`);
@@ -468,7 +560,7 @@ export class VideoService {
       case VideoType.HIDDEN_FILES:
         return 0.3;
       case VideoType.BASIC:
-        return 0.25;
+        return 0.15;
       case VideoType.REAL:
       default:
         return 0.2;
@@ -485,7 +577,7 @@ export class VideoService {
       if (type === VideoType.STRUCTURED) {
         continue; // Skip structured videos
       }
-      const video = await this.videoGenerationModel
+      const video = await this.videoModel
         .findOne({
           type,
           uploadedAt: { $exists: false },
@@ -501,5 +593,16 @@ export class VideoService {
     }
 
     return latestVideos;
+  }
+
+  translateLang(lang: Languages): string {
+    switch (lang) {
+      case Languages.EN:
+        return 'English';
+      case Languages.ES:
+        return 'Spanish';
+      default:
+        return 'English';
+    }
   }
 }

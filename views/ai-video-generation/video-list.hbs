@@ -287,6 +287,7 @@
 
 <body>
   <div class='container'>
+    {{> languageselector}}
     <!-- Navigation menu -->
     {{> navmenu}}
 
@@ -322,7 +323,14 @@
             <option value="uploaded" {{#if (eq currentStatusFilter 'uploaded' )}}selected{{/if}}>Uploaded</option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="notRelatedFilter">Not Related</label>
+          <input type="checkbox" id="notRelatedFilter" name="notRelated" {{#if currentRelatedFilter}} checked="true"
+            {{/if}}>
+        </div>
         <button type="button" id="applySeriesFilter" class="btn btn-primary">Filter Series</button>
+
+
       </form>
 
       {{#if currentSeriesFilter}}
@@ -386,11 +394,11 @@
       <ul class="pagination">
         {{#if pagination.hasPrev}}
         <li>
-          <a
+          <a class="pagination-link"
             href="/videos/list?page=1{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">First</a>
         </li>
         <li>
-          <a
+          <a class="pagination-link"
             href="/videos/list?page={{pagination.prevPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Previous</a>
         </li>
         {{else}}
@@ -404,18 +412,18 @@
 
         {{#each (generatePageNumbers pagination.currentPage pagination.totalPages)}}
         <li {{#if (eq this ../pagination.currentPage)}}class="active" {{/if}}>
-          <a
+          <a class="pagination-link"
             href="/videos/list?page={{this}}{{#if ../currentSeriesFilter}}&series={{../currentSeriesFilter}}{{/if}}{{#if ../currentTypeFilter}}&type={{../currentTypeFilter}}{{/if}}{{#if ../currentStatusFilter}}&status={{../currentStatusFilter}}{{/if}}">{{this}}</a>
         </li>
         {{/each}}
 
         {{#if pagination.hasNext}}
         <li>
-          <a
+          <a class="pagination-link"
             href="/videos/list?page={{pagination.nextPage}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Next</a>
         </li>
         <li>
-          <a
+          <a class="pagination-link"
             href="/videos/list?page={{pagination.totalPages}}{{#if currentSeriesFilter}}&series={{currentSeriesFilter}}{{/if}}{{#if currentTypeFilter}}&type={{currentTypeFilter}}{{/if}}{{#if currentStatusFilter}}&status={{currentStatusFilter}}{{/if}}">Last</a>
         </li>
         {{else}}
@@ -457,17 +465,20 @@
       const seriesFilter = document.getElementById('seriesFilter');
       const typeFilter = document.getElementById('typeFilter');
       const statusFilter = document.getElementById('statusFilter');
+      const notRelatedFilter = document.getElementById('notRelatedFilter');
       const applySeriesFilterBtn = document.getElementById('applySeriesFilter');
 
       function applyAllFilters() {
         const series = seriesFilter.value;
         const type = typeFilter.value;
         const status = statusFilter.value;
+        const notRelated = notRelatedFilter.checked;
 
         let url = '/videos/list?';
         if (series) url += `series=${encodeURIComponent(series)}&`;
         if (type) url += `type=${encodeURIComponent(type)}&`;
         if (status) url += `status=${encodeURIComponent(status)}&`;
+        if (notRelated) url += `notRelated=true&`;
 
         window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
       }
@@ -476,16 +487,20 @@
         const series = seriesFilter.value;
         const type = typeFilter.value;
         const status = statusFilter.value;
+        const notRelated = notRelatedFilter.checked;
+        const lang = localStorage.getItem('lang') || 'en';
 
-        let url = '/videos/list?';
+        let url = '/videos/list?lang=' + lang + '&';
         if (series) url += `series=${encodeURIComponent(series)}&`;
         if (type) url += `type=${encodeURIComponent(type)}&`;
         if (status) url += `status=${encodeURIComponent(status)}&`;
+        if (notRelated) url += `notRelated=true&`;
 
         window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
       }
 
       // Apply type and status filters automatically on change
+      notRelatedFilter.addEventListener('change', applyTypeAndStatusFilter);
       typeFilter.addEventListener('change', applyTypeAndStatusFilter);
       statusFilter.addEventListener('change', applyTypeAndStatusFilter);
 

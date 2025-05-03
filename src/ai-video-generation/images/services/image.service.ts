@@ -14,7 +14,7 @@ export class ImageService {
     private readonly imageModel: Model<ImageDocument>,
     private readonly imageQueueService: ImageQueueService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   async createImage(
     text: string,
@@ -28,15 +28,34 @@ export class ImageService {
     });
   }
 
-  async getAllImages(page = 1, limit = 10): Promise<{ images: Image[], total: number, pages: number }> {
+  async copyImage(id: string, videoId: string): Promise<Image | null> {
+    const image = await this.imageModel.findById(id).exec();
+    if (!image) {
+      throw new NotFoundException(`Image with ID ${id} not found`);
+    }
+
+    return this.imageModel.create({
+      ...image.toObject(),
+      _id: undefined, // Clear the _id to create a new document
+      createdAt: undefined, // Clear the createdAt to set a new timestamp
+      updatedAt: undefined, // Clear the updatedAt to set a new timestamp
+      videoId,
+    });
+  }
+
+  async getAllImages(
+    page = 1,
+    limit = 10,
+  ): Promise<{ images: Image[]; total: number; pages: number }> {
     const skip = (page - 1) * limit;
     const [images, total] = await Promise.all([
-      this.imageModel.find()
+      this.imageModel
+        .find()
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.imageModel.countDocuments()
+      this.imageModel.countDocuments(),
     ]);
 
     const pages = Math.ceil(total / limit);
@@ -65,9 +84,13 @@ export class ImageService {
     if (image.publicId) {
       try {
         await this.cloudinaryService.deleteFile(image.publicId, 'image');
-        this.logger.log(`Deleted image file from Cloudinary: ${image.publicId}`);
+        this.logger.log(
+          `Deleted image file from Cloudinary: ${image.publicId}`,
+        );
       } catch (error) {
-        this.logger.error(`Failed to delete image from Cloudinary: ${error.message}`);
+        this.logger.error(
+          `Failed to delete image from Cloudinary: ${error.message}`,
+        );
       }
     }
 
@@ -97,11 +120,13 @@ export class ImageService {
     }
 
     // Reset the image status to pending
-    await this.imageModel.findByIdAndUpdate(
-      id,
-      { status: 'pending', url: null, publicId: null },
-      { runValidators: true }
-    ).exec();
+    await this.imageModel
+      .findByIdAndUpdate(
+        id,
+        { status: 'pending', url: null, publicId: null },
+        { runValidators: true },
+      )
+      .exec();
 
     // Add to the queue
     await this.imageQueueService.addImageGenerationJob(image);

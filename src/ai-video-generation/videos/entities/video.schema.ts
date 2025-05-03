@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, ObjectId } from 'mongoose';
-import { VideoType } from 'src/ai-video-generation/types';
+import { Languages, VideoType } from 'src/ai-video-generation/types';
 
 export type VideoDocument = Video & Document;
 
@@ -10,6 +10,9 @@ export class Video {
 
   @Prop({ required: true })
   texts: string[];
+
+  @Prop({ required: true, enum: Languages })
+  lang: string;
 
   @Prop()
   url?: string;
@@ -35,6 +38,9 @@ export class Video {
   updatedAt: Date;
   @Prop()
   uploadedAt?: Date;
+
+  @Prop()
+  related: string;
 }
 
 export const VideoSchema = SchemaFactory.createForClass(Video);

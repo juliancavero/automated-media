@@ -387,6 +387,7 @@
 
 <body>
     <div class='container'>
+        {{> languageselector}}
         <!-- Navigation menu -->
         {{> navmenu}}
 
@@ -570,7 +571,7 @@
         addSafeEventListener('saveConfigBtn', 'click', async function () {
             const languageSelect = document.getElementById('languageSelect');
             const voiceSelect = document.getElementById('voiceSelect');
-
+            const lang = localStorage.getItem('lang') || 'en';
             if (!languageSelect || !voiceSelect) return;
 
             const languageCode = languageSelect.value;
@@ -585,7 +586,8 @@
                     },
                     body: JSON.stringify({
                         languageCode,
-                        voiceId
+                        voiceId,
+                        lang
                     })
                 });
 
@@ -669,6 +671,7 @@
             document.getElementById('generateBtn').disabled = true;
 
             try {
+                const lang = localStorage.getItem('lang') || 'en';
                 const response = await fetch('/videos/create-video-job', {
                     method: 'POST',
                     headers: {
@@ -679,6 +682,7 @@
                         images,
                         series,
                         type,
+                        lang,
                     })
                 });
 
@@ -788,6 +792,7 @@
         addSafeEventListener('generateScriptBtn', 'click', async function () {
             try {
                 const type = document.getElementById('videoTypeSelect').value;
+                const lang = localStorage.getItem('lang') || 'en';
                 document.getElementById('scriptOutput').value = 'Generating script...';
                 document.getElementById('generateScriptBtn').disabled = true;
 
@@ -796,7 +801,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ type })
+                    body: JSON.stringify({ type, lang })
                 });
 
                 if (!response.ok) {
@@ -817,6 +822,7 @@
         addSafeEventListener('generateCustomScriptBtn', 'click', async function () {
             try {
                 const type = document.getElementById('videoTypeSelect').value;
+                const lang = localStorage.getItem('lang') || 'en';
                 const customText = document.getElementById('customScriptInput').value.trim();
                 if (!customText) {
                     alert('Please enter a custom story idea or topic.');
@@ -831,7 +837,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ type, text: customText })
+                    body: JSON.stringify({ type, text: customText, lang })
                 });
 
                 if (!response.ok) {

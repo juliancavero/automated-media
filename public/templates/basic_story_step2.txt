@@ -5,7 +5,7 @@ Reading and Understanding:
 Read a story that has a strong hook, an intriguing development, and a surprising or emotionally impactful ending. It could be about a strange encounter, a bizarre coincidence, or a small but unsettling event.
 
 Rewriting:
-Transform the story into a short, fluid, and literary narrative in English, divided into short, focused, and powerful paragraphs. Aim for between 8-12 paragraphs to create a rich, detailed narrative (with a minimum of 7 paragraphs). The more diverse paragraphs you can create, the more engaging and visually varied the final video will be.
+Transform the story into a short, fluid, and literary narrative in {{lang}}, divided into short, focused, and powerful paragraphs. Aim for between 8-12 paragraphs to create a rich, detailed narrative (with a minimum of 7 paragraphs). The more diverse paragraphs you can create, the more engaging and visually varied the final video will be.
 Each paragraph should capture only one specific action, emotion, or moment. Avoid mixing several events or ideas in the same paragraph. Break longer moments into smaller beats to allow for more variation and rhythm.
 
 Important:
@@ -38,7 +38,7 @@ Output Format:
 Structure the entire response as an array of objects in JSON format.
 Each object must have two keys:
 
-"text": contains the narrative text of the paragraph (written in English, using simple language, an emotional, literary, and visual tone).
+"text": contains the narrative text of the paragraph (written in {{lang}}, using simple language, an emotional, literary, and visual tone).
 
 "image": contains the detailed visual description of the image associated with that paragraph (in English, realistic style, rich in details about lighting, atmosphere, characters, and background).
 
@@ -47,7 +47,6 @@ The narration should feel intimate, nostalgic, or unsettling, depending on the e
 
 Important:
 Do not write as if it were a Reddit post, and do not mention that it is a dream or personal experience unless it is vital to the story. Always maintain the focus on the story as an event happening in real time.
-Your entire response must be in English.
 
 Next, I will provide you with the original story you must process following all the instructions above:
 <story></story>

@@ -2,13 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   PollyClient,
   SynthesizeSpeechCommand,
-  SynthesizeSpeechCommandInput
+  SynthesizeSpeechCommandInput,
 } from '@aws-sdk/client-polly';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { TextToSpeechOptions } from './interfaces/text-to-speech-options.interface';
 import { validateAWSConfig } from './utils/aws-config';
 import { PollyConfigService } from './services/polly-config.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 const DEFAULT_CONFIG: TextToSpeechOptions = {
   voiceId: 'Joanna',
@@ -30,7 +31,7 @@ export class AwsPollyService {
     // Initialize AWS configuration
     this.isConfigured = this.initializeAWS();
     this.polly = new PollyClient({
-      region: this.configService.get<string>('AWS_REGION', 'us-east-1')
+      region: this.configService.get<string>('AWS_REGION', 'us-east-1'),
     });
   }
 
@@ -93,12 +94,13 @@ export class AwsPollyService {
    */
   async convertTextsToSpeech(
     text: string,
+    lang: Languages = Languages.EN,
     options?: TextToSpeechOptions,
   ): Promise<Buffer> {
     // Try to get configuration from database
     let dbConfig = {};
     try {
-      const configFromDb = await this.pollyConfigService.getCurrentConfig();
+      const configFromDb = await this.pollyConfigService.getCurrentConfig(lang);
       if (configFromDb) {
         dbConfig = {
           voiceId: configFromDb.voiceId,
@@ -128,7 +130,8 @@ export class AwsPollyService {
     }
 
     this.logger.log(
-      `Converting text to speech: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''
+      `Converting text to speech: "${text.substring(0, 50)}${
+        text.length > 50 ? '...' : ''
       }"`,
     );
 
@@ -226,7 +229,8 @@ export class AwsPollyService {
           return Buffer.from(response.AudioStream);
         } else {
           // For Node.js environment, we need to read the stream
-          const stream = response.AudioStream as unknown as NodeJS.ReadableStream;
+          const stream =
+            response.AudioStream as unknown as NodeJS.ReadableStream;
           return new Promise<Buffer>((resolve, reject) => {
             const chunks: Buffer[] = [];
             stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));

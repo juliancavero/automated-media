@@ -9,6 +9,7 @@ import axios from 'axios';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import { VideoService } from './video.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
@@ -59,6 +60,7 @@ export class VideoGenerationService {
     videoId: string,
     imagenes: Image[],
     audios: Audio[],
+    lang: Languages,
     options?: VideoOptions,
   ): Promise<string> {
     const videoOptions = { ...this.DEFAULT_VIDEO_OPTIONS, ...options };
@@ -120,6 +122,7 @@ export class VideoGenerationService {
         this.logger.log('Generando descripción del video con IA...');
         const description = await this.aiService.generateVideoDescription(
           uploadResult.url,
+          lang,
         );
         await this.videoService.setVideoDescription(videoId, description);
         this.logger.log('Descripción del video generada exitosamente');

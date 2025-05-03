@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PollyConfigRepository } from '../repositories/polly-config.repository';
 import { PollyConfig } from '../schemas/polly-config.schema';
 import { CreatePollyConfigDto } from '../dto/polly-config.dto';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Injectable()
 export class PollyConfigService {
@@ -9,8 +10,8 @@ export class PollyConfigService {
 
   constructor(private readonly pollyConfigRepository: PollyConfigRepository) {}
 
-  async getCurrentConfig(): Promise<PollyConfig | null> {
-    const config = await this.pollyConfigRepository.findOne();
+  async getCurrentConfig(lang: Languages): Promise<PollyConfig | null> {
+    const config = await this.pollyConfigRepository.findOne(lang);
     if (!config) {
       this.logger.log('No existing Polly configuration found');
       return null;
@@ -21,16 +22,25 @@ export class PollyConfigService {
   async getConfigById(id: string): Promise<PollyConfig> {
     const config = await this.pollyConfigRepository.findById(id);
     if (!config) {
-      throw new NotFoundException(`Polly configuration with ID ${id} not found`);
+      throw new NotFoundException(
+        `Polly configuration with ID ${id} not found`,
+      );
     }
     return config;
   }
 
-  async createConfig(createDto: CreatePollyConfigDto): Promise<PollyConfig | null> {
-    const existingConfig = await this.pollyConfigRepository.findOne();
+  async createConfig(
+    createDto: CreatePollyConfigDto,
+  ): Promise<PollyConfig | null> {
+    const existingConfig = await this.pollyConfigRepository.findOne(
+      createDto.lang,
+    );
     if (existingConfig) {
       this.logger.log('Updating existing Polly configuration');
-      return this.pollyConfigRepository.update(String(existingConfig._id), createDto);
+      return this.pollyConfigRepository.update(
+        String(existingConfig._id),
+        createDto,
+      );
     }
     this.logger.log('Creating new Polly configuration');
     return this.pollyConfigRepository.create(createDto);

@@ -1,6 +1,7 @@
-import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
+import { Body, Controller, Logger, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AudioGenerationService } from '../services/audio-generation.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Controller('audio-generation')
 export class AudioGenerationController {
@@ -11,10 +12,15 @@ export class AudioGenerationController {
   ) {}
 
   @Post()
-  async generateAudio(@Body() body: { text: string }, @Res() res: Response) {
+  async generateAudio(
+    @Query('lang') lang: Languages,
+    @Body() body: { text: string },
+    @Res() res: Response,
+  ) {
     const audio = await this.audioGenerationService.generateAudioFromText(
       body.text,
       'videoId',
+      lang,
     );
 
     if (!audio) {

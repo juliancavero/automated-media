@@ -3,6 +3,7 @@ import { AwsPollyService } from '../../../external/aws-polly/aws-polly.service';
 import { AudioService } from './audio.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { isValidObjectId } from 'mongoose';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Injectable()
 export class AudioGenerationService {
@@ -14,12 +15,19 @@ export class AudioGenerationService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async generateAudioFromText(text: string, audioId: string): Promise<string> {
+  async generateAudioFromText(
+    text: string,
+    audioId: string,
+    lang: Languages,
+  ): Promise<string> {
     this.logger.log(`Generating audio for text: ${text}`);
 
     try {
       // Call AWS Polly service to convert text to speech
-      const audioResult = await this.awsPollyService.convertTextsToSpeech(text);
+      const audioResult = await this.awsPollyService.convertTextsToSpeech(
+        text,
+        lang,
+      );
 
       if (!audioResult) {
         throw new Error('Failed to generate audio with AWS Polly');
@@ -31,10 +39,12 @@ export class AudioGenerationService {
         this.logger.error('Failed to upload audio to Cloudinary');
         throw new Error('Failed to upload audio to Cloudinary');
       }
-      
+
       // if audioId is not provided or is not an instance of ObjectId, just return uploadResult.url
       if (!audioId || !isValidObjectId(audioId)) {
-        this.logger.log('No valid audioId provided, returning Cloudinary URL directly');
+        this.logger.log(
+          'No valid audioId provided, returning Cloudinary URL directly',
+        );
         return uploadResult.url;
       }
 

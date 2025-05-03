@@ -186,31 +186,68 @@
       width: 20px;
       height: 20px;
     }
+
+    .language-copy-btn {
+      z-index: 10;
+    }
   </style>
 </head>
 
 <body>
   <div class="container mt-4">
+    {{> languageselector}}
     {{> navmenu}}
 
-    <h1>
-      {{title}}
-      {{#if videoGeneration.series}}
-      <span class="series-badge">
-        Series: <a href="/videos/list?series={{videoGeneration.series}}"
-          class="series-link">{{videoGeneration.series}}</a>
-      </span>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1>
+        {{title}}
+        {{#if videoGeneration.series}}
+        <span class="series-badge">
+          Series: <a href="/videos/list?series={{videoGeneration.series}}"
+            class="series-link">{{videoGeneration.series}}</a>
+        </span>
+        {{/if}}
+        {{#if videoGeneration.type}}
+        <span class="series-badge type-badge">
+          Type: <a href="/videos/list?type={{videoGeneration.type}}" class="series-link">{{videoGeneration.type}}</a>
+        </span>
+        {{/if}}
+      </h1>
+      <button id="generate-language-copy-btn" class="btn btn-primary language-copy-btn">
+        Generate Language Copy
+      </button>
+    </div>
+
+    {{#if videoGeneration.lang}}
+    <div class='detail-row' style="width: 100%; display: flex; justify-content: space-around; align-items: center;">
+      <div>
+        <div class='detail-label'>Language:</div>
+        <div class='detail-value'>
+          {{videoGeneration.lang}}
+          {{#if (eq videoGeneration.lang 'es')}}
+          <span style='margin-left: 5px;'>🇪🇸</span>
+          {{/if}}
+          {{#if (eq videoGeneration.lang 'en')}}
+          <span style='margin-left: 5px;'>🇬🇧</span>
+          {{/if}}
+        </div>
+      </div>
+      {{#if videoGeneration.related}}
+      <div class="">
+        <div class="">
+          <h5>Related Video</h5>
+        </div>
+        <div class="card-body">
+          <a href="/videos/list/{{videoGeneration.related}}" class="btn btn-primary">Ir al vídeo relacionado</a>
+        </div>
+      </div>
       {{/if}}
-      {{#if videoGeneration.type}}
-      <span class="series-badge type-badge">
-        Type: <a href="/videos/list?type={{videoGeneration.type}}" class="series-link">{{videoGeneration.type}}</a>
-      </span>
-      {{/if}}
-    </h1>
+    </div>
+    {{/if}}
 
     {{#if videoGeneration}}
     <div class="text-center generate-video-btn">
-      <div class="form-check form-check-inline align-middle mx-3 my-3">
+      {{!-- <div class="form-check form-check-inline align-middle mx-3 my-3">
         <input class="form-check-input" type="checkbox" id="add-to-be-continued" value="true">
         <label class="form-check-label" for="add-to-be-continued">Añadir 'To be continued...' al final del
           vídeo</label>
@@ -218,7 +255,7 @@
       <div class="form-check form-check-inline align-middle mx-3 my-3">
         <input class="form-check-input" type="checkbox" id="add-the-end" value="true">
         <label class="form-check-label" for="add-the-end">Añadir 'The End' al final del vídeo</label>
-      </div>
+      </div> --}}
       <div class="action-buttons">
         <button id="select-all-btn" class="btn btn-secondary btn-lg">Select All Items</button>
 
@@ -758,6 +795,42 @@
               `<span class="text-danger">Error: ${error.message}</span>`;
             setUploadDateBtn.disabled = false;
             setUploadDateBtn.innerHTML = '<i class="fas fa-save"></i> Set Upload Date';
+          }
+        });
+      }
+
+      // Generate language copy button functionality
+      const generateLanguageCopyBtn = document.getElementById('generate-language-copy-btn');
+      if (generateLanguageCopyBtn) {
+        generateLanguageCopyBtn.addEventListener('click', async function () {
+          const videoId = '{{videoGeneration._id}}';
+          const lang = localStorage.getItem('lang');
+
+          try {
+            generateLanguageCopyBtn.disabled = true;
+            generateLanguageCopyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            const response = await fetch(`/videos/${videoId}/generate-language-copy`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ lang })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              window.location.href = `/videos/list/${result.newVideoId}`;
+            } else {
+              generateLanguageCopyBtn.disabled = false;
+              generateLanguageCopyBtn.innerHTML = 'Generate Language Copy';
+              alert(`Error: ${result.message || 'Failed to generate language copy'}`);
+            }
+          } catch (error) {
+            generateLanguageCopyBtn.disabled = false;
+            generateLanguageCopyBtn.innerHTML = 'Generate Language Copy';
+            alert(`Error: ${error.message}`);
           }
         });
       }

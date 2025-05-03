@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, ObjectId } from 'mongoose';
+import { ObjectId } from 'mongoose';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Schema({ timestamps: true })
 export class PollyConfig {
@@ -10,6 +11,9 @@ export class PollyConfig {
 
   @Prop({ default: 'en-US' })
   languageCode: string;
+
+  @Prop({ required: true, enum: Languages })
+  lang: string;
 
   @Prop({ default: true })
   isActive: boolean;

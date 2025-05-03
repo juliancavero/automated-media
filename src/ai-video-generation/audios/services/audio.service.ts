@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Audio, AudioDocument } from '../schemas/audio.schema';
 import { AudioQueueService } from '../queues/audio-queue.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Injectable()
 export class AudioService {
@@ -14,17 +15,44 @@ export class AudioService {
     private readonly audioModel: Model<AudioDocument>,
     private readonly audioQueueService: AudioQueueService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   async createAudio(
     text: string,
     videoId: string,
     order: number,
+    lang: string,
   ): Promise<Audio> {
     return await this.audioModel.create({
       text,
       videoId,
       order,
+      lang,
+    });
+  }
+
+  async copyAudio(
+    id: string,
+    videoId: string,
+    text: string,
+    lang: Languages,
+  ): Promise<Audio | null> {
+    const audio = await this.audioModel.findById(id).exec();
+    if (!audio) {
+      throw new NotFoundException(`Audio with ID ${id} not found`);
+    }
+
+    return this.audioModel.create({
+      ...audio.toObject(),
+      videoId,
+      text,
+      lang,
+      _id: undefined, // Ensure a new ID is generated
+      status: 'pending', // Reset status to pending
+      createdAt: undefined, // Ensure createdAt is set to now
+      updatedAt: undefined, // Ensure updatedAt is set to now
+      publicId: undefined, // Ensure publicId is reset
+      url: undefined, // Ensure URL is reset
     });
   }
 
@@ -46,9 +74,13 @@ export class AudioService {
     if (audio.publicId) {
       try {
         await this.cloudinaryService.deleteFile(audio.publicId, 'video');
-        this.logger.log(`Deleted audio file from Cloudinary: ${audio.publicId}`);
+        this.logger.log(
+          `Deleted audio file from Cloudinary: ${audio.publicId}`,
+        );
       } catch (error) {
-        this.logger.error(`Failed to delete audio from Cloudinary: ${error.message}`);
+        this.logger.error(
+          `Failed to delete audio from Cloudinary: ${error.message}`,
+        );
       }
     }
 
@@ -57,15 +89,20 @@ export class AudioService {
     this.logger.log(`Deleted audio from database: ${id}`);
   }
 
-  async getAllAudios(page = 1, limit = 10): Promise<{ audios: Audio[], total: number, pages: number }> {
+  async getAllAudios(
+    page = 1,
+    limit = 10,
+    lang = Languages.EN,
+  ): Promise<{ audios: Audio[]; total: number; pages: number }> {
     const skip = (page - 1) * limit;
     const [audios, total] = await Promise.all([
-      this.audioModel.find()
+      this.audioModel
+        .find({ lang })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
-      this.audioModel.countDocuments()
+      this.audioModel.countDocuments(),
     ]);
 
     const pages = Math.ceil(total / limit);
@@ -110,11 +147,13 @@ export class AudioService {
     }
 
     // Reset the audio status to pending
-    await this.audioModel.findByIdAndUpdate(
-      id,
-      { status: 'pending', url: null, publicId: null },
-      { runValidators: true }
-    ).exec();
+    await this.audioModel
+      .findByIdAndUpdate(
+        id,
+        { status: 'pending', url: null, publicId: null },
+        { runValidators: true },
+      )
+      .exec();
 
     // Add to the queue
     await this.audioQueueService.addAudioGenerationJob(audio);

@@ -1,13 +1,25 @@
-import { Controller, Delete, Get, Param, Render, Res, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Render,
+  Res,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { AudioService } from '../services/audio.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 @Controller('audios')
 export class AudioController {
-  constructor(private readonly audioService: AudioService) { }
+  constructor(private readonly audioService: AudioService) {}
 
   @Delete(':id')
-  async deleteAudio(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+  async deleteAudio(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       await this.audioService.deleteAudio(id);
       return { success: true, message: 'Audio deleted successfully' };
@@ -20,14 +32,19 @@ export class AudioController {
   async relaunchFailedAudios(): Promise<{ success: boolean; message: string }> {
     try {
       await this.audioService.relaunchFailedAudios();
-      return { success: true, message: 'Failed audio tasks have been requeued' };
+      return {
+        success: true,
+        message: 'Failed audio tasks have been requeued',
+      };
     } catch (error) {
       return { success: false, message: `Error: ${error.message}` };
     }
   }
 
   @Post(':id/regenerate')
-  async regenerateAudio(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+  async regenerateAudio(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       await this.audioService.regenerateAudio(id);
       return { success: true, message: 'Audio regeneration has been queued' };
@@ -39,15 +56,25 @@ export class AudioController {
   // Views
   @Get('list')
   @Render('ai-video-generation/audio-list')
-  async getAudiosListView(@Query('page') page = '1', @Query('limit') limit = '10', @Res() res: Response) {
+  async getAudiosListView(
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+    @Query('lang') lang = Languages.EN,
+    @Res() res: Response,
+  ) {
     const pageNumber = parseInt(page, 10) || 1;
     const limitNumber = parseInt(limit, 10) || 10;
 
-    const { audios, total, pages } = await this.audioService.getAllAudios(pageNumber, limitNumber);
+    const { audios, total, pages } = await this.audioService.getAllAudios(
+      pageNumber,
+      limitNumber,
+      lang,
+    );
 
     return {
       title: 'Audio List',
       audios,
+      lang,
       pagination: {
         currentPage: pageNumber,
         totalPages: pages,
@@ -56,7 +83,7 @@ export class AudioController {
         hasPrev: pageNumber > 1,
         nextPage: pageNumber + 1,
         prevPage: pageNumber - 1,
-      }
+      },
     };
   }
 

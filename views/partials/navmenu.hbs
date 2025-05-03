@@ -20,6 +20,45 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const lang = localStorage.getItem('lang') || 'en'; // Default to 'en' if not set
+
+    // Get all navigation links
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    // Modify each link to include the lang parameter
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      const hasParams = href.includes('?');
+
+      // Append lang parameter appropriately (with ? or &)
+      if (hasParams) {
+        link.setAttribute('href', `${href}&lang=${lang}`);
+      } else {
+        link.setAttribute('href', `${href}?lang=${lang}`);
+      }
+    });
+
+    // Get all pagination links
+    const paginationLinks = document.querySelectorAll('.pagination-link');
+
+    // Modify each link to include the lang parameter
+    paginationLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      const url = new URL(href, window.location.origin);
+      const params = new URLSearchParams(window.location.search);
+      params.forEach((value, key) => {
+        if (!url.searchParams.has(key)) {
+          url.searchParams.append(key, value);
+        }
+      });
+      url.searchParams.set('lang', lang);
+      link.setAttribute('href', url.toString());
+    });
+  });
+</script>
+
 <style>
   .special {
     background-color: #5f265a !important;

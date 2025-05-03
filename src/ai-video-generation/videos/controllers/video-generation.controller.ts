@@ -12,7 +12,7 @@ import { CrearVideoDto } from '../dto/crear-video.dto';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { VideoGenerationService } from '../services/video-generation.service';
-import { VideoType } from 'src/ai-video-generation/types';
+import { Languages, VideoType } from 'src/ai-video-generation/types';
 
 @Controller('video-generation')
 export class VideoGenerationController {
@@ -62,6 +62,7 @@ export class VideoGenerationController {
       crearVideoDto.videoId,
       chosenImages,
       chosenAudios,
+      crearVideoDto.lang,
       {
         addToBeContinued: crearVideoDto.addToBeContinued,
         addTheEnd: crearVideoDto.addTheEnd,
@@ -75,7 +76,7 @@ export class VideoGenerationController {
   }
 
   @Post('generate-script')
-  async generateScript(@Body() body: { type: VideoType }) {
+  async generateScript(@Body() body: { type: VideoType; lang: Languages }) {
     if (!body.type) {
       throw new BadRequestException('Script type is required');
     }
@@ -88,7 +89,10 @@ export class VideoGenerationController {
     }
 
     try {
-      const script = await this.videoService.generateScript(body.type);
+      const script = await this.videoService.generateScript(
+        body.type,
+        body.lang,
+      );
 
       return {
         statusCode: HttpStatus.OK,
@@ -108,7 +112,9 @@ export class VideoGenerationController {
   }
 
   @Post('generate-script-json')
-  async generateScriptJson(@Body() body: { type: VideoType; text: string }) {
+  async generateScriptJson(
+    @Body() body: { type: VideoType; text: string; lang: Languages },
+  ) {
     if (!body.type) {
       throw new BadRequestException('Script type is required');
     }
@@ -128,6 +134,7 @@ export class VideoGenerationController {
       const script = await this.videoService.generateScriptJson(
         body.type,
         body.text,
+        body.lang,
       );
 
       return {

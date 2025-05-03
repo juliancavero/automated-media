@@ -20,6 +20,7 @@ import { VideoQueueService } from '../queues/video-queue.service';
 import { ApiQuery } from '@nestjs/swagger';
 import { Video } from '../entities/video.schema';
 import { VideoService } from '../services/video.service';
+import { getTargetLanguage, Languages } from 'src/ai-video-generation/types';
 
 interface CalendarDay {
   day: number;
@@ -107,6 +108,37 @@ export class VideoController {
     } catch (error) {
       this.logger.error(
         `Error regenerating video description: ${error.message}`,
+      );
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Post(':id/generate-language-copy')
+  async generateLanguageCopy(
+    @Param('id') id: string,
+    @Body() body: { lang: Languages },
+  ): Promise<{ success: boolean; message: string; newVideoId?: string }> {
+    const targetLanguage = getTargetLanguage(body.lang);
+    try {
+      const result = await this.videoService.generateLanguageCopy(
+        id,
+        targetLanguage,
+      );
+      if (!result) {
+        return {
+          success: false,
+          message: 'Video not found or language copy generation failed',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Video language copy generated successfully',
+        newVideoId: result._id.toString(),
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error generating video language copy: ${error.message}`,
       );
       return { success: false, message: `Error: ${error.message}` };
     }
@@ -260,12 +292,20 @@ export class VideoController {
     description: 'Number of items per page',
     required: false,
   })
+  @ApiQuery({
+    name: 'notRelated',
+    type: String,
+    description: 'Filter videos not related to the series',
+    required: false,
+  })
   async renderVideoGenerationsList(
     @Query('series') series?: string,
     @Query('type') type?: string,
     @Query('status') status?: string,
     @Query('page') pageQuery?: string,
     @Query('limit') limitQuery?: string,
+    @Query('lang') lang: Languages = Languages.EN,
+    @Query('notRelated') notRelated?: string,
   ) {
     const page = pageQuery ? parseInt(pageQuery, 10) : 1;
     const limit = limitQuery ? parseInt(limitQuery, 10) : 10;
@@ -276,6 +316,8 @@ export class VideoController {
       status,
       page,
       limit,
+      lang,
+      notRelated === 'true',
     );
 
     return {
@@ -284,6 +326,8 @@ export class VideoController {
       currentSeriesFilter: series || '',
       currentTypeFilter: type || '',
       currentStatusFilter: status || '',
+      currentRelatedFilter: notRelated || '',
+      lang,
       pagination: {
         currentPage: page,
         totalPages,

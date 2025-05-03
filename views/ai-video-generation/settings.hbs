@@ -263,6 +263,7 @@
 
 <body>
     <div class="container mt-4">
+        {{> languageselector}}
         {{> navmenu}}
 
         <h1>Application Settings</h1>
@@ -353,6 +354,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialize for voice settings
             try {
+                const lang = localStorage.getItem('lang') || 'en';
                 const voicesResponse = await fetch('/polly-config/voices');
                 if (!voicesResponse.ok) throw new Error('Failed to fetch voices');
                 allVoices = await voicesResponse.json();
@@ -366,7 +368,7 @@
                     languageSelect.appendChild(option);
                 });
 
-                const configResponse = await fetch('/polly-config');
+                const configResponse = await fetch('/polly-config?lang=' + lang);
                 if (configResponse.ok) {
                     currentConfig = await configResponse.json();
                     if (currentConfig.languageCode) {
@@ -408,6 +410,7 @@
         document.getElementById('saveConfigBtn').addEventListener('click', async function () {
             const languageCode = document.getElementById('languageSelect').value;
             const voiceId = document.getElementById('voiceSelect').value;
+            const lang = localStorage.getItem('lang') || 'en';
             if (!languageCode || !voiceId) return;
 
             try {
@@ -418,7 +421,8 @@
                     },
                     body: JSON.stringify({
                         languageCode,
-                        voiceId
+                        voiceId,
+                        lang
                     })
                 });
 
