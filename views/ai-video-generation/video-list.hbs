@@ -363,6 +363,7 @@
           <th class="hid">Fecha de Creación</th>
           <th class="hid">URL</th>
           <th class="hid">Estado</th>
+          <th>Language Copy</th>
         </tr>
       </thead>
       <tbody>
@@ -379,6 +380,21 @@
             {{/if}}
           </td>
           <td class="hid" data-label="Estado">{{status}}</td>
+          <td>
+            {{#if lang}}
+            <button class="btn btn-sm generate-language-copy-btn" data-video-id="{{_id}}"
+              style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+              {{#if (eq lang 'es')}}
+              <span style='margin-left: 5px;'>🇪🇸</span>
+              {{/if}}
+              {{#if (eq lang 'en')}}
+              <span style='margin-left: 5px;'>🇬🇧</span>
+              {{/if}}
+            </button>
+            {{else}}
+            <span>N/A</span>
+            {{/if}}
+          </td>
         </tr>
         {{/each}}
       </tbody>
@@ -520,6 +536,72 @@
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         applyAllFilters();
+      });
+
+      // Generate language copy button functionality
+      const generateLanguageCopyButtons = document.querySelectorAll('.generate-language-copy-btn');
+
+      async function generateLanguageCopy(videoId) {
+        const lang = localStorage.getItem('lang');
+        const generateLanguageCopyBtn = document.querySelector(`.generate-language-copy-btn[data-video-id="${videoId}"]`);
+
+        try {
+          generateLanguageCopyBtn.disabled = true;
+          generateLanguageCopyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+          const response = await fetch(`/videos/${videoId}/generate-language-copy`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lang })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Show success message
+            generateLanguageCopyBtn.innerHTML = '✓';
+            // Create and dispatch a custom event
+            const event = new CustomEvent('toast', {
+              detail: {
+                message: 'Language copy generated successfully!',
+                type: 'success'
+              }
+            });
+            document.dispatchEvent(event);
+          } else {
+            generateLanguageCopyBtn.disabled = false;
+            generateLanguageCopyBtn.innerHTML = 'Error';
+            // Show error message
+            const event = new CustomEvent('toast', {
+              detail: {
+                message: result.message || 'Failed to generate language copy',
+                type: 'danger'
+              }
+            });
+            document.dispatchEvent(event);
+          }
+        } catch (error) {
+          generateLanguageCopyBtn.disabled = false;
+          generateLanguageCopyBtn.innerHTML = 'Error';
+          // Show error message
+          const event = new CustomEvent('toast', {
+            detail: {
+              message: error.message,
+              type: 'danger'
+            }
+          });
+          document.dispatchEvent(event);
+        }
+      }
+
+      generateLanguageCopyButtons.forEach(button => {
+        button.addEventListener('click', async function (event) {
+          event.stopPropagation(); // Prevent row click
+          const videoId = this.dataset.videoId;
+          await generateLanguageCopy(videoId);
+        });
       });
     });
   </script>
