@@ -163,8 +163,6 @@ export class VideoService {
       url: undefined, // Clear the URL to create a new document
       publicId: undefined, // Clear the publicId to create a new document
       status: 'pending', // Set the status to pending
-      createdAt: undefined, // Clear the createdAt to create a new document
-      updatedAt: undefined, // Clear the updatedAt to create a new document
       lang,
       texts: translatedTexts,
       related: video._id.toString(), // Set the related field to the original video ID

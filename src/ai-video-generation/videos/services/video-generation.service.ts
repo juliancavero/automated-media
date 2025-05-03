@@ -122,7 +122,7 @@ export class VideoGenerationService {
         this.logger.log('Generando descripción del video con IA...');
         const description = await this.aiService.generateVideoDescription(
           uploadResult.url,
-          lang,
+          video?.lang as Languages,
         );
         await this.videoService.setVideoDescription(videoId, description);
         this.logger.log('Descripción del video generada exitosamente');
@@ -133,6 +133,10 @@ export class VideoGenerationService {
         );
         // No interrumpimos el flujo principal si falla la generación de la descripción
       }
+
+      // logger con emojis
+      this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
+      this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
 
       return videoResult.url ?? '';
     } catch (error) {

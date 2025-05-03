@@ -20,9 +20,7 @@ export class AudioQueueConsumer extends WorkerHost {
 
   async process(job: Job<AudioGenerationJob>): Promise<any> {
     const { text, id, lang } = job.data;
-    this.logger.debug(
-      `Processing audio generation for AUDIO ID ${id} for text: ${text.substring(0, 30)}...`,
-    );
+    this.logger.debug(`Generating audio for text: ${text.substring(0, 30)}...`);
 
     try {
       const audioUrl = await this.audioGenerationService.generateAudioFromText(
@@ -31,9 +29,7 @@ export class AudioQueueConsumer extends WorkerHost {
         lang,
       );
 
-      this.logger.debug(
-        `Successfully processed audio ID ${id} Audio URL: ${audioUrl}`,
-      );
+      this.logger.debug(`Audio: ${id} - URL: ${audioUrl}`);
       return { success: true, ...job.data };
     } catch (error) {
       this.logger.error(

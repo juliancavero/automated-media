@@ -564,8 +564,8 @@
           const selectedAudio = Array.from(document.querySelectorAll('.audio-checkbox:checked'))
             .map(checkbox => checkbox.dataset.id);
 
-          const addToBeContinued = document.getElementById('add-to-be-continued').checked;
-          const addTheEnd = document.getElementById('add-the-end').checked;
+          //const addToBeContinued = document.getElementById('add-to-be-continued').checked;
+          //const addTheEnd = document.getElementById('add-the-end').checked;
 
           if (selectedImages.length === 0 || selectedAudio.length === 0) {
             document.getElementById('generate-status').innerHTML =
@@ -588,8 +588,8 @@
                 videoId,
                 images: selectedImages,
                 audios: selectedAudio,
-                addToBeContinued,
-                addTheEnd
+                //addToBeContinued,
+                //addTheEnd
               })
             });
 

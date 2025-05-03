@@ -22,7 +22,7 @@ export class VyrioAiService {
       throw new Error('Prompt is required to create an image.');
     }
 
-    this.logger.log(`Creating image with VyrioAi using text: "${text}"...`);
+    this.logger.log(`Creating image using: "${text.substring(0, 20)}"...`);
     try {
       const formData = new FormData();
       formData.append('prompt', text);

@@ -20,7 +20,7 @@ export class AudioGenerationService {
     audioId: string,
     lang: Languages,
   ): Promise<string> {
-    this.logger.log(`Generating audio for text: ${text}`);
+    this.logger.log(`Generating audio for text: ${text.substring(0, 30)}...`);
 
     try {
       // Call AWS Polly service to convert text to speech

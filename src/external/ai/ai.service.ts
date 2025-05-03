@@ -32,9 +32,6 @@ export class AiService {
     }
 
     try {
-      // Upload the video URL directly to Google AI
-      this.logger.log(`Uploading video to Google AI: ${videoUrl}`);
-
       const file =
         await this.googleAIUploadService.uploadVideoFromUrl(videoUrl);
 
@@ -48,9 +45,10 @@ export class AiService {
           },
         };
         const promptWithLang = VIDEO_DESCRIPTION_PROMPT.replace(
-          '{{lang}}',
+          /{{lang}}/g,
           this.translateLanguage(lang),
         );
+
         const textPart = { text: promptWithLang };
 
         const result = await model.generateContent([fileDataPart, textPart]);
@@ -103,7 +101,7 @@ export class AiService {
   }
 
   async translateTexts(texts: string[], lang: Languages): Promise<string[]> {
-    this.logger.log(`Translating texts to ${lang}: ${texts}`);
+    this.logger.log(`Translating texts to ${this.translateLanguage(lang)}`);
 
     if (!process.env.GOOGLE_AI_API_KEY) {
       throw new UnauthorizedException('GOOGLE_AI_API_KEY is not set');
@@ -134,7 +132,7 @@ export class AiService {
         translatedTexts.push(translatedText);
       }
 
-      this.logger.log(`Translated texts: ${translatedTexts}`);
+      this.logger.log('Texts translated successfully');
       return translatedTexts;
     } catch (error) {
       this.logger.error(
@@ -147,9 +145,9 @@ export class AiService {
 
   translateLanguage(lang: Languages): string {
     switch (lang) {
-      case 'en':
+      case Languages.EN:
         return 'English';
-      case 'es':
+      case Languages.ES:
         return 'Spanish';
       default:
         throw new Error(`Unsupported language: ${lang}`);

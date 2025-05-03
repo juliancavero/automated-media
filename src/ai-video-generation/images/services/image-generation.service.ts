@@ -14,7 +14,7 @@ export class ImageGenerationService {
   ) {}
 
   async generateImageFromText(text: string, imageId: string): Promise<string> {
-    this.logger.log(`Generating image for prompt: ${text}`);
+    this.logger.log(`Generating image for: ${text.substring(0, 20)}...`);
 
     try {
       const bufferResponse = await this.vyrioAiService.createImage(text);

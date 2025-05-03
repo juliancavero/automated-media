@@ -106,9 +106,6 @@ export class AwsPollyService {
           voiceId: configFromDb.voiceId,
           languageCode: configFromDb.languageCode,
         };
-        this.logger.log(
-          `Using Polly configuration from database: voiceId=${configFromDb.voiceId}, languageCode=${configFromDb.languageCode}`,
-        );
       }
     } catch (error) {
       this.logger.warn(
@@ -136,9 +133,6 @@ export class AwsPollyService {
     );
 
     try {
-      // Generate unique filename
-      const filename = `speech_${uuidv4()}.${mergedOptions.outputFormat || 'mp3'}`;
-
       // Convert text to speech using the AWS Polly service
       const audioData = await this.synthesizeSpeech(
         text,
@@ -184,22 +178,6 @@ export class AwsPollyService {
     }
 
     return params;
-  }
-
-  /**
-   * Get MIME type based on the format
-   */
-  private getMimeType(format: string): string {
-    switch (format) {
-      case 'mp3':
-        return 'audio/mpeg';
-      case 'ogg_vorbis':
-        return 'audio/ogg';
-      case 'pcm':
-        return 'audio/wav';
-      default:
-        return 'application/octet-stream';
-    }
   }
 
   /**
