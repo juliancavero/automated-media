@@ -20,7 +20,7 @@ import {
   mergeEveryting,
 } from '../helpers/ffmpeg';
 
-const shouldGenerateDescription = false; // Cambiar a false para desactivar la generación de descripción
+const shouldGenerateDescription = true; // Cambiar a false para desactivar la generación de descripción
 
 // URL de las imágenes de "To Be Continued" y "The End"
 // Commented out for now
