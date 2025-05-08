@@ -2,21 +2,13 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { GoogleAIUploadService } from '../google-ai-upload/google-ai-upload.service';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Languages } from 'src/ai-video-generation/types';
+import { SimplifiedTranscriptionSegment } from '../types';
+import {
+  VIDEO_DESCRIPTION_PROMPT,
+  TRANSLATION_PROMPT,
+  REFINE_TRANSCRIPTIONS_PROMPT,
+} from './prompts';
 
-interface TranscriptionSegment {
-  timestamps: {
-    from: string;
-    to: string;
-  };
-  offsets: {
-    from: number;
-    to: number;
-  };
-  text: string;
-}
-
-const VIDEO_DESCRIPTION_PROMPT =
-  'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 40 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #shorthorror, #urbanlegend, #unusual, #stories, #story, and similar trending tags in {{lang}}. Respond with only the caption text, written in {{lang}}.';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -130,7 +122,10 @@ export class AiService {
     try {
       const model = this.ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const translatedLang = this.translateLanguage(lang);
-      const translationPrompt = `Translate the following text to ${translatedLang}. Return ONLY the translation, without any additional text or suggestions:`;
+      const translationPrompt = TRANSLATION_PROMPT.replace(
+        '{{translatedLang}}',
+        translatedLang,
+      );
 
       const translatedTexts: string[] = [];
       for (const text of texts) {
@@ -168,8 +163,8 @@ export class AiService {
 
   async refineTranscriptions(
     realTexts: string[],
-    transcriptions: TranscriptionSegment[],
-  ): Promise<TranscriptionSegment[]> {
+    transcriptions: SimplifiedTranscriptionSegment[],
+  ): Promise<SimplifiedTranscriptionSegment[]> {
     this.logger.log('Refining transcriptions with AI (single prompt)');
 
     if (!process.env.GOOGLE_AI_API_KEY) {
@@ -193,11 +188,10 @@ export class AiService {
       const contextText = realTexts.join(' ');
 
       // Create a prompt that includes all transcription segments and the context text
-      const prompt = `You are a transcription refinement expert. You will receive a list of transcription segments (single words) and a context text (full sentences). Your task is to correct each transcription segment based on the context text, while preserving the original timestamps and any other metadata associated with the transcription segment. The original transcriptions are approximations and may contain errors. The context text is the accurate version of the entire speech. Do not add any additional text or suggestions. Return ONLY a JSON array containing the corrected transcription segments. If a word is already correct, return it as is.
-          
-          Context text: ${contextText}
-          Transcription segments: ${JSON.stringify(transcriptions)}
-          `;
+      const prompt = REFINE_TRANSCRIPTIONS_PROMPT.replace(
+        '{{contextText}}',
+        contextText,
+      ).replace('{{transcriptions}}', JSON.stringify(transcriptions));
 
       const result = await model.generateContent(prompt);
 
@@ -227,7 +221,7 @@ export class AiService {
       }
 
       try {
-        // Parse the AI response as a JSON array of TranscriptionSegments
+        // Parse the AI response as a JSON array of SimplifiedTranscriptionSegments
         const parsedRefinedText = JSON.parse(refinedText);
 
         if (!Array.isArray(parsedRefinedText)) {
