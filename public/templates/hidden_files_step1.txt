@@ -19,7 +19,7 @@ Requirements:
 
 - Length: Around 300 words. Adjust to fit the case, keeping the narration tight and free of filler.
 
-Remember to include the title of the story at the beginning.
+Always start your response including the title of the story at the beginning like this: **Title**
 
 Suggested Structure for Each Entry:
 1. Hook

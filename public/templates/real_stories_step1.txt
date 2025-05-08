@@ -15,7 +15,7 @@ Structure:
 
 Tone: Thoughtful, subdued, and cinematic in feeling — but not in format. Think: whispered campfire tale or an entry in a secret journal. Avoid sensationalism.
 
-Remember to include the title of the story at the beginning.
+Always start your response including the title of the story at the beginning like this: **Title**
 
 Do not include any of the following:
 - Script directions (e.g. “Cut to:”, “Scene:”, “Narrator:”)

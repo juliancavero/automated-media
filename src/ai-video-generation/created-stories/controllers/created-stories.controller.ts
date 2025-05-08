@@ -54,4 +54,26 @@ export class CreatedStoriesController {
       data: updatedStory,
     };
   }
+
+  @Put('add')
+  async addStory(@Body('type') type: string, @Body('title') title: string) {
+    if (!type || !Object.values(VideoType).includes(type as VideoType)) {
+      throw new BadRequestException('Valid type is required');
+    }
+
+    if (!title) {
+      throw new BadRequestException('Title is required');
+    }
+
+    const updatedStory = await this.createdStoriesService.addStory(
+      type as VideoType,
+      title,
+    );
+
+    return {
+      success: true,
+      message: 'Title added successfully',
+      data: updatedStory,
+    };
+  }
 }

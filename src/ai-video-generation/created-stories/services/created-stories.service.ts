@@ -33,4 +33,17 @@ export class CreatedStoriesService {
   async getAllTypes(): Promise<VideoType[]> {
     return Object.values(VideoType);
   }
+
+  async addStory(type: VideoType, title: string): Promise<CreatedStory> {
+    const existingStory = await this.createdStoryModel.findOne({ type }).exec();
+    if (existingStory) {
+      existingStory.titles.push(title);
+      return existingStory.save();
+    }
+    const newStory = new this.createdStoryModel({
+      type,
+      titles: [title],
+    });
+    return newStory.save();
+  }
 }

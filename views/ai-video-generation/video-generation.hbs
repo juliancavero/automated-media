@@ -523,17 +523,21 @@
                         <!-- Right column -->
                         <div class="script-column">
                             <h4>Generate JSON from script</h4>
-                            <textarea id="customScriptInput" class="form-control" rows="4"
-                                placeholder="Enter your custom story idea or topic here..."></textarea>
                             <button id="generateCustomScriptBtn" class="btn btn-primary mt-3">Generate Custom
                                 Script</button>
                             <div class="textarea-wrapper mt-3">
-                                <textarea id="customScriptOutput" class="form-control" rows="10"></textarea>
+                                <textarea id="customScriptOutput" class="form-control" rows="15"></textarea>
                                 <button class="copy-textarea-btn"
                                     onclick="copyToClipboard('customScriptOutput')">Copy</button>
                                 <span class="copy-success-message">Copied!</span>
                             </div>
                         </div>
+                    </div>
+                    <div id="addTitleSection"
+                        style="display: none; margin-top: 10px; padding: 10px; background-color: #ffffe0; border: 1px solid #ddd; border-radius: 4px;">
+                        <p id="addTitleText"></p>
+                        <button id="addTitleButton" class="btn btn-warning"
+                            style="background-color: #f0ad4e; border-color: #eea236;">Añadir</button>
                     </div>
                 </div>
             </div>
@@ -858,7 +862,8 @@
         }
 
         addSafeEventListener('transformBtn', 'click', function () {
-            let batchImportText = document.getElementById('batchImportText').value.trim();
+            let batchImportText = document.getElementById('batchImportText').value.trim() || document.getElementById('customScriptOutput').value.trim();
+
             if (!batchImportText) {
                 alert('Please paste a JSON array.');
                 return;
@@ -931,6 +936,10 @@
 
                 const result = await response.json();
                 document.getElementById('scriptOutput').value = result.data.script;
+
+                // Check for title in script and display add title section
+                getTitleFromScriptOutput();
+
             } catch (error) {
                 console.error('Error generating script:', error);
                 document.getElementById('scriptOutput').value = `Error: ${error.message}`;
@@ -939,12 +948,52 @@
             }
         });
 
+        function getTitleFromScriptOutput() {
+            const textContent = document.getElementById('scriptOutput').value;
+            const titleMatch = textContent.match(/^\s*(?:\*\*(.*?)\*\*|#+\s*(.+))/m);
+            const title = titleMatch ? (titleMatch[1] || titleMatch[2]) : null;
+            if (title) {
+                const addTitleSection = document.getElementById('addTitleSection');
+                const addTitleText = document.getElementById('addTitleText');
+                const addTitleButton = document.getElementById('addTitleButton');
+
+                addTitleText.textContent = `¿Añadir a lista de usados? -- ${title}`;
+                addTitleSection.style.display = 'block';
+
+                addTitleButton.onclick = async function () {
+                    try {
+                        const type = document.getElementById('videoTypeSelect').value;
+                        const response = await fetch('/created-stories/add', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ type, title })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to add title to list');
+                        }
+
+                        addTitleSection.style.display = 'none';
+                    } catch (error) {
+                        console.error('Error adding title:', error);
+                        alert('Failed to add title. Please try again.');
+                    }
+                };
+            } else {
+                addTitleSection.style.display = 'none';
+            }
+        }
+
+        addSafeEventListener('scriptOutput', 'input', getTitleFromScriptOutput);
+
         // Add custom script generation functionality
         addSafeEventListener('generateCustomScriptBtn', 'click', async function () {
             try {
                 const type = document.getElementById('videoTypeSelect').value;
                 const lang = localStorage.getItem('lang') || 'en';
-                const customText = document.getElementById('customScriptInput').value.trim();
+                const customText = document.getElementById('scriptOutput').value.trim();
                 if (!customText) {
                     alert('Please enter a custom story idea or topic.');
                     return;

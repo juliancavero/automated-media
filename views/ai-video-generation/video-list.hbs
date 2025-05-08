@@ -282,6 +282,32 @@
       color: #a94442;
       border: 1px solid #ebccd1;
     }
+
+    .video-type-selector {
+      display: flex;
+      gap: 10px;
+    }
+
+    .video-type-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .video-type-btn.active {
+      background-color: #0275d8;
+      color: white;
+      border-color: #0275d8;
+    }
+
+    .video-type-btn:hover:not(.active) {
+      background-color: #f0f0f0;
+    }
   </style>
 </head>
 
@@ -297,40 +323,84 @@
     <div class="filter-container">
       <form id="seriesFilterForm" class="filter-form">
         <div class="form-group">
-          <label for="seriesFilter">Filter by Series</label>
-          <input type="text" id="seriesFilter" name="series" class="form-control" placeholder="Enter series name"
-            value="{{currentSeriesFilter}}">
+          <label for="typeFilter" style="font-size: 0.9rem;">Filter by Type</label>
+          <div class="video-type-selector">
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'basic' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="basic" {{#if (eq currentTypeFilter 'basic' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-film"></i>
+              Basic
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'real' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="real" {{#if (eq currentTypeFilter 'real' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-video"></i>
+              Real
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'hidden_beasts' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="hidden_beasts" {{#if (eq currentTypeFilter 'hidden_beasts'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-dragon"></i>
+              Hidden Beasts
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'hidden_files' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="hidden_files" {{#if (eq currentTypeFilter 'hidden_files'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-folder-open"></i>
+              Hidden Files
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter '' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="" {{#if (eq currentTypeFilter '' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-times-circle"></i>
+              All Types
+            </label>
+          </div>
         </div>
+
         <div class="form-group">
-          <label for="typeFilter">Filter by Type</label>
-          <select id="typeFilter" name="type" class="form-control">
-            <option value="">All Types</option>
-            <option value="basic" {{#if (eq currentTypeFilter 'basic' )}}selected{{/if}}>Basic</option>
-            <option value="structured" {{#if (eq currentTypeFilter 'structured' )}}selected{{/if}}>Structured</option>
-            <option value="real" {{#if (eq currentTypeFilter 'real' )}}selected{{/if}}>Real</option>
-            <option value="hidden_beasts" {{#if (eq currentTypeFilter 'hidden_beasts' )}}selected{{/if}}>Hidden Beasts
-            </option>
-            <option value="hidden_files" {{#if (eq currentTypeFilter 'hidden_files' )}}selected{{/if}}>Hidden Files
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="statusFilter">Filter by Status</label>
-          <select id="statusFilter" name="status" class="form-control">
-            <option value="">All Status</option>
-            <option value="pending" {{#if (eq currentStatusFilter 'pending' )}}selected{{/if}}>Pending</option>
-            <option value="finished" {{#if (eq currentStatusFilter 'finished' )}}selected{{/if}}>Finished</option>
-            <option value="uploaded" {{#if (eq currentStatusFilter 'uploaded' )}}selected{{/if}}>Uploaded</option>
-          </select>
+          <label for="statusFilter" style="font-size: 0.9rem;">Filter by Status</label>
+          <div class="video-type-selector">
+            <label class="video-type-btn {{#if (eq currentStatusFilter 'pending' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="status" value="pending" {{#if (eq currentStatusFilter 'pending'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-clock"></i>
+              Pending
+            </label>
+            <label class="video-type-btn {{#if (eq currentStatusFilter 'finished' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="status" value="finished" {{#if (eq currentStatusFilter 'finished'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-check-circle"></i>
+              Finished
+            </label>
+            <label class="video-type-btn {{#if (eq currentStatusFilter 'uploaded' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="status" value="uploaded" {{#if (eq currentStatusFilter 'uploaded'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-upload"></i>
+              Uploaded
+            </label>
+            <label class="video-type-btn {{#if (eq currentStatusFilter '' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="status" value="" {{#if (eq currentStatusFilter '' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-times-circle"></i>
+              All Status
+            </label>
+          </div>
         </div>
         <div class="form-group">
           <label for="notRelatedFilter">Not Related</label>
           <input type="checkbox" id="notRelatedFilter" name="notRelated" {{#if currentRelatedFilter}} checked="true"
             {{/if}}>
         </div>
-        <button type="button" id="applySeriesFilter" class="btn btn-primary">Filter Series</button>
-
-
       </form>
 
       {{#if currentSeriesFilter}}
@@ -359,7 +429,6 @@
       <thead>
         <tr>
           <th>Texto</th>
-          <th class="hid">Series</th>
           <th class="hid">Fecha de Creación</th>
           <th class="hid">URL</th>
           <th class="hid">Estado</th>
@@ -370,7 +439,6 @@
         {{#each videoGenerations}}
         <tr class="clickable-row {{#if (eq status 'uploaded')}}status-uploaded{{/if}}" data-href="/videos/list/{{_id}}">
           <td class='description' data-label="Texto">{{truncate texts.[0] 40}}</td>
-          <td class="hid" data-label="Series">{{series}}</td>
           <td class='date hid' data-label="Fecha de Creación">{{formatDate createdAt}}</td>
           <td class='url hid' data-label="URL">
             {{#if url}}
@@ -478,36 +546,17 @@
       });
 
       // Add handlers for filters
-      const seriesFilter = document.getElementById('seriesFilter');
-      const typeFilter = document.getElementById('typeFilter');
-      const statusFilter = document.getElementById('statusFilter');
+      const typeFilterRadios = document.querySelectorAll('input[name="type"]');
+      const statusFilterRadios = document.querySelectorAll('input[name="status"]');
       const notRelatedFilter = document.getElementById('notRelatedFilter');
-      const applySeriesFilterBtn = document.getElementById('applySeriesFilter');
-
-      function applyAllFilters() {
-        const series = seriesFilter.value;
-        const type = typeFilter.value;
-        const status = statusFilter.value;
-        const notRelated = notRelatedFilter.checked;
-
-        let url = '/videos/list?';
-        if (series) url += `series=${encodeURIComponent(series)}&`;
-        if (type) url += `type=${encodeURIComponent(type)}&`;
-        if (status) url += `status=${encodeURIComponent(status)}&`;
-        if (notRelated) url += `notRelated=true&`;
-
-        window.location.href = url.endsWith('&') ? url.slice(0, -1) : url;
-      }
 
       function applyTypeAndStatusFilter() {
-        const series = seriesFilter.value;
-        const type = typeFilter.value;
-        const status = statusFilter.value;
+        const type = document.querySelector('input[name="type"]:checked').value;
+        const status = document.querySelector('input[name="status"]:checked').value;
         const notRelated = notRelatedFilter.checked;
         const lang = localStorage.getItem('lang') || 'en';
 
         let url = '/videos/list?lang=' + lang + '&';
-        if (series) url += `series=${encodeURIComponent(series)}&`;
         if (type) url += `type=${encodeURIComponent(type)}&`;
         if (status) url += `status=${encodeURIComponent(status)}&`;
         if (notRelated) url += `notRelated=true&`;
@@ -517,25 +566,11 @@
 
       // Apply type and status filters automatically on change
       notRelatedFilter.addEventListener('change', applyTypeAndStatusFilter);
-      typeFilter.addEventListener('change', applyTypeAndStatusFilter);
-      statusFilter.addEventListener('change', applyTypeAndStatusFilter);
-
-      // Apply series filter only on button click
-      applySeriesFilterBtn.addEventListener('click', applyAllFilters);
-
-      // Apply series filter on Enter key in the input
-      seriesFilter.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-          e.preventDefault(); // Prevent form submission
-          applyAllFilters();
-        }
+      typeFilterRadios.forEach(radio => {
+        radio.addEventListener('change', applyTypeAndStatusFilter);
       });
-
-      // Handle form submission to prevent default behavior
-      const form = document.getElementById('seriesFilterForm');
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        applyAllFilters();
+      statusFilterRadios.forEach(radio => {
+        radio.addEventListener('change', applyTypeAndStatusFilter);
       });
 
       // Generate language copy button functionality
