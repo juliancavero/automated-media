@@ -572,7 +572,7 @@ export class VideoService {
       case VideoType.HIDDEN_FILES:
         return 0.3;
       case VideoType.BASIC:
-        return 0.05;
+        return 0.075;
       case VideoType.REAL:
       default:
         return 0.2;
