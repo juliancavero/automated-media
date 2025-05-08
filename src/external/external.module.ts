@@ -5,10 +5,27 @@ import { HuggingFaceModule } from './huggingface/huggingface.module';
 import { VyrioAiModule } from './vyrioai/vyrioai.module';
 import { AiModule } from './ai/ai.module';
 import { GoogleAIUploadModule } from './google-ai-upload/google-ai-upload.module';
+import { SubtitlesModule } from './subtitles/subtitles.module';
 
 @Module({
-  imports: [CloudinaryModule, AwsPollyModule, HuggingFaceModule, VyrioAiModule, AiModule, GoogleAIUploadModule],
+  imports: [
+    CloudinaryModule,
+    AwsPollyModule,
+    HuggingFaceModule,
+    VyrioAiModule,
+    AiModule,
+    GoogleAIUploadModule,
+    SubtitlesModule,
+  ],
   providers: [],
-  exports: [CloudinaryModule, AwsPollyModule, HuggingFaceModule, VyrioAiModule, AiModule, GoogleAIUploadModule],
+  exports: [
+    CloudinaryModule,
+    AwsPollyModule,
+    HuggingFaceModule,
+    VyrioAiModule,
+    AiModule,
+    GoogleAIUploadModule,
+    SubtitlesModule,
+  ],
 })
-export class ExternalModule { }
+export class ExternalModule {}

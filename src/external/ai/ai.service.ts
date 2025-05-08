@@ -3,6 +3,18 @@ import { GoogleAIUploadService } from '../google-ai-upload/google-ai-upload.serv
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Languages } from 'src/ai-video-generation/types';
 
+interface TranscriptionSegment {
+  timestamps: {
+    from: string;
+    to: string;
+  };
+  offsets: {
+    from: number;
+    to: number;
+  };
+  text: string;
+}
+
 const VIDEO_DESCRIPTION_PROMPT =
   'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 40 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #shorthorror, #urbanlegend, #unusual, #stories, #story, and similar trending tags in {{lang}}. Respond with only the caption text, written in {{lang}}.';
 @Injectable()
@@ -151,6 +163,90 @@ export class AiService {
         return 'Spanish';
       default:
         throw new Error(`Unsupported language: ${lang}`);
+    }
+  }
+
+  async refineTranscriptions(
+    realTexts: string[],
+    transcriptions: TranscriptionSegment[],
+  ): Promise<TranscriptionSegment[]> {
+    this.logger.log('Refining transcriptions with AI (single prompt)');
+
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      throw new UnauthorizedException('GOOGLE_AI_API_KEY is not set');
+    }
+
+    if (!realTexts || realTexts.length === 0) {
+      this.logger.warn('No real texts provided for refinement');
+      return transcriptions;
+    }
+
+    if (!transcriptions || transcriptions.length === 0) {
+      this.logger.warn('No transcriptions provided for refinement');
+      return [];
+    }
+
+    try {
+      const model = this.ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+      // Join the real texts into a single context string
+      const contextText = realTexts.join(' ');
+
+      // Create a prompt that includes all transcription segments and the context text
+      const prompt = `You are a transcription refinement expert. You will receive a list of transcription segments (single words) and a context text (full sentences). Your task is to correct each transcription segment based on the context text, while preserving the original timestamps and any other metadata associated with the transcription segment. The original transcriptions are approximations and may contain errors. The context text is the accurate version of the entire speech. Do not add any additional text or suggestions. Return ONLY a JSON array containing the corrected transcription segments. If a word is already correct, return it as is.
+          
+          Context text: ${contextText}
+          Transcription segments: ${JSON.stringify(transcriptions)}
+          `;
+
+      const result = await model.generateContent(prompt);
+
+      this.logger.debug('AI response:', result.response.text());
+      let refinedText = result.response.text();
+
+      if (!refinedText) {
+        this.logger.error(
+          'Could not refine transcriptions, AI returned empty response.',
+        );
+        return transcriptions; // Return original transcriptions if AI fails
+      }
+
+      // Extract JSON array from the response
+      const firstBracket = refinedText.indexOf('[');
+      const lastBracket = refinedText.lastIndexOf(']');
+
+      if (
+        firstBracket !== -1 &&
+        lastBracket !== -1 &&
+        firstBracket < lastBracket
+      ) {
+        refinedText = refinedText.substring(firstBracket, lastBracket + 1);
+      } else {
+        this.logger.error('Could not find JSON array in AI response.');
+        return transcriptions; // Return original transcriptions if brackets not found
+      }
+
+      try {
+        // Parse the AI response as a JSON array of TranscriptionSegments
+        const parsedRefinedText = JSON.parse(refinedText);
+
+        if (!Array.isArray(parsedRefinedText)) {
+          this.logger.error('AI returned a non-array response.');
+          return transcriptions; // Return original transcriptions if parsing fails
+        }
+
+        this.logger.log('Transcriptions refined successfully (single prompt)');
+        return parsedRefinedText;
+      } catch (parseError) {
+        this.logger.error(`Failed to parse AI response: ${parseError.message}`);
+        return transcriptions; // Return original transcriptions if parsing fails
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error refining transcriptions (single prompt): ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
   }
 }
