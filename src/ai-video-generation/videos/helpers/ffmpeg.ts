@@ -50,10 +50,14 @@ export const addBackgroundMusic = async (
   concatDuration: number,
 ): Promise<void> => {
   return await new Promise<void>((resolve, reject) => {
+    // Añadimos 10 segundos extra a la duración de la música de fondo
+    // para asegurar que cubra cualquier duración extra en el video final
+    const extendedDuration = concatDuration + 10;
+
     ffmpeg()
       .input(backgroundMusicPath)
       .audioFilters(`volume=${musicVolume}`) // Usar el volumen específico para el tipo de video
-      .duration(concatDuration)
+      .duration(extendedDuration)
       .outputOptions(['-c:a', 'libmp3lame', '-b:a', '128k'])
       .output(lowVolumeMusic)
       .on('end', resolve)
@@ -129,6 +133,7 @@ export const mergeEveryting = async (
         '720:1280',
         '-r',
         '30',
+        // Eliminamos la opción '-shortest' para permitir que el video muestre toda la duración
         '-max_muxing_queue_size',
         '9999',
       ])

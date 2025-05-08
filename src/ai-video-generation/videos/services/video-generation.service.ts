@@ -20,6 +20,8 @@ import {
   mergeEveryting,
 } from '../helpers/ffmpeg';
 
+const shouldGenerateDescription = false; // Cambiar a false para desactivar la generación de descripción
+
 // URL de las imágenes de "To Be Continued" y "The End"
 // Commented out for now
 /* const toBeContinuedUrl =
@@ -29,7 +31,6 @@ const theEndUrl =
 
  */
 interface VideoOptions {
-  duration?: number; // Duración en segundos por imagen (solo usado si no hay audios)
   format?: string; // Formato del video (mp4, avi, etc.)
   addToBeContinued?: boolean; // Agregar "To Be Continued" al final del video
   addTheEnd?: boolean; // Agregar "The End" al final del video
@@ -39,7 +40,6 @@ interface VideoOptions {
 export class VideoGenerationService {
   private readonly logger = new Logger(VideoGenerationService.name);
   private readonly DEFAULT_VIDEO_OPTIONS: VideoOptions = {
-    duration: 5,
     format: 'mp4',
     addToBeContinued: false,
     addTheEnd: false,
@@ -122,20 +122,22 @@ export class VideoGenerationService {
       }
 
       // Generar descripción del video con IA
-      try {
-        this.logger.log('Generando descripción del video con IA...');
-        const description = await this.aiService.generateVideoDescription(
-          uploadResult.url,
-          video?.lang as Languages,
-        );
-        await this.videoService.setVideoDescription(videoId, description);
-        this.logger.log('Descripción del video generada exitosamente');
-      } catch (descriptionError) {
-        this.logger.error(
-          'Error al generar la descripción del video:',
-          descriptionError,
-        );
-        // No interrumpimos el flujo principal si falla la generación de la descripción
+      if (shouldGenerateDescription) {
+        try {
+          this.logger.log('Generando descripción del video con IA...');
+          const description = await this.aiService.generateVideoDescription(
+            uploadResult.url,
+            video?.lang as Languages,
+          );
+          await this.videoService.setVideoDescription(videoId, description);
+          this.logger.log('Descripción del video generada exitosamente');
+        } catch (descriptionError) {
+          this.logger.error(
+            'Error al generar la descripción del video:',
+            descriptionError,
+          );
+          // No interrumpimos el flujo principal si falla la generación de la descripción
+        }
       }
 
       // logger con emojis
@@ -355,7 +357,12 @@ export class VideoGenerationService {
 
       for (let i = 0; i < audioFiles.length; i++) {
         const imageFile = imageFiles[Math.min(i, imageFiles.length - 1)];
-        const audioDuration = audioDurations[i];
+
+        // if this is the last audio, audioduration is the audioDurations[i] + 2
+        const audioDuration =
+          i === audioFiles.length - 1
+            ? audioDurations[i] + 2
+            : audioDurations[i];
 
         // Añadir imagen con la duración del audio correspondiente
         segmentsContent += `file '${imageFile.path}'\n`;
@@ -366,12 +373,6 @@ export class VideoGenerationService {
           segmentsContent += `file '${imageFile.path}'\n`;
           segmentsContent += `duration 1\n`;
         }
-      }
-
-      // Añadir la última imagen una vez más (necesario para el último segmento)
-      if (imageFiles.length > 0) {
-        segmentsContent += `file '${imageFiles[Math.min(audioFiles.length - 1, imageFiles.length - 1)].path}'\n`;
-        // No añadimos duración aquí para que sea el último fotograma
       }
 
       await promisify(fs.writeFile)(segmentsFile, segmentsContent);
