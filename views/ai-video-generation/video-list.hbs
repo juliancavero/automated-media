@@ -324,7 +324,7 @@
       <form id="seriesFilterForm" class="filter-form">
         <div class="form-group">
           <label for="typeFilter" style="font-size: 0.9rem;">Filter by Type</label>
-          <div class="video-type-selector">
+          <div class="video-type-selector" style="margin-bottom: 5px;">
             <label class="video-type-btn {{#if (eq currentTypeFilter 'basic' )}}active{{/if}}"
               style="padding: 5px 8px; font-size: 0.8rem;">
               <input type="radio" name="type" value="basic" {{#if (eq currentTypeFilter 'basic' )}}checked{{/if}}
@@ -346,12 +346,28 @@
               <i class="fas fa-dragon"></i>
               Hidden Beasts
             </label>
+          </div>
+          <div class="video-type-selector">
             <label class="video-type-btn {{#if (eq currentTypeFilter 'hidden_files' )}}active{{/if}}"
               style="padding: 5px 8px; font-size: 0.8rem;">
               <input type="radio" name="type" value="hidden_files" {{#if (eq currentTypeFilter 'hidden_files'
                 )}}checked{{/if}} style="display:none;">
               <i class="fas fa-folder-open"></i>
               Hidden Files
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'first_person' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="first_person" {{#if (eq currentTypeFilter 'first_person'
+                )}}checked{{/if}} style="display:none;">
+              <i class="fas fa-user-alt"></i>
+              First Person
+            </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'censored' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="censored" {{#if (eq currentTypeFilter 'censored' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-ban"></i>
+              Censored
             </label>
             <label class="video-type-btn {{#if (eq currentTypeFilter '' )}}active{{/if}}"
               style="padding: 5px 8px; font-size: 0.8rem;">

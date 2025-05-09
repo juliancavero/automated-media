@@ -401,6 +401,22 @@ export class VideoService {
             'hidden_files_step1.txt',
           );
           break;
+        case VideoType.FIRST_PERSON:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'first_person_step1.txt',
+          );
+          break;
+        case VideoType.CENSORED:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'censored_step1.txt',
+          );
+          break;
         default:
           throw new Error(`Invalid script type: ${type}`);
       }
@@ -494,6 +510,22 @@ export class VideoService {
             'hidden_files_step2.txt',
           );
           break;
+        case VideoType.FIRST_PERSON:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'first_person_step2.txt',
+          );
+          break;
+        case VideoType.CENSORED:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'censored_step2.txt',
+          );
+          break;
         default:
           throw new Error(`Invalid script type: ${type}`);
       }
@@ -573,6 +605,10 @@ export class VideoService {
         return 0.3;
       case VideoType.BASIC:
         return 0.075;
+      case VideoType.FIRST_PERSON:
+        return 0.05;
+      case VideoType.CENSORED:
+        return 0.075;
       case VideoType.REAL:
       default:
         return 0.2;
@@ -606,6 +642,24 @@ export class VideoService {
     }
 
     return latestVideos;
+  }
+
+  async countVideosByType(lang: Languages): Promise<{ [key: string]: number }> {
+    const counts: { [key: string]: number } = {};
+
+    for (const type of Object.values(VideoType)) {
+      if (type === VideoType.STRUCTURED) {
+        continue; // Skip structured videos
+      }
+      const query = {
+        lang,
+        type: type,
+      };
+
+      counts[type] = await this.videoModel.countDocuments(query);
+    }
+
+    return counts;
   }
 
   translateLang(lang: Languages): string {

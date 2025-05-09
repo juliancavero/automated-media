@@ -252,9 +252,12 @@ export class VideoController {
   // Views
   @Get('create')
   @Render('ai-video-generation/video-generation')
-  async renderVideoGenerationPage() {
+  async renderVideoGenerationPage(@Query('lang') lang: Languages) {
+    const videoCount: { [key: string]: number } =
+      await this.videoService.countVideosByType(lang);
     return {
       title: 'AI Video Generation',
+      videoCount,
     };
   }
 

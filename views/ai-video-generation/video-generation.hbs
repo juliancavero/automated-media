@@ -481,24 +481,39 @@
         <div class='form-container'>
             <!-- Video Type Selector (First) -->
             <div class="video-type-selector">
-                <div class="video-type-btn active" data-value="basic">
+                {{#with (findMinCountType videoCount)}}
+                <div class="video-type-btn {{#if (eq this 'basic')}}active{{/if}}" data-value="basic">
                     <i class="fas fa-film"></i>
-                    Basic
+                    Basic {{#if (eq this
+                    'basic')}}<b>({{../videoCount.basic}})</b>{{else}}({{../videoCount.basic}}){{/if}}
                 </div>
-                <div class="video-type-btn" data-value="real">
+                <div class="video-type-btn {{#if (eq this 'real')}}active{{/if}}" data-value="real">
                     <i class="fas fa-video"></i>
-                    Real
+                    Real {{#if (eq this 'real')}}<b>({{../videoCount.real}})</b>{{else}}({{../videoCount.real}}){{/if}}
                 </div>
-                <div class="video-type-btn" data-value="hidden_beasts">
+                <div class="video-type-btn {{#if (eq this 'hidden_beasts')}}active{{/if}}" data-value="hidden_beasts">
                     <i class="fas fa-dragon"></i>
-                    Hidden Beasts
+                    Hidden Beasts {{#if (eq this
+                    'hidden_beasts')}}<b>({{../videoCount.hidden_beasts}})</b>{{else}}({{../videoCount.hidden_beasts}}){{/if}}
                 </div>
-                <div class="video-type-btn" data-value="hidden_files">
+                <div class="video-type-btn {{#if (eq this 'hidden_files')}}active{{/if}}" data-value="hidden_files">
                     <i class="fas fa-folder-open"></i>
-                    Hidden Files
+                    Hidden Files {{#if (eq this
+                    'hidden_files')}}<b>({{../videoCount.hidden_files}})</b>{{else}}({{../videoCount.hidden_files}}){{/if}}
                 </div>
+                <div class="video-type-btn {{#if (eq this 'first_person')}}active{{/if}}" data-value="first_person">
+                    <i class="fas fa-user-alt"></i>
+                    First Person {{#if (eq this
+                    'first_person')}}<b>({{../videoCount.first_person}})</b>{{else}}({{../videoCount.first_person}}){{/if}}
+                </div>
+                <div class="video-type-btn {{#if (eq this 'censored')}}active{{/if}}" data-value="censored">
+                    <i class="fas fa-ban"></i>
+                    Censored {{#if (eq this
+                    'censored')}}<b>({{../videoCount.censored}})</b>{{else}}({{../videoCount.censored}}){{/if}}
+                </div>
+                {{/with}}
             </div>
-            <input type="hidden" id="videoTypeSelect" value="basic">
+            <input type="hidden" id="videoTypeSelect" value="{{findMinCountType videoCount}}">
 
             <!-- Script Generation section (Second - expanded by default) -->
             <div class="series-input">

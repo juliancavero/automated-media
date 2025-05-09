@@ -4,6 +4,8 @@ export enum VideoType {
   REAL = 'real',
   HIDDEN_BEASTS = 'hidden_beasts',
   HIDDEN_FILES = 'hidden_files',
+  FIRST_PERSON = 'first_person',
+  CENSORED = 'censored',
 }
 
 export enum Languages {

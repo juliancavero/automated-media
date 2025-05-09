@@ -126,6 +126,22 @@ async function bootstrap() {
     return new Date();
   });
 
+  hbs.registerHelper('findMinCountType', function (videoCount) {
+    let minCount = Infinity;
+    let minType = '';
+
+    for (const type in videoCount) {
+      if (videoCount.hasOwnProperty(type)) {
+        if (videoCount[type] < minCount) {
+          minCount = videoCount[type];
+          minType = type;
+        }
+      }
+    }
+
+    return minType;
+  });
+
   const port = process.env.PORT ?? 10000;
   const host = process.env.HOST ?? '0.0.0.0';
 

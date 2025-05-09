@@ -7,26 +7,27 @@ Requirements:
    • Note every character, object, and setting that recurs or plays a pivotal role.
 
 2. **Rewrite for Social Media**
-   • Produce between 8-12 paragraphs to create a rich, detailed narrative (with a minimum of 7 paragraphs) in simple, conversational {{lang}} suitable for a 1.5–2 minute voice-over (150–250 words total). The more diverse paragraphs you can create, the more engaging and visually varied the final video will be.
-   • Each paragraph captures exactly one action, emotion, or moment—no mixing.
-   • Keep the tone immersive and visual, avoiding complex vocabulary or formal phrasing.
+   • Add a powerful and short **"Did you know that...?"** hook as the **first paragraph**, based on the most intriguing detail of the story. It should be a question that sparks immediate curiosity and hints at the mystery to come.
+   • Then, produce **8–12 total paragraphs** (including the hook), forming a flowing, mysterious narrative in simple, conversational {{lang}}, suitable for a 1.5–2 minute voice-over (150–250 words total).
+   • Each paragraph captures **exactly one action, emotion, or moment**.
+   • Keep the tone **immersive, visual, and slightly suspenseful**—like storytelling around a campfire.
 
 3. **Safety & Platform Compliance**
-   • Exclude any explicit violence, harm, or fatal outcomes; imply tension neutrally.
-   • Avoid flagged terms or potentially censored content—keep narratives family-friendly.
+   • No explicit violence, harm, or fatal outcomes. Tension should be suggested, not shown.
+   • Avoid flagged or sensitive terms—make the story family-friendly.
 
 4. **Image Descriptions**
-   After each paragraph, include an “image” field with a detailed scene prompt in English:
-   • Specify lighting, color palette, atmosphere (e.g., warm, cold, mysterious), character expressions, and background elements. Be extremely specific and detailed in your descriptions.
-   • Use a realistic style with natural lighting and consistent visual details for any recurring characters, objects, or settings.
-   • If new visual details appear, carry them forward for coherence.
+   After each paragraph, include an “image” field with a **highly detailed visual prompt** in English:
+   • Describe atmosphere, lighting, character expressions, colors, setting, and textures.
+   • Use **realistic style, cinematic lighting**, and consistent visual elements throughout.
+   • If an object, person, or place appears more than once, describe it again for coherence.
 
 5. **Consistency Rule**
-   • Maintain identical visual attributes (colors, styles, ambient conditions) for repeated elements unless the story demands a change. The images will be generated without previous context — always fully describe recurring details again when needed.
+   Maintain identical visual features (colors, styles, ambient conditions) for repeated elements unless there's a narrative reason for change.
 
 6. **Output Format**
    Return a JSON array of objects, each with two keys:
-   - `"text"`: the rewritten paragraph ({{lang}}, simple, emotional, visual)
+   - `"text"`: the rewritten paragraph ({{lang}}, simple, emotional, and visual)
    - `"image"`: the corresponding detailed image description (English, realistic style)
 
 Structure Example:
@@ -34,14 +35,9 @@ Structure Example:
 ```json
 [
   {
-    "text": "…",
-    "image": "…"
+    "text": "...",
+    "image": "..."
   },
-  {
-    "text": "…",
-    "image": "…"
-  }
-  // etc.
+  etc.
 ]
-
 <story></story>
