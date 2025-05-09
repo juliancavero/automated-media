@@ -374,6 +374,10 @@
                         Misterios
                         {{else if (eq type "hidden_beasts")}}
                         Animales
+                        {{else if (eq type "censored")}}
+                        Censurado
+                        {{else if (eq type "first_person")}}
+                        Primera P
                         {{else}}
                         {{type}}
                         {{/if}}
@@ -493,6 +497,14 @@
 
             // Function to display videos in the modal
             function displayVideos(videos) {
+                const translatedVideoTypes = {
+                    'basic': 'Básico',
+                    'real': 'Real',
+                    'hidden_files': 'Misterios',
+                    'hidden_beasts': 'Animales',
+                    'censored': 'Censurado',
+                    'first_person': 'Primera Persona'
+                };
                 videoList.innerHTML = '';
 
                 videos.forEach(video => {
@@ -502,7 +514,7 @@
 
                     // Display video type and anything else useful
                     videoElement.innerHTML = `
-                        <strong>Type:</strong> ${video.type}
+                        <strong>Type:</strong> ${translatedVideoTypes[video.type] || video.type}
                         ${video.series ? `<br><strong>Series:</strong> ${video.series}` : ''}
                         <br><small>Created: ${new Date(video.createdAt).toLocaleDateString()}</small>
                     `;
