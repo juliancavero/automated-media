@@ -21,6 +21,7 @@ import { ApiQuery } from '@nestjs/swagger';
 import { Video } from '../entities/video.schema';
 import { VideoService } from '../services/video.service';
 import { getTargetLanguage, Languages } from 'src/ai-video-generation/types';
+import { VideoTestService } from '../services/videotest.service';
 
 interface CalendarDay {
   day: number;

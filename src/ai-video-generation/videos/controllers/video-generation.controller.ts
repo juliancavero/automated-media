@@ -6,6 +6,7 @@ import {
   HttpException,
   Logger,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
 import { VideoService } from '../services/video.service';
 import { CrearVideoDto } from '../dto/crear-video.dto';
@@ -13,6 +14,8 @@ import { AudioService } from 'src/ai-video-generation/audios/services/audio.serv
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { VideoGenerationService } from '../services/video-generation.service';
 import { Languages, VideoType } from 'src/ai-video-generation/types';
+import { Response } from 'express';
+import { VideoTestService } from '../services/videotest.service';
 
 @Controller('video-generation')
 export class VideoGenerationController {
@@ -23,6 +26,7 @@ export class VideoGenerationController {
     private readonly imageService: ImageService,
     private readonly audioService: AudioService,
     private readonly videoGenerationService: VideoGenerationService,
+    private readonly videoTestService: VideoTestService,
   ) {}
 
   @Post()
@@ -73,6 +77,52 @@ export class VideoGenerationController {
       statusCode: HttpStatus.OK,
       message: 'Video generation tasks created successfully',
     };
+  }
+
+  @Post('video-buffer')
+  async videoBuffer(
+    @Body() crearVideoDto: CrearVideoDto,
+    @Res() res: Response,
+  ) {
+    if (
+      !crearVideoDto.videoId ||
+      !crearVideoDto.audios.length ||
+      !crearVideoDto.images.length
+    ) {
+      throw new HttpException('Missing data!', HttpStatus.BAD_REQUEST);
+    }
+
+    const images = await this.imageService.findByVideoId(crearVideoDto.videoId);
+    const audios = await this.audioService.findByVideoId(crearVideoDto.videoId);
+
+    if (!images || images.length === 0) {
+      throw new HttpException(
+        'No images found for the provided video ID',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!audios || audios.length === 0) {
+      throw new HttpException(
+        'No audios found for the provided video ID',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const chosenImages = images.filter((image) =>
+      crearVideoDto.images.includes(image._id.toString()),
+    );
+    const chosenAudios = audios.filter((audio) =>
+      crearVideoDto.audios.includes(audio._id.toString()),
+    );
+
+    const videoBuffer = await this.videoTestService.createBufferVideo(
+      crearVideoDto.videoId,
+      chosenImages,
+      chosenAudios,
+    );
+
+    res.setHeader('Content-Type', 'video/mp4');
+    res.send(videoBuffer);
   }
 
   @Post('generate-script')

@@ -12,6 +12,7 @@ import { AiModule } from 'src/external/ai/ai.module';
 import { BullModule } from '@nestjs/bullmq';
 import { VideoQueueService } from './queues/video-queue.service';
 import { CreatedStoriesModule } from '../created-stories/created-stories.module';
+import { VideoTestService } from './services/videotest.service';
 
 @Module({
   imports: [
@@ -26,7 +27,12 @@ import { CreatedStoriesModule } from '../created-stories/created-stories.module'
     CreatedStoriesModule,
   ],
   controllers: [VideoController, VideoGenerationController],
-  providers: [VideoService, VideoGenerationService, VideoQueueService],
+  providers: [
+    VideoService,
+    VideoGenerationService,
+    VideoQueueService,
+    VideoTestService,
+  ],
   exports: [VideoService, VideoGenerationService, VideoQueueService],
 })
 export class VideoModule {}

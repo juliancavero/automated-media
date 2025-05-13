@@ -267,7 +267,7 @@ export const applyKenBurnsToImage = async (
         '-pix_fmt',
         'yuv420p',
         '-preset',
-        'medium', // Cambiado de 'ultrafast' a 'medium' para un mejor equilibrio calidad/velocidad
+        'meedium', // Cambiado de 'ultrafast' a 'medium' para un mejor equilibrio calidad/velocidad
         '-crf',
         '24', // Constant Rate Factor (calidad, 18 es buena, más bajo es mejor calidad pero más tamaño)
         '-an',

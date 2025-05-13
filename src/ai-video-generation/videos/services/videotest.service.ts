@@ -3,93 +3,79 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { promisify } from 'util';
-import { Image } from '../../images/schemas/image.schema';
-import { Audio } from '../../audios/schemas/audio.schema';
-import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
-import { AiService } from 'src/external/ai/ai.service';
-import { VideoService } from './video.service';
-import { Languages } from 'src/ai-video-generation/types';
-import { getExtensionFromUrl } from '../helpers/getExtensionFromUrl';
-import { downloadFile } from '../helpers/downloadFile';
+import { Image } from '../../images/schemas/image.schema'; // Ajusta la ruta según tu estructura
+import { Audio } from '../../audios/schemas/audio.schema'; // Ajusta la ruta según tu estructura
+// Asumo que CloudinaryService y AiService no son directamente necesarios en generateVideo
+// import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
+// import { AiService } from 'src/external/ai/ai.service';
+import { VideoService } from './video.service'; // Ajusta la ruta según tu estructura
+import { getExtensionFromUrl } from '../helpers/getExtensionFromUrl'; // Ajusta la ruta
+import { downloadFile } from '../helpers/downloadFile'; // Ajusta la ruta
 import {
   addBackgroundMusic,
   concatAudiosWithSilence,
   createSilenceFile,
   getFileDuration,
   mergeAudios,
+  applyKenBurnsToImage, // Importar la función actualizada
   mergeGeneratedVideoClipsWithAudio,
-  applyKenBurnsToImage,
-} from '../helpers/ffmpeg';
+} from '../helpers/ffmpegtest'; // Ajusta la ruta según tu estructura
 
-const shouldGenerateDescription = false; // Cambiar a false para desactivar la generación de descripción
-
-// URL de las imágenes de "To Be Continued" y "The End"
-// Commented out for now
-/* const toBeContinuedUrl =
-  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745508219/automated-media/k4ytllsqujwdymbomfnn.png';
-const theEndUrl =
-  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745512154/automated-media/fkuedi0iqajs36lh2kmg.png';
-
- */
 interface VideoOptions {
-  format?: string; // Formato del video (mp4, avi, etc.)
-  addToBeContinued?: boolean; // Agregar "To Be Continued" al final del video
-  addTheEnd?: boolean; // Agregar "The End" al final del video
+  format?: string;
+  addToBeContinued?: boolean;
+  addTheEnd?: boolean;
 }
 
 @Injectable()
-export class VideoGenerationService {
-  private readonly logger = new Logger(VideoGenerationService.name);
+export class VideoTestService {
+  private readonly logger = new Logger(VideoTestService.name);
   private readonly DEFAULT_VIDEO_OPTIONS: VideoOptions = {
     format: 'mp4',
     addToBeContinued: false,
     addTheEnd: false,
   };
 
-  constructor(
-    private readonly cloudinaryService: CloudinaryService,
-    private readonly videoService: VideoService,
-    private readonly aiService: AiService,
-  ) {
-    this.logger.log('VideoGenerationService inicializado');
+  constructor(private readonly videoService: VideoService) {
+    this.logger.log(
+      'VideoTestService (Ken Burns Panning Version) inicializado',
+    );
   }
 
-  /**
-   * Crea un video a partir de arrays de imágenes y audios generados
-   * @param imagenes Array de Image
-   * @param audios Array de Audio
-   * @param options Opciones de configuración del video
-   * @returns Promise<Buffer> Buffer con los datos del video generado
-   */
-  async crearVideo(
+  async createBufferVideo(
     videoId: string,
     imagenes: Image[],
     audios: Audio[],
-    lang: Languages,
     options?: VideoOptions,
-  ): Promise<string> {
+  ): Promise<Buffer> {
     const videoOptions = { ...this.DEFAULT_VIDEO_OPTIONS, ...options };
 
-    try {
-      this.logger.log(
-        `Creando video con ${imagenes.length} imágenes y ${audios.length} audios`,
-      );
+    this.logger.log(
+      `Creando video ID ${videoId} con ${imagenes.length} imágenes y ${audios.length} audios (Efecto Paneo Ken Burns)`,
+    );
 
-      // Obtener la ruta de la música de fondo según el tipo de video
+    if (imagenes.length === 0) {
+      this.logger.error(
+        'No se proporcionaron imágenes. No se puede generar el vídeo.',
+      );
+      throw new Error('Se requiere al menos una imagen para generar el vídeo.');
+    }
+    if (audios.length === 0) {
+      this.logger.error(
+        'No se proporcionaron audios. No se puede generar el vídeo.',
+      );
+      throw new Error('Se requiere al menos un audio para generar el vídeo.');
+    }
+
+    try {
       const backgroundMusicPath =
         await this.videoService.getMusicByVideoId(videoId);
-      this.logger.log(`Usando música de fondo: ${backgroundMusicPath}`);
 
-      // Obtener el video para determinar el tipo y el volumen adecuado para la música
-      const video = await this.videoService.findById(videoId);
+      const videoInfo = await this.videoService.findById(videoId);
       const musicVolume = this.videoService.getMusicVolumeByType(
-        video?.type || 'basic',
-      );
-      this.logger.log(
-        `Usando volumen de música: ${musicVolume} para tipo: ${video?.type}`,
+        videoInfo?.type || 'basic',
       );
 
-      // Generar el video utilizando los datos en memoria
       const videoBuffer = await this.generateVideo(
         imagenes,
         audios,
@@ -98,69 +84,19 @@ export class VideoGenerationService {
         musicVolume,
       );
 
-      this.logger.log(`Video generado exitosamente`);
-      // Subir el video a Cloudinary
-      const uploadResult = await this.cloudinaryService.upload(videoBuffer);
-
-      if (!uploadResult?.url) {
-        throw new Error('Error al subir el video a Cloudinary');
-      }
-
-      // Guardar el video en la base de datos
-      const existingVideo = await this.videoService.findById(videoId);
-      const newStatus =
-        existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
-
-      const videoResult = await this.videoService.setVideoUrl(
-        videoId,
-        uploadResult.url,
-        uploadResult.public_id,
-        newStatus,
+      this.logger.log(
+        `Video con efecto de paneo Ken Burns generado exitosamente para ID ${videoId}`,
       );
-      if (!videoResult) {
-        this.logger.error('Error al guardar el video en la base de datos');
-        throw new Error('Error al guardar el video en la base de datos');
-      }
-
-      // Generar descripción del video con IA
-      if (shouldGenerateDescription) {
-        try {
-          this.logger.log('Generando descripción del video con IA...');
-          const description = await this.aiService.generateVideoDescription(
-            uploadResult.url,
-            video?.lang as Languages,
-          );
-          await this.videoService.setVideoDescription(videoId, description);
-          this.logger.log('Descripción del video generada exitosamente');
-        } catch (descriptionError) {
-          this.logger.error(
-            'Error al generar la descripción del video:',
-            descriptionError,
-          );
-          // No interrumpimos el flujo principal si falla la generación de la descripción
-        }
-      }
-
-      // logger con emojis
-      this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
-      this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
-
-      return videoResult.url ?? '';
+      return videoBuffer;
     } catch (error) {
-      this.logger.error('Error al crear el video:', error);
-      throw error;
+      this.logger.error(
+        `Error al crear el video con paneo Ken Burns para ID ${videoId}:`,
+        error.stack,
+      );
+      throw error; // Re-lanzar el error para que sea manejado por el llamador
     }
   }
 
-  /**
-   * Genera un video combinando imágenes y audios
-   * @param imagenes Array de imágenes generadas
-   * @param audios Array de audios almacenados
-   * @param options Opciones de configuración del video
-   * @param backgroundMusicPath Ruta del archivo de música de fondo
-   * @param musicVolume Volumen para la música de fondo
-   * @returns Buffer con los datos del video generado
-   */
   private async generateVideo(
     imagenes: Image[],
     audios: Audio[],
