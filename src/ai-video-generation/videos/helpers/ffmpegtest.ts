@@ -158,9 +158,6 @@ export const mergeGeneratedVideoClipsWithAudio = async (
         '-shortest',
       ])
       .output(outputVideoPath)
-      .on('start', (commandLine) => {
-        console.log('FFmpeg comando (merge clips con audio): ' + commandLine);
-      })
       .on('end', resolve)
       .on('error', (err, stdout, stderr) => {
         console.error(

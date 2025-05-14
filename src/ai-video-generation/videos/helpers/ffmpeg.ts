@@ -117,10 +117,6 @@ export const addBackgroundMusic = async (
         '2',
       ])
       .output(lowVolumeMusic)
-      .on('start', (commandLine: string) => {
-        // Log the command for debugging
-        console.log('FFmpeg comando (addBackgroundMusic): ' + commandLine);
-      })
       .on('end', resolve)
       .on('error', (err: Error) => {
         console.error('Error ajustando música de fondo:', err.message);
@@ -227,9 +223,6 @@ export const mergeAudios = async (
         '2',
       ])
       .output(finalAudioPath)
-      .on('start', (commandLine: string) => {
-        console.log('FFmpeg comando (merge audios): ' + commandLine);
-      })
       .on('end', () => {
         resolve();
       })
@@ -328,9 +321,6 @@ export const mergeGeneratedVideoClipsWithAudio = async (
         '-shortest',
       ])
       .output(outputVideoPath)
-      .on('start', (commandLine: string) => {
-        console.log('FFmpeg comando (merge clips con audio): ' + commandLine);
-      })
       .on('end', resolve)
       .on('error', (err: Error, stdout: string, stderr: string) => {
         console.error(
