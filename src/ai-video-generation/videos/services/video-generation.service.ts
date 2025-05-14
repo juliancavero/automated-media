@@ -23,14 +23,6 @@ import {
 
 const shouldGenerateDescription = false; // Cambiar a false para desactivar la generación de descripción
 
-// URL de las imágenes de "To Be Continued" y "The End"
-// Commented out for now
-/* const toBeContinuedUrl =
-  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745508219/automated-media/k4ytllsqujwdymbomfnn.png';
-const theEndUrl =
-  'https://res.cloudinary.com/dkequ9kzt/image/upload/v1745512154/automated-media/fkuedi0iqajs36lh2kmg.png';
-
- */
 interface VideoOptions {
   format?: string; // Formato del video (mp4, avi, etc.)
   addToBeContinued?: boolean; // Agregar "To Be Continued" al final del video
@@ -54,13 +46,6 @@ export class VideoGenerationService {
     this.logger.log('VideoGenerationService inicializado');
   }
 
-  /**
-   * Crea un video a partir de arrays de imágenes y audios generados
-   * @param imagenes Array de Image
-   * @param audios Array de Audio
-   * @param options Opciones de configuración del video
-   * @returns Promise<Buffer> Buffer con los datos del video generado
-   */
   async crearVideo(
     videoId: string,
     imagenes: Image[],
@@ -75,12 +60,10 @@ export class VideoGenerationService {
         `Creando video con ${imagenes.length} imágenes y ${audios.length} audios`,
       );
 
-      // Obtener la ruta de la música de fondo según el tipo de video
       const backgroundMusicPath =
         await this.videoService.getMusicByVideoId(videoId);
       this.logger.log(`Usando música de fondo: ${backgroundMusicPath}`);
 
-      // Obtener el video para determinar el tipo y el volumen adecuado para la música
       const video = await this.videoService.findById(videoId);
       const musicVolume = this.videoService.getMusicVolumeByType(
         video?.type || 'basic',
@@ -89,7 +72,6 @@ export class VideoGenerationService {
         `Usando volumen de música: ${musicVolume} para tipo: ${video?.type}`,
       );
 
-      // Generar el video utilizando los datos en memoria
       const videoBuffer = await this.generateVideo(
         imagenes,
         audios,
@@ -99,14 +81,12 @@ export class VideoGenerationService {
       );
 
       this.logger.log(`Video generado exitosamente`);
-      // Subir el video a Cloudinary
       const uploadResult = await this.cloudinaryService.upload(videoBuffer);
 
       if (!uploadResult?.url) {
         throw new Error('Error al subir el video a Cloudinary');
       }
 
-      // Guardar el video en la base de datos
       const existingVideo = await this.videoService.findById(videoId);
       const newStatus =
         existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
@@ -122,7 +102,6 @@ export class VideoGenerationService {
         throw new Error('Error al guardar el video en la base de datos');
       }
 
-      // Generar descripción del video con IA
       if (shouldGenerateDescription) {
         try {
           this.logger.log('Generando descripción del video con IA...');
@@ -137,14 +116,10 @@ export class VideoGenerationService {
             'Error al generar la descripción del video:',
             descriptionError,
           );
-          // No interrumpimos el flujo principal si falla la generación de la descripción
         }
       }
 
-      // logger con emojis
       this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
-      this.logger.verbose('🎥✨ Video generado exitosamente 🎥✨');
-
       return videoResult.url ?? '';
     } catch (error) {
       this.logger.error('Error al crear el video:', error);
@@ -152,15 +127,6 @@ export class VideoGenerationService {
     }
   }
 
-  /**
-   * Genera un video combinando imágenes y audios
-   * @param imagenes Array de imágenes generadas
-   * @param audios Array de audios almacenados
-   * @param options Opciones de configuración del video
-   * @param backgroundMusicPath Ruta del archivo de música de fondo
-   * @param musicVolume Volumen para la música de fondo
-   * @returns Buffer con los datos del video generado
-   */
   private async generateVideo(
     imagenes: Image[],
     audios: Audio[],
@@ -168,18 +134,16 @@ export class VideoGenerationService {
     backgroundMusicPath?: string,
     musicVolume: number = 0.2,
   ): Promise<Buffer> {
-    // Crear un directorio temporal único para esta generación de vídeo
     const tempDir = fs.mkdtempSync(
       path.join(os.tmpdir(), `video-gen-kb-pan-${Date.now()}-`),
     );
-    const tempFiles: string[] = []; // Lista para rastrear y limpiar archivos temporales
+    const tempFiles: string[] = [];
 
     try {
       this.logger.log(
         `Directorio temporal para generación de vídeo: ${tempDir}`,
       );
 
-      // Descargar y preparar archivos de imagen
       const imageFileInfos = await Promise.all(
         imagenes.map(async (imagen, index) => {
           if (!imagen.url) {
@@ -205,7 +169,6 @@ export class VideoGenerationService {
         }),
       );
 
-      // Descargar y preparar archivos de audio
       const audioFileInfos = await Promise.all(
         audios.map(async (audio, index) => {
           if (!audio.url) {
@@ -228,7 +191,6 @@ export class VideoGenerationService {
         }),
       );
 
-      // Ordenar imágenes y audios según su propiedad 'order'
       imageFileInfos.sort((a, b) => a.order - b.order);
       audioFileInfos.sort((a, b) => a.order - b.order);
 
@@ -238,7 +200,6 @@ export class VideoGenerationService {
       );
       tempFiles.push(outputVideoPath);
 
-      // Obtener duraciones de los archivos de audio individuales
       const audioDurations = await Promise.all(
         audioFileInfos.map(async (audioFile) => {
           try {
@@ -247,49 +208,87 @@ export class VideoGenerationService {
             this.logger.error(
               `Error obteniendo duración de ${audioFile.path}: ${err.message}. Usando 0s.`,
             );
-            return 0; // Devolver 0 si hay error para robustez
+            return 0;
           }
         }),
       );
 
-      // Crear archivo de silencio (1 segundo)
       const silenceFilePath = path.join(tempDir, 'silence_1s.mp3');
       tempFiles.push(silenceFilePath);
       await createSilenceFile(silenceFilePath);
+      // Obtener la duración real del archivo de silencio podría ser más robusto,
+      // pero createSilenceFile lo genera con 1s.
+      const silenceSegmentDuration = 1;
 
-      // Crear lista de audios para concatenar (audio1, silencio, audio2, silencio, ...)
       const audioListFile = path.join(tempDir, 'audiolist_for_concat.txt');
       let audioListContent = '';
-      audioFileInfos.forEach((audioFile, index) => {
-        // Usar rutas absolutas y normalizadas para FFmpeg
+      const resolvedSilenceFilePath = path
+        .resolve(silenceFilePath)
+        .replace(/\\/g, '/');
+
+      if (audioFileInfos.length === 0 && imagenes.length > 0) {
+        // Caso: Hay imágenes pero no audios. Crear un vídeo solo con imágenes y silencio.
+        // Podríamos querer un comportamiento específico aquí, como un vídeo de N segundos por imagen.
+        // Por ahora, esto resultará en un vídeo muy corto o vacío si no hay audios.
+        // Para añadir un silencio final incluso sin audios, se necesitaría lógica adicional.
+        // Por ahora, nos enfocamos en el caso con audios.
+        this.logger.warn(
+          'No hay audios, el video podría ser muy corto o estar vacío si no se maneja explícitamente.',
+        );
+      }
+
+      audioFileInfos.forEach((audioFile) => {
         audioListContent += `file '${path.resolve(audioFile.path).replace(/\\/g, '/')}'\n`;
-        if (index < audioFileInfos.length - 1) {
-          // Añadir silencio entre audios
-          audioListContent += `file '${path.resolve(silenceFilePath).replace(/\\/g, '/')}'\n`;
-        }
+        // Añadir un segmento de silencio DESPUÉS de CADA audio.
+        // El último silencio actuará como el silencio final del vídeo.
+        audioListContent += `file '${resolvedSilenceFilePath}'\n`;
       });
+
+      // Si no hay audios, pero queremos un final con la última imagen y silencio (si hay imágenes)
+      // Esto es un caso más complejo si no hay `audioFileInfos` para iterar.
+      // La lógica actual asume que si hay audios, habrá un silencio final.
+      // Si `audioFileInfos` está vacío, `audioListContent` estará vacío.
+
       await promisify(fs.writeFile)(audioListFile, audioListContent);
       tempFiles.push(audioListFile);
 
-      // Concatenar audios con silencios intercalados
       const concatenatedNarrationsPath = path.join(
         tempDir,
         'narrations_concatenated.mp3',
       );
       tempFiles.push(concatenatedNarrationsPath);
-      await concatAudiosWithSilence(audioListFile, concatenatedNarrationsPath);
-      const narrationsDuration = await getFileDuration(
-        concatenatedNarrationsPath,
-      );
 
-      // Preparar audio final (narración + música de fondo si existe)
+      // Solo intentar concatenar si hay contenido en audioListFile
+      let narrationsDuration = 0;
+      if (audioListContent.trim() !== '') {
+        await concatAudiosWithSilence(
+          audioListFile,
+          concatenatedNarrationsPath,
+        );
+        narrationsDuration = await getFileDuration(concatenatedNarrationsPath);
+      } else if (imageFileInfos.length > 0) {
+        // Si no hay audios pero sí imágenes, podríamos querer crear un audio de puro silencio
+        // para que el video tenga alguna duración con la imagen final.
+        // Por ahora, si no hay audios, narrationsDuration será 0.
+        // Esto significa que el video final podría no tener audio si no hay `audioFileInfos`.
+        // Para el problema original (final abrupto CON audios), esto está cubierto.
+        this.logger.log(
+          'No hay contenido de audio para concatenar. La narración estará vacía.',
+        );
+        // Creamos un archivo de narraciones vacío o con un silencio mínimo si es necesario
+        // para que ffmpeg no falle más adelante si espera un archivo de audio.
+        // Opcionalmente, copiar el archivo de silencio para que haya *algo* de audio.
+        fs.copyFileSync(silenceFilePath, concatenatedNarrationsPath); // Usar un silencio como base
+        narrationsDuration = silenceSegmentDuration; // Duración del silencio base
+      }
+
       const finalAudioTrackPath = path.join(tempDir, 'final_audio_track.mp3');
       tempFiles.push(finalAudioTrackPath);
 
       let backgroundMusicAvailable = false;
       if (backgroundMusicPath) {
         try {
-          await promisify(fs.access)(backgroundMusicPath); // Verificar acceso
+          await promisify(fs.access)(backgroundMusicPath);
           const musicStats = await promisify(fs.stat)(backgroundMusicPath);
           if (musicStats.size > 0) {
             backgroundMusicAvailable = true;
@@ -311,7 +310,7 @@ export class VideoGenerationService {
           backgroundMusicPath,
           lowVolumeMusicPath,
           musicVolume,
-          narrationsDuration,
+          narrationsDuration, // La duración de la narración ya incluye todos los silencios
         );
         await mergeAudios(
           concatenatedNarrationsPath,
@@ -319,61 +318,109 @@ export class VideoGenerationService {
           finalAudioTrackPath,
         );
       } else {
-        fs.copyFileSync(concatenatedNarrationsPath, finalAudioTrackPath); // Usar narración como audio final
+        // Si no hay narración (o es solo un silencio base) o no hay música de fondo,
+        // usar la narración (o el silencio base) como pista final.
+        fs.copyFileSync(concatenatedNarrationsPath, finalAudioTrackPath);
       }
 
-      // --- Generar clips de vídeo con efecto Ken Burns (Paneo) ---
       const videoClipsForConcatenation: string[] = [];
-
       let lastDirection: number | null = null;
 
-      for (let i = 0; i < audioFileInfos.length; i++) {
-        // Seleccionar la imagen correspondiente
-        const imageToUse =
-          imageFileInfos[Math.min(i, imageFileInfos.length - 1)];
-        let imageClipDuration = audioDurations[i];
+      // Si no hay audios, pero sí imágenes, generamos un clip por imagen con una duración por defecto.
+      if (audioFileInfos.length === 0 && imageFileInfos.length > 0) {
+        this.logger.log(
+          'Generando clips de vídeo solo con imágenes y duración de silencio por defecto.',
+        );
+        for (let i = 0; i < imageFileInfos.length; i++) {
+          const imageToUse = imageFileInfos[i];
+          // Cada imagen se mostrará por la duración de un segmento de silencio.
+          // Si es la última imagen, se mostrará por la duración del silencio final (que es `silenceSegmentDuration`).
+          const imageClipDuration = silenceSegmentDuration;
 
-        if (i < audioFileInfos.length - 1) {
-          imageClipDuration += 1;
+          if (imageClipDuration > 0) {
+            const kenBurnsClipPath = path.join(
+              tempDir,
+              `kb_video_clip_${i}.mp4`,
+            );
+            let direction: number;
+            do {
+              direction = Math.floor(Math.random() * 4) + 1;
+            } while (direction === lastDirection);
+            lastDirection = direction;
+
+            try {
+              await applyKenBurnsToImage(
+                imageToUse.path,
+                kenBurnsClipPath,
+                imageClipDuration,
+                direction as 1 | 2 | 3 | 4,
+              );
+              videoClipsForConcatenation.push(kenBurnsClipPath);
+              tempFiles.push(kenBurnsClipPath);
+            } catch (kenBurnsError) {
+              this.logger.error(
+                `Error al aplicar Ken Burns a la imagen ${imageToUse.path} (sin audio): ${kenBurnsError.message}. Clip omitido.`,
+              );
+            }
+          }
         }
+      } else {
+        // Generar clips de vídeo basados en la duración de los audios y silencios
+        for (let i = 0; i < audioFileInfos.length; i++) {
+          const imageToUse =
+            imageFileInfos[Math.min(i, imageFileInfos.length - 1)];
+          // La duración del clip de imagen es la duración del audio MÁS el silencio que le sigue.
+          const imageClipDuration = audioDurations[i] + silenceSegmentDuration;
 
-        if (imageClipDuration > 0) {
-          const kenBurnsClipPath = path.join(tempDir, `kb_video_clip_${i}.mp4`);
-
-          // Generar dirección aleatoria distinta de la anterior
-          let direction: number;
-          do {
-            direction = Math.floor(Math.random() * 4) + 1; // 1 a 4
-          } while (direction === lastDirection);
-          lastDirection = direction;
-
-          try {
-            await applyKenBurnsToImage(
-              imageToUse.path,
-              kenBurnsClipPath,
-              imageClipDuration,
-              direction as 1 | 2 | 3 | 4, // 1=→, 2=↓, 3=←, 4=↑
+          if (imageClipDuration > 0) {
+            const kenBurnsClipPath = path.join(
+              tempDir,
+              `kb_video_clip_${i}.mp4`,
             );
-            videoClipsForConcatenation.push(kenBurnsClipPath);
-            tempFiles.push(kenBurnsClipPath);
-          } catch (kenBurnsError) {
-            this.logger.error(
-              `Error al aplicar Ken Burns (Paneo) a la imagen ${imageToUse.path} para el clip ${i}: ${kenBurnsError.message}. Este clip será omitido.`,
-            );
+            let direction: number;
+            do {
+              direction = Math.floor(Math.random() * 4) + 1; // 1 a 4
+            } while (direction === lastDirection);
+            lastDirection = direction;
+
+            try {
+              await applyKenBurnsToImage(
+                imageToUse.path,
+                kenBurnsClipPath,
+                imageClipDuration,
+                direction as 1 | 2 | 3 | 4,
+              );
+              videoClipsForConcatenation.push(kenBurnsClipPath);
+              tempFiles.push(kenBurnsClipPath);
+            } catch (kenBurnsError) {
+              this.logger.error(
+                `Error al aplicar Ken Burns (Paneo) a la imagen ${imageToUse.path} para el clip ${i}: ${kenBurnsError.message}. Este clip será omitido.`,
+              );
+            }
           }
         }
       }
 
       if (videoClipsForConcatenation.length === 0) {
-        this.logger.error(
-          'No se generaron clips de vídeo con Ken Burns. No se puede crear el vídeo final.',
-        );
-        throw new Error(
-          'Fallo al generar clips de vídeo individuales con efecto Ken Burns.',
-        );
+        if (imageFileInfos.length > 0) {
+          this.logger.warn(
+            'No se generaron clips de vídeo con Ken Burns, pero hay imágenes. Se intentará crear un vídeo estático si es posible o se lanzará error.',
+          );
+          // Podríamos intentar crear un video con la primera imagen y el audio final si existe.
+          // O simplemente lanzar el error como antes. Por simplicidad, mantenemos el error.
+          throw new Error(
+            'Fallo al generar clips de vídeo individuales con efecto Ken Burns, y no hay clips para concatenar.',
+          );
+        } else {
+          this.logger.error(
+            'No se generaron clips de vídeo con Ken Burns (y no hay imágenes). No se puede crear el vídeo final.',
+          );
+          throw new Error(
+            'Fallo al generar clips de vídeo individuales con efecto Ken Burns.',
+          );
+        }
       }
 
-      // Crear archivo de lista para concatenar los clips de vídeo con Ken Burns
       const videoListFile = path.join(tempDir, 'videolist_for_concat.txt');
       const videoListContent = videoClipsForConcatenation
         .map(
@@ -383,32 +430,48 @@ export class VideoGenerationService {
       await promisify(fs.writeFile)(videoListFile, videoListContent);
       tempFiles.push(videoListFile);
 
-      // Fusionar los clips de vídeo generados (con Ken Burns) y la pista de audio final
       const tempFinalVideoPath = path.join(
         tempDir,
         `temp_final_video.${options.format}`,
       );
       tempFiles.push(tempFinalVideoPath);
+
+      // Asegurarse de que finalAudioTrackPath existe y tiene contenido,
+      // incluso si es solo silencio, para que ffmpeg no falle.
+      if (
+        !fs.existsSync(finalAudioTrackPath) ||
+        fs.statSync(finalAudioTrackPath).size === 0
+      ) {
+        this.logger.warn(
+          `El archivo finalAudioTrackPath (${finalAudioTrackPath}) está vacío o no existe. Usando un archivo de silencio como fallback para la pista de audio.`,
+        );
+        // Crear un archivo de silencio si no existe o está vacío
+        await createSilenceFile(
+          finalAudioTrackPath,
+          narrationsDuration > 0 ? narrationsDuration : silenceSegmentDuration,
+        ); // Usar duración de narración o 1s
+        if (narrationsDuration === 0) {
+          this.logger.error(
+            'La duración de la narración y del segmento de silencio es 0. El video podría no tener audio o fallar.',
+          );
+        }
+      }
+
       await mergeGeneratedVideoClipsWithAudio(
         videoListFile,
-        finalAudioTrackPath,
+        finalAudioTrackPath, // Este audio ya incluye todos los silencios, incluido el final
         tempFinalVideoPath,
       );
 
-      // Copiar al path de salida final (esto es redundante si outputVideoPath ya es el destino)
       fs.copyFileSync(tempFinalVideoPath, outputVideoPath);
-
-      // Leer el vídeo generado como buffer para devolverlo
       return await promisify(fs.readFile)(outputVideoPath);
     } catch (error) {
       this.logger.error(
         'Error detallado en generateVideo (Paneo Ken Burns):',
         error.stack,
       );
-      // Asegurarse de que el error se propague para que la transacción/proceso falle si es necesario
       throw error;
     } finally {
-      // Limpieza de archivos temporales
       this.logger.log(
         `Iniciando limpieza de archivos temporales de ${tempDir}`,
       );
@@ -423,10 +486,8 @@ export class VideoGenerationService {
           );
         }
       }
-      // Eliminar directorio temporal
       try {
         if (fs.existsSync(tempDir)) {
-          // Verificar si el directorio aún existe
           fs.rmdirSync(tempDir);
         }
       } catch (err) {

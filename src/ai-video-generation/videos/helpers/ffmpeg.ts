@@ -1,4 +1,4 @@
-import fs from 'fs';
+const fs = require('fs');
 
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
@@ -11,20 +11,35 @@ ffmpeg.setFfprobePath(ffprobePath);
 
 const VIDEO_WIDTH = 720;
 const VIDEO_HEIGHT = 1280;
-const VIDEO_FPS = 30; // Fotogramas por segundo para los clips de Ken Burns
+const VIDEO_FPS = 30;
 
-export const createSilenceFile = async (filePath: string): Promise<void> => {
+export const createSilenceFile = async (
+  filePath: string,
+  duration: number = 1,
+): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    if (duration <= 0) {
+      console.warn(
+        `createSilenceFile: La duración solicitada es ${duration}. Se usará 0.01s en su lugar.`,
+      );
+      duration = 0.01;
+    }
     ffmpeg()
       .input('anullsrc')
       .inputFormat('lavfi')
       .audioFrequency(44100)
       .audioBitrate('192k')
       .audioChannels(2)
-      .duration(1) // 1 segundo de silencio
+      .duration(duration)
       .output(filePath)
       .on('end', resolve)
-      .on('error', reject)
+      .on('error', (err: Error) => {
+        console.error(
+          `Error creando archivo de silencio (${duration}s) en ${filePath}:`,
+          err.message,
+        );
+        reject(err);
+      })
       .run();
   });
 };
@@ -34,13 +49,31 @@ export const concatAudiosWithSilence = async (
   concatAudioPath: string,
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    const listContent = fs.readFileSync(audioListFile, 'utf-8');
+    if (listContent.trim() === '') {
+      console.warn(
+        'El archivo de lista de audios para concatenar está vacío. Se creará un archivo de audio con un breve silencio.',
+      );
+      createSilenceFile(concatAudioPath, 0.01).then(resolve).catch(reject);
+      return;
+    }
+
     ffmpeg()
       .input(audioListFile)
-      .inputOptions('-f', 'concat', '-safe', '0')
-      .outputOptions('-c:a', 'libmp3lame', '-b:a', '192k') // Calidad de audio
+      .inputOptions(['-f', 'concat', '-safe', '0'])
+      .outputOptions([
+        '-c:a',
+        'libmp3lame',
+        '-b:a',
+        '192k',
+        '-ar',
+        '44100',
+        '-ac',
+        '2',
+      ])
       .output(concatAudioPath)
       .on('end', resolve)
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         console.error('Error concatenando audios:', err.message);
         reject(err);
       })
@@ -52,20 +85,44 @@ export const addBackgroundMusic = async (
   backgroundMusicPath: string,
   lowVolumeMusic: string,
   musicVolume: number,
-  concatDuration: number,
+  concatDuration: number, // This is the target duration for the background music
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
-    // Duración extendida para la música de fondo para asegurar cobertura
-    const extendedDuration = concatDuration + 10;
+    if (concatDuration <= 0) {
+      console.warn(
+        `addBackgroundMusic: La duración de la narración es ${concatDuration}. La música de fondo podría no procesarse como se espera o ser muy corta.`,
+      );
+      // Create a very short silent file if target duration is invalid
+      createSilenceFile(lowVolumeMusic, 0.01).then(resolve).catch(reject);
+      return;
+    }
 
     ffmpeg()
       .input(backgroundMusicPath)
-      .audioFilters(`volume=${musicVolume}`) // Aplicar volumen
-      .duration(extendedDuration) // Limitar duración de la música
-      .outputOptions(['-c:a', 'libmp3lame', '-b:a', '128k'])
+      .inputOptions([
+        '-stream_loop',
+        '-1', // Loop the background music input indefinitely
+      ])
+      .audioFilters(`volume=${musicVolume}`) // Apply volume adjustment
+      .outputOptions([
+        '-t',
+        concatDuration.toString(), // Set the output duration to match narration
+        '-c:a',
+        'libmp3lame',
+        '-b:a',
+        '128k',
+        '-ar',
+        '44100',
+        '-ac',
+        '2',
+      ])
       .output(lowVolumeMusic)
+      .on('start', (commandLine: string) => {
+        // Log the command for debugging
+        console.log('FFmpeg comando (addBackgroundMusic): ' + commandLine);
+      })
       .on('end', resolve)
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         console.error('Error ajustando música de fondo:', err.message);
         reject(err);
       })
@@ -79,58 +136,169 @@ export const mergeAudios = async (
   finalAudioPath: string,
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    const concatAudioExists =
+      fs.existsSync(concatAudioPath) && fs.statSync(concatAudioPath).size > 0;
+    const lowVolumeMusicExists =
+      fs.existsSync(lowVolumeMusic) && fs.statSync(lowVolumeMusic).size > 0;
+
+    if (!concatAudioExists && !lowVolumeMusicExists) {
+      console.warn(
+        'Ambos audios (narración y música) están vacíos o no existen. Creando silencio para finalAudioPath.',
+      );
+      createSilenceFile(finalAudioPath, 0.01).then(resolve).catch(reject);
+      return;
+    }
+    if (!concatAudioExists) {
+      console.warn(
+        'El audio de narración está vacío o no existe. Usando solo música de fondo si está disponible.',
+      );
+      ffmpeg()
+        .input(lowVolumeMusic)
+        .outputOptions([
+          '-c:a',
+          'libmp3lame',
+          '-b:a',
+          '192k',
+          '-ar',
+          '44100',
+          '-ac',
+          '2',
+        ])
+        .output(finalAudioPath)
+        .on('end', resolve)
+        .on('error', (err: Error) => {
+          console.error(
+            'Error al procesar música de fondo (fallback en mergeAudios):',
+            err.message,
+          );
+          reject(err);
+        })
+        .run();
+      return;
+    }
+    if (!lowVolumeMusicExists) {
+      console.warn(
+        'La música de fondo está vacía o no existe. Usando solo narración.',
+      );
+      ffmpeg()
+        .input(concatAudioPath)
+        .outputOptions([
+          '-c:a',
+          'libmp3lame',
+          '-b:a',
+          '192k',
+          '-ar',
+          '44100',
+          '-ac',
+          '2',
+        ])
+        .output(finalAudioPath)
+        .on('end', resolve)
+        .on('error', (err: Error) => {
+          console.error(
+            'Error al procesar narración (fallback en mergeAudios):',
+            err.message,
+          );
+          reject(err);
+        })
+        .run();
+      return;
+    }
+
+    const filterComplex =
+      '[0:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[aud0];' +
+      '[1:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[aud1];' +
+      '[aud0][aud1]amix=inputs=2:duration=first:dropout_transition=0[a]';
+
     ffmpeg()
-      .input(concatAudioPath) // Audio principal (narraciones)
-      .input(lowVolumeMusic) // Música de fondo
+      .input(concatAudioPath)
+      .input(lowVolumeMusic)
+      .complexFilter(filterComplex)
       .outputOptions([
-        '-filter_complex',
-        '[0:a][1:a]amerge=inputs=2[a]', // Mezclar dos pistas de audio
         '-map',
-        '[a]', // Mapear la pista mezclada
+        '[a]',
         '-c:a',
         'libmp3lame',
-        '-q:a',
-        '4', // Calidad de audio variable (buena)
-        '-shortest', // Finalizar cuando la pista más corta termine
+        '-b:a',
+        '192k',
+        '-ar',
+        '44100',
+        '-ac',
+        '2',
       ])
       .output(finalAudioPath)
+      .on('start', (commandLine: string) => {
+        console.log('FFmpeg comando (merge audios): ' + commandLine);
+      })
       .on('end', () => {
         resolve();
       })
-      .on('error', (err) => {
+      .on('error', (err: Error) => {
         console.error(
-          'Error mezclando audios, usando solo narración:',
+          'Error mezclando audios. Fallback: usando solo narración concatenada:',
           err.message,
         );
-        // Fallback: si la mezcla falla, usar solo el audio concatenado original
-        fs.copyFileSync(concatAudioPath, finalAudioPath);
-        resolve();
+        try {
+          ffmpeg()
+            .input(concatAudioPath)
+            .outputOptions([
+              '-c:a',
+              'libmp3lame',
+              '-b:a',
+              '192k',
+              '-ar',
+              '44100',
+              '-ac',
+              '2',
+            ])
+            .output(finalAudioPath)
+            .on('end', resolve)
+            .on('error', (copyErr: Error) => {
+              console.error(
+                'Error en fallback al procesar narración:',
+                copyErr.message,
+              );
+              reject(copyErr);
+            })
+            .run();
+        } catch (copyError: any) {
+          console.error(
+            'Excepción en fallback al procesar narración:',
+            copyError.message,
+          );
+          reject(copyError);
+        }
       })
       .run();
   });
 };
 
-/**
- * Merges pre-generated video clips (with Ken Burns effect) and the final audio track.
- */
 export const mergeGeneratedVideoClipsWithAudio = async (
   videoListFile: string,
   finalAudioPath: string,
   outputVideoPath: string,
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    const videoListContent = fs.readFileSync(videoListFile, 'utf-8');
+    if (videoListContent.trim() === '') {
+      console.error(
+        'El archivo de lista de videos para concatenar está vacío. No se puede generar el video final.',
+      );
+      return reject(new Error('Lista de clips de vídeo vacía.'));
+    }
+
+    if (
+      !fs.existsSync(finalAudioPath) ||
+      fs.statSync(finalAudioPath).size === 0
+    ) {
+      console.warn(
+        `El archivo de audio final ${finalAudioPath} está vacío o no existe. Se intentará generar video sin audio o con un silencio corto.`,
+      );
+    }
+
     ffmpeg()
       .input(videoListFile)
-      .inputOptions([
-        '-f',
-        'concat',
-        '-safe',
-        '0',
-        '-auto_convert',
-        '1',
-        '-err_detect',
-        'ignore_err',
-      ])
+      .inputOptions(['-f', 'concat', '-safe', '0'])
       .input(finalAudioPath)
       .outputOptions([
         '-pix_fmt',
@@ -149,6 +317,8 @@ export const mergeGeneratedVideoClipsWithAudio = async (
         '192k',
         '-ar',
         '44100',
+        '-ac',
+        '2',
         '-s',
         `${VIDEO_WIDTH}x${VIDEO_HEIGHT}`,
         '-r',
@@ -158,15 +328,17 @@ export const mergeGeneratedVideoClipsWithAudio = async (
         '-shortest',
       ])
       .output(outputVideoPath)
-      .on('start', (commandLine) => {
+      .on('start', (commandLine: string) => {
         console.log('FFmpeg comando (merge clips con audio): ' + commandLine);
       })
       .on('end', resolve)
-      .on('error', (err, stdout, stderr) => {
+      .on('error', (err: Error, stdout: string, stderr: string) => {
         console.error(
           'Error al fusionar clips de vídeo con audio:',
           err.message,
         );
+        console.error('FFmpeg stdout:', stdout);
+        console.error('FFmpeg stderr:', stderr);
         reject(
           new Error(
             `Fallo al fusionar clips de vídeo: ${err.message} \nstdout: ${stdout}\nstderr: ${stderr}`,
@@ -177,25 +349,20 @@ export const mergeGeneratedVideoClipsWithAudio = async (
   });
 };
 
-/**
- * Obtiene la duración de un archivo de video o audio usando ffprobe.
- * Devuelve la duración en segundos.
- */
 export function getFileDuration(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
+      return resolve(0);
+    }
+    ffmpeg.ffprobe(filePath, (err: Error, metadata: any) => {
       if (err) {
-        return reject(
-          new Error(`ffprobe falló para ${filePath}: ${err.message}`),
-        );
+        return resolve(0);
       }
       if (!metadata || !metadata.format) {
-        return reject(
-          new Error(`Formato de metadatos inválido o ausente para ${filePath}`),
-        );
+        return resolve(0);
       }
       const duration = metadata.format.duration;
-      if (typeof duration !== 'number' || isNaN(duration)) {
+      if (typeof duration !== 'number' || isNaN(duration) || duration < 0) {
         resolve(0);
         return;
       }
@@ -204,11 +371,6 @@ export function getFileDuration(filePath: string): Promise<number> {
   });
 }
 
-/**
- * Applies Ken Burns effect (panning from left to right) to a single image
- * to create a video clip of a specified duration.
- * Pre-calculates x-increment and y-offset in JS for FFmpeg.
- */
 export const applyKenBurnsToImage = async (
   imagePath: string,
   outputPath: string,

@@ -108,6 +108,9 @@
             white-space: nowrap;
             cursor: pointer;
             transition: background-color 0.3s;
+            display: block;
+            text-decoration: none;
+            color: inherit;
         }
 
         .pending-upload {
@@ -358,7 +361,7 @@
                     data-date="{{date}}">
                     <div class="day-number"></div>
                     {{#each videos}}
-                    <div class="video-item 
+                    <a href="/videos/list/{{_id}}" class="video-item 
                     {{#if uploadedAt}}
                         {{#unless (eq status 'uploaded')}} pending-upload {{/unless}} {{/if}}" data-video-id="{{_id}}">
                         {{#if uploadedAt}}
@@ -381,7 +384,7 @@
                         {{else}}
                         {{type}}
                         {{/if}}
-                    </div>
+                    </a>
                     {{/each}}
                 </div>
                 {{/each}}
@@ -406,14 +409,6 @@
     </div>
 
     <script>
-        document.querySelectorAll('.video-item').forEach(video => {
-            video.addEventListener('click', function () {
-                const videoId = this.getAttribute('data-video-id');
-                window.location.href = '/videos/list/' + videoId;
-            });
-        });
-
-        // Update the month display when the page loads
         document.addEventListener('DOMContentLoaded', function () {
             updateMonthDisplay();
             markOtherMonthDays();
