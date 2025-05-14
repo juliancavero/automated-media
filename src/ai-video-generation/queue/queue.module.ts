@@ -6,6 +6,7 @@ import { VideoQueueConsumer } from './consumers/video-queue.consumer';
 import { AudioModule } from '../audios/audio.module';
 import { VideoModule } from '../videos/video.module';
 import { ImageModule } from '../images/image.module';
+import { VideoProcessorQueueConsumer } from './consumers/video-processor-queue.consumer';
 
 @Module({
   imports: [
@@ -22,6 +23,9 @@ import { ImageModule } from '../images/image.module';
         name: 'audio-generation',
       },
       {
+        name: 'video-description',
+      },
+      {
         name: 'video-processing',
       },
     ),
@@ -30,7 +34,12 @@ import { ImageModule } from '../images/image.module';
     VideoModule,
   ],
   controllers: [],
-  providers: [ImageQueueConsumer, AudioQueueConsumer, VideoQueueConsumer],
+  providers: [
+    ImageQueueConsumer,
+    AudioQueueConsumer,
+    VideoQueueConsumer,
+    VideoProcessorQueueConsumer,
+  ],
   exports: [],
 })
-export class QueueModule { }
+export class QueueModule {}

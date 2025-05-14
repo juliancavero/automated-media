@@ -662,6 +662,19 @@ export class VideoService {
     return counts;
   }
 
+  async findIncompleteVideos() {
+    return this.videoModel
+      .find({
+        $or: [
+          { url: { $exists: false } },
+          { url: null },
+          { publicId: { $exists: false } },
+          { publicId: null },
+        ],
+      })
+      .exec();
+  }
+
   translateLang(lang: Languages): string {
     switch (lang) {
       case Languages.EN:

@@ -12,7 +12,6 @@ import {
   Delete,
   Put,
 } from '@nestjs/common';
-import { VideoGenerationService } from '../services/video-generation.service';
 import { GenerateVideoDto } from '../dto/generate-video.dto';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
@@ -20,8 +19,7 @@ import { VideoQueueService } from '../queues/video-queue.service';
 import { ApiQuery } from '@nestjs/swagger';
 import { Video } from '../entities/video.schema';
 import { VideoService } from '../services/video.service';
-import { getTargetLanguage, Languages } from 'src/ai-video-generation/types';
-import { VideoTestService } from '../services/videotest.service';
+import { Languages } from 'src/ai-video-generation/types';
 
 interface CalendarDay {
   day: number;

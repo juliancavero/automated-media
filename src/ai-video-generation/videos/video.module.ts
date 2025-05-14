@@ -18,6 +18,9 @@ import { VideoTestService } from './services/videotest.service';
   imports: [
     MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]),
     BullModule.registerQueue({
+      name: 'video-description',
+    }),
+    BullModule.registerQueue({
       name: 'video-processing',
     }),
     ImageModule,

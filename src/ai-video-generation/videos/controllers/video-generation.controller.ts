@@ -16,6 +16,7 @@ import { VideoGenerationService } from '../services/video-generation.service';
 import { Languages, VideoType } from 'src/ai-video-generation/types';
 import { Response } from 'express';
 import { VideoTestService } from '../services/videotest.service';
+import { VideoQueueService } from '../queues/video-queue.service';
 
 @Controller('video-generation')
 export class VideoGenerationController {
@@ -27,6 +28,7 @@ export class VideoGenerationController {
     private readonly audioService: AudioService,
     private readonly videoGenerationService: VideoGenerationService,
     private readonly videoTestService: VideoTestService,
+    private readonly videoQueueService: VideoQueueService,
   ) {}
 
   @Post()
@@ -202,5 +204,62 @@ export class VideoGenerationController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Post('all-media')
+  async crearVideoConTodo(
+    @Body()
+    body: {
+      videoId: string;
+    },
+  ) {
+    if (!body.videoId) {
+      throw new HttpException('VideoId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const video = await this.videoService.findById(body.videoId);
+
+    if (!video) {
+      throw new HttpException('Video not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Instead of directly processing, add to queue
+    const jobId = await this.videoQueueService.addVideoProcessingJob(
+      body.videoId,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Video added to processing queue successfully',
+      jobId,
+    };
+  }
+
+  @Post('process-incomplete-videos')
+  async processIncompleteVideos() {
+    // Find all videos that don't have url or publicId
+    const incompleteVideos = await this.videoService.findIncompleteVideos();
+
+    if (!incompleteVideos || incompleteVideos.length === 0) {
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'No incomplete videos found',
+        count: 0,
+      };
+    }
+
+    // Get the list of videoIds
+    const videoIds = incompleteVideos.map((video) => video._id.toString());
+
+    // Add them to the queue with delay between jobs
+    const jobIds =
+      await this.videoQueueService.addBatchVideoGenerationJobs(videoIds);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: `Added ${videoIds.length} videos to processing queue`,
+      count: videoIds.length,
+      jobIds: jobIds,
+    };
   }
 }

@@ -260,6 +260,7 @@
         <button id="select-all-btn" class="btn btn-secondary btn-lg">Select All Items</button>
 
         <button id="generate-video-btn" class="btn btn-primary btn-lg btn-generate">Generate Video</button>
+        <button id="queue-video-btn" class="btn btn-success btn-lg">Add to Processing Queue</button>
         {{#if videoGeneration.url}}
         <button id="mark-uploaded-btn" class="btn btn-warning btn-lg" {{#if (eq videoGeneration.status 'uploaded'
           )}}disabled{{/if}}>
@@ -605,6 +606,45 @@
           } catch (error) {
             document.getElementById('generate-status').innerHTML =
               `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+
+      // Queue video button functionality
+      const queueVideoBtn = document.getElementById('queue-video-btn');
+      if (queueVideoBtn) {
+        queueVideoBtn.addEventListener('click', async function () {
+          const videoId = '{{videoGeneration._id}}';
+
+          try {
+            document.getElementById('generate-status').innerHTML =
+              '<div class="alert alert-info">Adding video to processing queue... Please wait</div>';
+            queueVideoBtn.disabled = true;
+
+            const response = await fetch('/video-generation/all-media', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                videoId
+              })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              document.getElementById('generate-status').innerHTML =
+                '<div class="alert alert-success">Video added to processing queue successfully!</div>';
+            } else {
+              document.getElementById('generate-status').innerHTML =
+                `<div class="alert alert-danger">Error: ${result.message || 'Failed to add video to processing queue'}</div>`;
+            }
+          } catch (error) {
+            document.getElementById('generate-status').innerHTML =
+              `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          } finally {
+            queueVideoBtn.disabled = false;
           }
         });
       }

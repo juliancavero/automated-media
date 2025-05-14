@@ -275,6 +275,7 @@
                 <button id="relaunchImagesBtn" class="action-button">Relaunch Failed Images</button>
                 <button id="relaunchAudiosBtn" class="action-button">Relaunch Failed Audios</button>
                 <button id="relaunchMissingDescriptionsBtn" class="action-button">Generate Missing Descriptions</button>
+                <button id="processIncompleteVideosBtn" class="action-button">Process Incomplete Videos</button>
             </div>
             <div id="actionResponseMessage"></div>
         </div>
@@ -650,6 +651,49 @@
                     notification.textContent = `Error: ${error.message}`;
                     notification.className = 'notification error';
                     notification.style.display = 'block';
+                }
+            });
+
+            // Setup for Process Incomplete Videos button
+            const processIncompleteVideosBtn = document.getElementById('processIncompleteVideosBtn');
+            processIncompleteVideosBtn.addEventListener('click', async function () {
+                processIncompleteVideosBtn.disabled = true;
+                processIncompleteVideosBtn.innerText = 'Processing...';
+                const responseMessage = document.getElementById('actionResponseMessage');
+
+                try {
+                    const response = await fetch('/video-generation/process-incomplete-videos', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    responseMessage.classList.remove('error-message', 'success-message');
+                    if (result.statusCode === 200) {
+                        responseMessage.classList.add('success-message');
+                        responseMessage.textContent = `${result.message} (${result.count} videos queued)`;
+                    } else {
+                        responseMessage.classList.add('error-message');
+                        responseMessage.textContent = result.message || 'An error occurred while processing videos';
+                    }
+
+                    responseMessage.style.display = 'block';
+
+                    // Hide message after 5 seconds
+                    setTimeout(() => {
+                        responseMessage.style.display = 'none';
+                    }, 5000);
+                } catch (error) {
+                    console.error('Error:', error);
+                    responseMessage.classList.add('error-message');
+                    responseMessage.textContent = `Error: ${error.message}`;
+                    responseMessage.style.display = 'block';
+                } finally {
+                    processIncompleteVideosBtn.disabled = false;
+                    processIncompleteVideosBtn.innerText = 'Process Incomplete Videos';
                 }
             });
         }

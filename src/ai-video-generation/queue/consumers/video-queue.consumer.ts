@@ -7,7 +7,7 @@ interface VideoDescriptionGenerationJob {
   videoId: string;
 }
 
-@Processor('video-processing')
+@Processor('video-description')
 export class VideoQueueConsumer extends WorkerHost {
   private readonly logger = new Logger(VideoQueueConsumer.name);
 
