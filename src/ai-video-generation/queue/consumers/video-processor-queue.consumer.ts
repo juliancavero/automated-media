@@ -25,33 +25,41 @@ export class VideoProcessorQueueConsumer extends WorkerHost {
   }
 
   async process(job: Job<VideoDescriptionGenerationJob>) {
-    const { videoId } = job.data;
-    this.logger.log(`Processing incomplete video ${videoId}`);
+    try {
+      const { videoId } = job.data;
+      this.logger.log(`Processing incomplete video ${videoId}`);
 
-    // Logic similar to crearVideoConTodo
-    const video = await this.videoService.findById(videoId);
-    if (!video) {
-      throw new Error(`Video not found: ${videoId}`);
+      // Logic similar to crearVideoConTodo
+      const video = await this.videoService.findById(videoId);
+      if (!video) {
+        throw new Error(`Video not found: ${videoId}`);
+      }
+
+      const images = await this.imageService.findByVideoId(videoId);
+      const audios = await this.audioService.findByVideoId(videoId);
+
+      if (!images || images.length === 0) {
+        throw new Error(`No images found for video: ${videoId}`);
+      }
+      if (!audios || audios.length === 0) {
+        throw new Error(`No audios found for video: ${videoId}`);
+      }
+
+      // Generate the video with all images and audios
+      await this.videoGenerationService.crearVideo(
+        videoId,
+        images,
+        audios,
+        video.lang as Languages,
+      );
+
+      return { success: true, videoId };
+    } catch (error) {
+      this.logger.error(`Error processing video ${job.data.videoId}: ${error}`);
+      // wait for 5 seconds before retrying
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // Retry the job
+      throw error; // Re-throw the error to mark the job as failed
     }
-
-    const images = await this.imageService.findByVideoId(videoId);
-    const audios = await this.audioService.findByVideoId(videoId);
-
-    if (!images || images.length === 0) {
-      throw new Error(`No images found for video: ${videoId}`);
-    }
-    if (!audios || audios.length === 0) {
-      throw new Error(`No audios found for video: ${videoId}`);
-    }
-
-    // Generate the video with all images and audios
-    await this.videoGenerationService.crearVideo(
-      videoId,
-      images,
-      audios,
-      video.lang as Languages,
-    );
-
-    return { success: true, videoId };
   }
 }
