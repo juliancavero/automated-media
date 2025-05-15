@@ -11,7 +11,7 @@ import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Languages, VideoType } from 'src/ai-video-generation/types';
+import { Languages, Status, VideoType } from 'src/ai-video-generation/types';
 import { CreatedStoriesService } from 'src/ai-video-generation/created-stories/services/created-stories.service';
 
 @Injectable()
@@ -162,7 +162,7 @@ export class VideoService {
       _id: undefined, // Clear the ID to create a new document
       url: undefined, // Clear the URL to create a new document
       publicId: undefined, // Clear the publicId to create a new document
-      status: 'pending', // Set the status to pending
+      status: Status.PENDING, // Set the status to pending
       lang,
       texts: translatedTexts,
       related: video._id.toString(), // Set the related field to the original video ID
@@ -260,7 +260,7 @@ export class VideoService {
   async setVideoUploaded(id: string): Promise<Video | null> {
     return await this.videoModel.findByIdAndUpdate(
       id,
-      { status: 'uploaded' },
+      { status: Status.UPLOADED },
       { new: true, runValidators: true },
     );
   }
@@ -630,7 +630,7 @@ export class VideoService {
           lang,
           type,
           uploadedAt: { $exists: false },
-          status: 'finished',
+          status: Status.FINISHED,
           url: { $exists: true, $ne: null }, // Ensure the video has a URL
         })
         .sort({ createdAt: -1 })
@@ -670,9 +670,18 @@ export class VideoService {
           { url: null },
           { publicId: { $exists: false } },
           { publicId: null },
+          { status: Status.ERROR },
         ],
       })
       .exec();
+  }
+
+  async setStatus(id: string, status: Status): Promise<Video | null> {
+    return this.videoModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true },
+    );
   }
 
   translateLang(lang: Languages): string {

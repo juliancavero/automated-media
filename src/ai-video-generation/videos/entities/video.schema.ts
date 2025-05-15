@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, ObjectId } from 'mongoose';
-import { Languages, VideoType } from 'src/ai-video-generation/types';
+import { Languages, Status, VideoType } from 'src/ai-video-generation/types';
 
 export type VideoDocument = Video & Document;
 
@@ -20,8 +20,8 @@ export class Video {
   @Prop()
   publicId?: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'finished', 'uploaded'] })
-  status: string;
+  @Prop({ default: Status.PENDING, enum: Status })
+  status: Status;
 
   @Prop()
   series?: string;

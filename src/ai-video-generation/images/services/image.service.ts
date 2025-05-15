@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Image, ImageDocument } from '../schemas/image.schema';
 import { ImageQueueService } from '../queues/image-queue.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
+import { Status } from 'src/ai-video-generation/types';
 
 @Injectable()
 export class ImageService {
@@ -107,7 +108,7 @@ export class ImageService {
     return await this.imageModel
       .findByIdAndUpdate(
         id,
-        { url, publicId, status: 'finished' },
+        { url, publicId, status: Status.FINISHED },
         { new: true, runValidators: true },
       )
       .exec();
@@ -123,7 +124,7 @@ export class ImageService {
     await this.imageModel
       .findByIdAndUpdate(
         id,
-        { status: 'pending', url: null, publicId: null },
+        { status: Status.PENDING, url: null, publicId: null },
         { runValidators: true },
       )
       .exec();
@@ -134,11 +135,19 @@ export class ImageService {
 
   async relaunchFailedImages(): Promise<void> {
     const failedImages = await this.imageModel
-      .find({ status: 'pending' })
+      .find({ status: Status.PENDING || Status.ERROR })
       .exec();
 
     for (const image of failedImages) {
       await this.imageQueueService.addImageGenerationJob(image);
     }
+  }
+
+  async setStatus(id: string, status: Status): Promise<Image | null> {
+    return this.imageModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true },
+    );
   }
 }

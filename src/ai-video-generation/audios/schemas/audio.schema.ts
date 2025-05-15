@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, ObjectId } from 'mongoose';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 
 export type AudioDocument = Audio & Document;
 
@@ -20,8 +20,8 @@ export class Audio {
   @Prop()
   publicId?: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'finished'] })
-  status: string;
+  @Prop({ default: Status.PENDING, enum: Status })
+  status: Status;
 
   @Prop({ default: Date.now })
   createdAt: Date;

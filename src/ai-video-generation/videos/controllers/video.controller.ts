@@ -19,7 +19,7 @@ import { VideoQueueService } from '../queues/video-queue.service';
 import { ApiQuery } from '@nestjs/swagger';
 import { Video } from '../entities/video.schema';
 import { VideoService } from '../services/video.service';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 
 interface CalendarDay {
   day: number;
@@ -172,6 +172,22 @@ export class VideoController {
         `Error relaunching missing descriptions: ${error.message}`,
       );
       return { success: false, message: `Error: ${error.message}`, count: 0 };
+    }
+  }
+
+  @Post(':id/mark-error')
+  async markVideoAsError(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const video = await this.videoService.setStatus(id, Status.ERROR);
+      if (!video) {
+        return { success: false, message: 'Video not found' };
+      }
+      return { success: true, message: 'Video marked as failed successfully' };
+    } catch (error) {
+      this.logger.error(`Error marking video as failed: ${error.message}`);
+      return { success: false, message: `Error: ${error.message}` };
     }
   }
 

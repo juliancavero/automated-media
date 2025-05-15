@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { Audio, AudioDocument } from '../schemas/audio.schema';
 import { AudioQueueService } from '../queues/audio-queue.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 
 @Injectable()
 export class AudioService {
@@ -48,7 +48,7 @@ export class AudioService {
       text,
       lang,
       _id: undefined, // Ensure a new ID is generated
-      status: 'pending', // Reset status to pending
+      status: Status.PENDING, // Reset status to pending
       createdAt: undefined, // Ensure createdAt is set to now
       updatedAt: undefined, // Ensure updatedAt is set to now
       publicId: undefined, // Ensure publicId is reset
@@ -118,7 +118,7 @@ export class AudioService {
     const updatedAudio = await this.audioModel
       .findByIdAndUpdate(
         id,
-        { url, publicId, status: 'finished' },
+        { url, publicId, status: Status.FINISHED },
         { new: true, runValidators: true },
       )
       .exec();
@@ -132,7 +132,7 @@ export class AudioService {
 
   async relaunchFailedAudios(): Promise<void> {
     const failedAudios = await this.audioModel
-      .find({ status: 'pending' })
+      .find({ status: Status.PENDING || Status.ERROR })
       .exec();
 
     for (const audio of failedAudios) {
@@ -150,12 +150,20 @@ export class AudioService {
     await this.audioModel
       .findByIdAndUpdate(
         id,
-        { status: 'pending', url: null, publicId: null },
+        { status: Status.PENDING, url: null, publicId: null },
         { runValidators: true },
       )
       .exec();
 
     // Add to the queue
     await this.audioQueueService.addAudioGenerationJob(audio);
+  }
+
+  async setStatus(id: string, status: Status): Promise<Audio | null> {
+    return this.audioModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true },
+    );
   }
 }

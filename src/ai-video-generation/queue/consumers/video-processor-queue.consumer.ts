@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 import { VideoGenerationService } from 'src/ai-video-generation/videos/services/video-generation.service';
 import { VideoService } from 'src/ai-video-generation/videos/services/video.service';
 
@@ -29,6 +29,8 @@ export class VideoProcessorQueueConsumer extends WorkerHost {
       const { videoId } = job.data;
       this.logger.log(`Processing incomplete video ${videoId}`);
 
+      await this.videoService.setStatus(videoId, Status.PROCESSING);
+
       // Logic similar to crearVideoConTodo
       const video = await this.videoService.findById(videoId);
       if (!video) {
@@ -39,9 +41,11 @@ export class VideoProcessorQueueConsumer extends WorkerHost {
       const audios = await this.audioService.findByVideoId(videoId);
 
       if (!images || images.length === 0) {
+        await this.videoService.setStatus(videoId, Status.ERROR);
         throw new Error(`No images found for video: ${videoId}`);
       }
       if (!audios || audios.length === 0) {
+        await this.videoService.setStatus(videoId, Status.ERROR);
         throw new Error(`No audios found for video: ${videoId}`);
       }
 
@@ -53,8 +57,10 @@ export class VideoProcessorQueueConsumer extends WorkerHost {
         video.lang as Languages,
       );
 
+      await this.videoService.setStatus(videoId, Status.FINISHED);
       return { success: true, videoId };
     } catch (error) {
+      await this.videoService.setStatus(job.data.videoId, Status.ERROR);
       this.logger.error(`Error processing video ${job.data.videoId}: ${error}`);
       // wait for 5 seconds before retrying
       await new Promise((resolve) => setTimeout(resolve, 5000));

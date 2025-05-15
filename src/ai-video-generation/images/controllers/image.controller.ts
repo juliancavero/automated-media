@@ -12,12 +12,13 @@ import {
 import { Response } from 'express';
 import { ImageService } from '../services/image.service';
 import { Image } from '../schemas/image.schema';
+import { Status } from 'src/ai-video-generation/types';
 
 @Controller('images')
 export class ImageController {
   private readonly logger = new Logger(ImageController.name);
 
-  constructor(private readonly imageService: ImageService) { }
+  constructor(private readonly imageService: ImageService) {}
 
   @Post()
   async createImage(
@@ -29,7 +30,9 @@ export class ImageController {
   }
 
   @Delete(':id')
-  async deleteImage(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+  async deleteImage(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       await this.imageService.deleteImage(id);
       return { success: true, message: 'Image deleted successfully' };
@@ -40,7 +43,9 @@ export class ImageController {
   }
 
   @Post(':id/regenerate')
-  async regenerateImage(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+  async regenerateImage(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       await this.imageService.regenerateImage(id);
       return { success: true, message: 'Image regeneration has been queued' };
@@ -53,8 +58,27 @@ export class ImageController {
   async relaunchFailedImages(): Promise<{ success: boolean; message: string }> {
     try {
       await this.imageService.relaunchFailedImages();
-      return { success: true, message: 'Failed image tasks have been requeued' };
+      return {
+        success: true,
+        message: 'Failed image tasks have been requeued',
+      };
     } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Post(':id/mark-error')
+  async markImageAsError(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const image = await this.imageService.setStatus(id, Status.ERROR);
+      if (!image) {
+        return { success: false, message: 'Image not found' };
+      }
+      return { success: true, message: 'Image marked as failed successfully' };
+    } catch (error) {
+      this.logger.error(`Error marking image as failed: ${error.message}`);
       return { success: false, message: `Error: ${error.message}` };
     }
   }
@@ -62,11 +86,18 @@ export class ImageController {
   // Views
   @Get('list')
   @Render('ai-video-generation/image-list')
-  async getImagesListView(@Query('page') page = '1', @Query('limit') limit = '10', @Res() res: Response) {
+  async getImagesListView(
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+    @Res() res: Response,
+  ) {
     const pageNumber = parseInt(page, 10) || 1;
     const limitNumber = parseInt(limit, 10) || 100;
 
-    const { images, total, pages } = await this.imageService.getAllImages(pageNumber, limitNumber);
+    const { images, total, pages } = await this.imageService.getAllImages(
+      pageNumber,
+      limitNumber,
+    );
 
     return {
       title: 'Image List',
@@ -79,7 +110,7 @@ export class ImageController {
         hasPrev: pageNumber > 1,
         nextPage: pageNumber + 1,
         prevPage: pageNumber - 1,
-      }
+      },
     };
   }
 

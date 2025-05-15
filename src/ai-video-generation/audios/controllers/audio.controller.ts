@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AudioService } from '../services/audio.service';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 
 @Controller('audios')
 export class AudioController {
@@ -48,6 +48,21 @@ export class AudioController {
     try {
       await this.audioService.regenerateAudio(id);
       return { success: true, message: 'Audio regeneration has been queued' };
+    } catch (error) {
+      return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  @Post(':id/mark-error')
+  async markAudioAsError(
+    @Param('id') id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const audio = await this.audioService.setStatus(id, Status.ERROR);
+      if (!audio) {
+        return { success: false, message: 'Audio not found' };
+      }
+      return { success: true, message: 'Audio marked as failed successfully' };
     } catch (error) {
       return { success: false, message: `Error: ${error.message}` };
     }

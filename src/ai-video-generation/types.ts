@@ -8,6 +8,15 @@ export enum VideoType {
   CENSORED = 'censored',
 }
 
+export enum Status {
+  PENDING = 'pending',
+  FINISHED = 'finished',
+  UPLOADED = 'uploaded',
+  ERROR = 'error',
+  PROCESSING = 'processing',
+  QUEUED = 'queued',
+}
+
 export enum Languages {
   EN = 'en',
   ES = 'es',

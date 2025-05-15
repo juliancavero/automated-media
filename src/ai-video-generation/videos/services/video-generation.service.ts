@@ -8,7 +8,7 @@ import { Audio } from '../../audios/schemas/audio.schema';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { AiService } from 'src/external/ai/ai.service';
 import { VideoService } from './video.service';
-import { Languages } from 'src/ai-video-generation/types';
+import { Languages, Status } from 'src/ai-video-generation/types';
 import { getExtensionFromUrl } from '../helpers/getExtensionFromUrl';
 import { downloadFile } from '../helpers/downloadFile';
 import {
@@ -21,7 +21,7 @@ import {
   applyKenBurnsToImage,
 } from '../helpers/ffmpeg';
 
-const shouldGenerateDescription = false; // Cambiar a false para desactivar la generación de descripción
+const shouldGenerateDescription = true; // Cambiar a false para desactivar la generación de descripción
 
 interface VideoOptions {
   format?: string; // Formato del video (mp4, avi, etc.)
@@ -89,7 +89,9 @@ export class VideoGenerationService {
 
       const existingVideo = await this.videoService.findById(videoId);
       const newStatus =
-        existingVideo?.status === 'uploaded' ? 'uploaded' : 'finished';
+        existingVideo?.status === Status.UPLOADED
+          ? Status.UPLOADED
+          : Status.PENDING;
 
       const videoResult = await this.videoService.setVideoUrl(
         videoId,

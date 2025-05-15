@@ -190,6 +190,18 @@
     .language-copy-btn {
       z-index: 10;
     }
+
+    .btn-mark-failed {
+      margin-left: 5px;
+      background-color: #dc3545;
+      border-color: #dc3545;
+      color: white;
+    }
+
+    .btn-mark-failed:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
   </style>
 </head>
 
@@ -247,15 +259,6 @@
 
     {{#if videoGeneration}}
     <div class="text-center generate-video-btn">
-      {{!-- <div class="form-check form-check-inline align-middle mx-3 my-3">
-        <input class="form-check-input" type="checkbox" id="add-to-be-continued" value="true">
-        <label class="form-check-label" for="add-to-be-continued">Añadir 'To be continued...' al final del
-          vídeo</label>
-      </div>
-      <div class="form-check form-check-inline align-middle mx-3 my-3">
-        <input class="form-check-input" type="checkbox" id="add-the-end" value="true">
-        <label class="form-check-label" for="add-the-end">Añadir 'The End' al final del vídeo</label>
-      </div> --}}
       <div class="action-buttons">
         <button id="select-all-btn" class="btn btn-secondary btn-lg">Select All Items</button>
 
@@ -267,6 +270,7 @@
           Mark as Uploaded {{#if (eq videoGeneration.status 'uploaded')}}✓{{/if}}
         </button>
         {{/if}}
+        <button id="mark-failed-btn" class="btn btn-mark-failed btn-lg">Mark as Failed</button>
       </div>
       <div id="generate-status" class="mt-2"></div>
     </div>
@@ -684,6 +688,50 @@
           } catch (error) {
             markUploadedBtn.disabled = false;
             markUploadedBtn.innerHTML = 'Mark as Uploaded';
+            document.getElementById('generate-status').innerHTML =
+              `<div class="alert alert-danger">Error: ${error.message}</div>`;
+          }
+        });
+      }
+
+      // Mark as failed button functionality
+      const markFailedBtn = document.getElementById('mark-failed-btn');
+      if (markFailedBtn) {
+        markFailedBtn.addEventListener('click', async function () {
+          if (!confirm('Are you sure you want to mark this video as failed? This may affect how it\'s processed in the system.')) {
+            return;
+          }
+
+          const videoId = '{{videoGeneration._id}}';
+
+          try {
+            markFailedBtn.disabled = true;
+            markFailedBtn.innerHTML = 'Marking as failed...';
+
+            const response = await fetch(`/videos/${videoId}/mark-error`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              document.getElementById('generate-status').innerHTML =
+                '<div class="alert alert-success">Video marked as failed successfully!</div>';
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              markFailedBtn.disabled = false;
+              markFailedBtn.innerHTML = 'Mark as Failed';
+              document.getElementById('generate-status').innerHTML =
+                `<div class="alert alert-danger">Error: ${result.message || 'Failed to mark video as failed'}</div>`;
+            }
+          } catch (error) {
+            markFailedBtn.disabled = false;
+            markFailedBtn.innerHTML = 'Mark as Failed';
             document.getElementById('generate-status').innerHTML =
               `<div class="alert alert-danger">Error: ${error.message}</div>`;
           }

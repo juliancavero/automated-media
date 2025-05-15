@@ -89,6 +89,17 @@
       background-color: #c82333;
       border-color: #bd2130;
     }
+
+    .btn-danger {
+      margin-left: 5px;
+      background-color: #dc3545;
+      border-color: #dc3545;
+    }
+
+    .btn-danger:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
   </style>
 </head>
 
@@ -160,6 +171,7 @@
       <div class='actions'>
         <button class='btn btn-primary' onclick='downloadImage("{{image._id}}")'>Download</button>
         <button class='btn btn-warning' onclick='regenerateImage("{{image._id}}")'>Regenerate Image</button>
+        <button class='btn btn-danger' onclick='markImageAsFailed("{{image._id}}")'>Mark as Failed</button>
       </div>
 
       <div class="danger-zone">
@@ -221,6 +233,29 @@
           window.location.href = '/images/list';
         } else {
           alert(`Failed to delete: ${result.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    async function markImageAsFailed(id) {
+      if (!confirm('Are you sure you want to mark this image as failed? This may affect how it\'s processed in the system.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/images/${id}/mark-error`, {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Image marked as failed successfully');
+          window.location.reload();
+        } else {
+          alert(`Failed to mark as failed: ${result.message || 'Unknown error'}`);
         }
       } catch (error) {
         alert(`Error: ${error.message}`);
