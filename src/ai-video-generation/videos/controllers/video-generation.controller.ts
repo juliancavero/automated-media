@@ -13,7 +13,7 @@ import { CrearVideoDto } from '../dto/crear-video.dto';
 import { AudioService } from 'src/ai-video-generation/audios/services/audio.service';
 import { ImageService } from 'src/ai-video-generation/images/services/image.service';
 import { VideoGenerationService } from '../services/video-generation.service';
-import { Languages, VideoType } from 'src/ai-video-generation/types';
+import { Languages, Status, VideoType } from 'src/ai-video-generation/types';
 import { Response } from 'express';
 import { VideoTestService } from '../services/videotest.service';
 import { VideoQueueService } from '../queues/video-queue.service';
@@ -227,6 +227,8 @@ export class VideoGenerationController {
     const jobId = await this.videoQueueService.addVideoProcessingJob(
       body.videoId,
     );
+
+    await this.videoService.setStatus(body.videoId, Status.QUEUED);
 
     return {
       statusCode: HttpStatus.OK,
