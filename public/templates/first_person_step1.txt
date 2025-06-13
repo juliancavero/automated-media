@@ -16,9 +16,11 @@ Structure:
 
 Tone: Quiet, human, unsure. The story should feel *real* — something someone wrote while still trying to make sense of it themselves.
 
-Always start your response with a brief summary phrase like this: **Brief Summary Phrase**
+Always start your response with a brief summary phrase in bold ****
 
 Do not include any:
 - Dialogue formatting
 - Script directions
 - Overly dramatic or horror-style elements
+
+Your answer will go straight to the point with the title and the story.

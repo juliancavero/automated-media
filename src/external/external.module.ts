@@ -5,7 +5,6 @@ import { HuggingFaceModule } from './huggingface/huggingface.module';
 import { VyrioAiModule } from './vyrioai/vyrioai.module';
 import { AiModule } from './ai/ai.module';
 import { GoogleAIUploadModule } from './google-ai-upload/google-ai-upload.module';
-import { SubtitlesModule } from './subtitles/subtitles.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { SubtitlesModule } from './subtitles/subtitles.module';
     VyrioAiModule,
     AiModule,
     GoogleAIUploadModule,
-    SubtitlesModule,
   ],
   providers: [],
   exports: [
@@ -25,7 +23,6 @@ import { SubtitlesModule } from './subtitles/subtitles.module';
     VyrioAiModule,
     AiModule,
     GoogleAIUploadModule,
-    SubtitlesModule,
   ],
 })
 export class ExternalModule {}

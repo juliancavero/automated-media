@@ -25,3 +25,5 @@ Do not include:
 - Script directions
 - Dialogue formatting
 - Horror-style drama — this is mystery, not fear
+
+Your answer will go straight to the point with the title and the story.
