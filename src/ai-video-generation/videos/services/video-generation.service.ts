@@ -87,17 +87,11 @@ export class VideoGenerationService {
         throw new Error('Error al subir el video a Cloudinary');
       }
 
-      const existingVideo = await this.videoService.findById(videoId);
-      const newStatus =
-        existingVideo?.status === Status.UPLOADED
-          ? Status.UPLOADED
-          : Status.PENDING;
-
       const videoResult = await this.videoService.setVideoUrl(
         videoId,
         uploadResult.url,
         uploadResult.public_id,
-        newStatus,
+        Status.FINISHED,
       );
       if (!videoResult) {
         this.logger.error('Error al guardar el video en la base de datos');
