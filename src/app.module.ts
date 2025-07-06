@@ -13,6 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { InitAdminService } from './auth/init-admin.service';
 import { CreatedStoriesModule } from './ai-video-generation/created-stories/created-stories.module';
+import { QuizzModule } from './quizz/quizz.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CreatedStoriesModule } from './ai-video-generation/created-stories/crea
     QueueModule,
     ExternalModule,
     AuthModule,
+    QuizzModule,
   ],
   controllers: [AppController],
   providers: [

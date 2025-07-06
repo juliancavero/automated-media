@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    {{> head title="Crear Quiz"}}
+</head>
+
+<body>
+    {{> navmenu}}
+
+    <div class="container">
+        <h1>Crear Nuevo Quiz</h1>
+
+        <div id="message-container"></div>
+
+        <form id="quiz-form">
+            <div class="form-group">
+                <label for="titulo">Título del Quiz:</label>
+                <div class="input-with-ai">
+                    <input type="text" id="titulo" name="titulo" required>
+                    <button type="button" class="ai-btn" onclick="generateTitle()" title="Generar título con IA">
+                        🤖
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="difficulty">Dificultad:</label>
+                <select id="difficulty" name="difficulty" required>
+                    <option value="easy">Fácil</option>
+                    <option value="medium" selected>Medio</option>
+                    <option value="hard">Difícil</option>
+                    <option value="impossible">Imposible</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="difficultyText">Descripción de Dificultad:</label>
+                <input type="text" id="difficultyText" name="difficultyText"
+                    placeholder="Ej: Quiz básico para principiantes" required>
+            </div>
+
+            <div class="form-group">
+                <label for="scores">Puntuaciones (separadas por comas):</label>
+                <div class="input-with-ai">
+                    <input type="text" id="scores" name="scores" placeholder="Ej: Principiante, Intermedio, Avanzado">
+                    <button type="button" class="ai-btn" onclick="generateScores()" title="Generar puntuaciones con IA">
+                        🤖
+                    </button>
+                </div>
+                <small style="color: #666; font-size: 12px;">Deja vacío para no incluir puntuaciones</small>
+            </div>
+
+            <div id="questions-container">
+                <div class="questions-header">
+                    <h3>Preguntas</h3>
+                    <button type="button" class="ai-btn ai-btn-large" onclick="generateMultipleQuestions()"
+                        title="Añadir 5 preguntas con IA">
+                        🤖 Añadir 5 preguntas
+                    </button>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="addQuestion()">Agregar Pregunta</button>
+            <button type="submit" class="btn btn-success">Crear Quiz</button>
+        </form>
+    </div>
+
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        small {
+            display: block;
+            margin-top: 5px;
+        }
+
+        .question-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-header>div:last-child {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .question-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .remove-question {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .answer-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .answer-input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .correct-radio {
+            width: auto;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .input-with-ai {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-with-ai input {
+            flex: 1;
+        }
+
+        .ai-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+
+        .ai-btn:hover {
+            background: #0056b3;
+        }
+
+        .ai-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .ai-btn-large {
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .questions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .questions-header h3 {
+            margin: 0;
+        }
+
+        .question-ai-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+
+    <script>
+        let questionCounter = 0;
+
+        function addQuestion() {
+            questionCounter++;
+            const questionHtml = `
+                <div class="question-container" id="question-${questionCounter}">
+                    <div class="question-header">
+                        <div class="question-title">Pregunta ${questionCounter}</div>
+                        <div>
+                            <button type="button" class="ai-btn" onclick="generateSingleQuestion(${questionCounter})" title="Generar esta pregunta con IA">
+                                🤖
+                            </button>
+                            <button type="button" class="remove-question" onclick="removeQuestion(${questionCounter})">Eliminar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Texto de la pregunta:</label>
+                        <textarea name="preguntas[${questionCounter}][texto]" required rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Imagen (URL opcional):</label>
+                        <input type="url" name="preguntas[${questionCounter}][imagen]">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Respuestas (marca la correcta):</label>
+                        <div id="answers-${questionCounter}">
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="0" class="correct-radio" required>
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 1" required>
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="1" class="correct-radio">
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 2" required>
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="2" class="correct-radio">
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 3" required>
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="3" class="correct-radio">
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 4" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('questions-container').insertAdjacentHTML('beforeend', questionHtml);
+        }
+
+        function removeQuestion(questionId) {
+            document.getElementById(`question-${questionId}`).remove();
+        }
+
+        // Initialize with one question
+        addQuestion();
+
+        // Handle form submission
+        document.getElementById('quiz-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const scoresInput = formData.get('scores');
+            const scores = scoresInput ? scoresInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+
+            const quizData = {
+                titulo: formData.get('titulo'),
+                difficulty: formData.get('difficulty'),
+                difficultyText: formData.get('difficultyText'),
+                scores: scores,
+                preguntas: []
+            };
+
+            // Process questions
+            for (let i = 1; i <= questionCounter; i++) {
+                const questionElement = document.getElementById(`question-${i}`);
+                if (questionElement) {
+                    const texto = formData.get(`preguntas[${i}][texto]`);
+                    const imagen = formData.get(`preguntas[${i}][imagen]`);
+                    const respuestas = formData.getAll(`preguntas[${i}][respuestas][]`);
+                    const correcta = formData.get(`preguntas[${i}][correcta]`);
+
+                    if (texto && respuestas.length === 4 && correcta !== null) {
+                        quizData.preguntas.push({
+                            texto,
+                            imagen: imagen || undefined,
+                            respuestas,
+                            indiceRespuestaCorrecta: parseInt(correcta)
+                        });
+                    }
+                }
+            }
+
+            try {
+                const response = await fetch('/quizzes/create-with-questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quizData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Quiz creado exitosamente!', 'success');
+                    document.getElementById('quiz-form').reset();
+
+                    // Reset questions container with header
+                    const questionsContainer = document.getElementById('questions-container');
+                    questionsContainer.innerHTML = `
+                        <div class="questions-header">
+                            <h3>Preguntas</h3>
+                            <button type="button" class="ai-btn ai-btn-large" onclick="generateMultipleQuestions()" title="Añadir 5 preguntas con IA">
+                                🤖 Añadir 5 preguntas
+                            </button>
+                        </div>
+                    `;
+
+                    questionCounter = 0;
+                    addQuestion();
+                } else {
+                    showMessage('Error al crear el quiz: ' + (result.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al crear el quiz: ' + error.message, 'error');
+            }
+        });
+
+        function showMessage(message, type) {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        // AI Functions
+        async function generateTitle() {
+            const button = event.target;
+            const titleInput = document.getElementById('titulo');
+
+            button.disabled = true;
+            button.textContent = '⏳';
+
+            try {
+                const response = await fetch('/quizzes/ai/generate-title', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    titleInput.value = result.title;
+                    showMessage('Título generado con IA exitosamente!', 'success');
+                } else {
+                    showMessage('Error al generar título: ' + (result.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al generar título: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🤖';
+            }
+        }
+
+        async function generateSingleQuestion(questionId) {
+            const button = event.target;
+            const titleInput = document.getElementById('titulo');
+            const difficultySelect = document.getElementById('difficulty');
+
+            if (!titleInput.value.trim()) {
+                showMessage('Primero debes ingresar un título para el quiz', 'error');
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '⏳';
+
+            try {
+                const response = await fetch('/quizzes/ai/generate-question', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: titleInput.value,
+                        difficulty: difficultySelect.value
+                    })
+                });
+
+                const question = await response.json();
+
+                if (response.ok) {
+                    // Fill the question form
+                    const questionTextArea = document.querySelector(`textarea[name="preguntas[${questionId}][texto]"]`);
+                    const answerInputs = document.querySelectorAll(`input[name="preguntas[${questionId}][respuestas][]"]`);
+                    const correctRadio = document.querySelector(`input[name="preguntas[${questionId}][correcta]"][value="${question.indiceRespuestaCorrecta}"]`);
+
+                    questionTextArea.value = question.texto;
+                    answerInputs.forEach((input, index) => {
+                        input.value = question.respuestas[index] || '';
+                    });
+                    correctRadio.checked = true;
+
+                    showMessage('Pregunta generada con IA exitosamente!', 'success');
+                } else {
+                    showMessage('Error al generar pregunta: ' + (question.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al generar pregunta: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🤖';
+            }
+        }
+
+        async function generateScores() {
+            const button = event.target;
+            const titleInput = document.getElementById('titulo');
+            const scoresInput = document.getElementById('scores');
+
+            if (!titleInput.value.trim()) {
+                showMessage('Primero debes ingresar un título para el quiz', 'error');
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '⏳';
+
+            try {
+                const response = await fetch('/quizzes/ai/generate-scores', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: titleInput.value.trim()
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    scoresInput.value = result.scores.join(', ');
+                    showMessage('Puntuaciones generadas con IA exitosamente!', 'success');
+                } else {
+                    showMessage('Error al generar puntuaciones: ' + (result.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al generar puntuaciones: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🤖';
+            }
+        }
+
+        async function generateMultipleQuestions() {
+            const button = event.target;
+            const titleInput = document.getElementById('titulo');
+            const difficultySelect = document.getElementById('difficulty');
+
+            if (!titleInput.value.trim()) {
+                showMessage('Primero debes ingresar un título para el quiz', 'error');
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = '⏳ Generando...';
+
+            try {
+                const response = await fetch('/quizzes/ai/generate-multiple-questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: titleInput.value,
+                        difficulty: difficultySelect.value
+                    })
+                });
+
+                const questions = await response.json();
+
+                if (response.ok) {
+                    // Add the 5 generated questions to existing ones
+                    questions.forEach(question => {
+                        addQuestion();
+                        const currentQuestionId = questionCounter;
+
+                        // Fill the question data
+                        setTimeout(() => {
+                            const questionTextArea = document.querySelector(`textarea[name="preguntas[${currentQuestionId}][texto]"]`);
+                            const answerInputs = document.querySelectorAll(`input[name="preguntas[${currentQuestionId}][respuestas][]"]`);
+                            const correctRadio = document.querySelector(`input[name="preguntas[${currentQuestionId}][correcta]"][value="${question.indiceRespuestaCorrecta}"]`);
+
+                            questionTextArea.value = question.texto;
+                            answerInputs.forEach((input, index) => {
+                                input.value = question.respuestas[index] || '';
+                            });
+                            correctRadio.checked = true;
+                        }, 100);
+                    });
+
+                    showMessage('5 preguntas añadidas con IA exitosamente!', 'success');
+                } else {
+                    showMessage('Error al generar preguntas: ' + (questions.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al generar preguntas: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🤖 Añadir 5 preguntas';
+            }
+        }
+    </script>
+</body>
+
+</html>

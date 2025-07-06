@@ -8,6 +8,7 @@ import * as hbs from 'hbs';
 import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import { registerHelpers } from '../helpers';
 
 // Helper function to create directories safely
 function ensureDirectoryExists(dir: string, logger: Logger): void {
@@ -42,6 +43,15 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Enable CORS
+  const frontUrl = process.env.QUIZZ_FRONT_URL ?? 'http://localhost:5173';
+  app.enableCors({
+    origin: [frontUrl, 'http://127.0.0.1:5173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  });
+
   // Use cookie parser to extract cookies
   app.use(cookieParser());
 
@@ -66,11 +76,10 @@ async function bootstrap() {
   // Register handlebars partials
   hbs.registerPartials(partialsDir);
 
-  // Register Handlebars helpers
-  hbs.registerHelper('add', function (value1, value2) {
-    return value1 + value2;
-  });
+  // Register all Handlebars helpers from helpers.js
+  registerHelpers(hbs);
 
+  // Additional custom helpers
   hbs.registerHelper('generatePageNumbers', (currentPage, totalPages) => {
     const pages: number[] = [];
     const maxPagesToShow = 5;
@@ -90,14 +99,6 @@ async function bootstrap() {
     return pages;
   });
 
-  hbs.registerHelper('eq', function (arg1, arg2) {
-    return arg1 === arg2;
-  });
-
-  hbs.registerHelper('truncate', function (text, length) {
-    if (!text) return '';
-    return text.length > length ? text.substring(0, length) + '...' : text;
-  });
   hbs.registerHelper('truncateShort', function (text, length) {
     if (!text) return '';
     return text.length > length ? text.substring(0, length) : text;

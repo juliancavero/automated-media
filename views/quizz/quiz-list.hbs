@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    {{> head title="Lista de Quizzes"}}
+</head>
+
+<body>
+    {{> navmenu}}
+
+    <div class="container">
+        <h1>Lista de Quizzes</h1>
+
+        {{#if quizzes.length}}
+        <div class="quiz-table-container">
+            <table class="quiz-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Nº Preguntas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each quizzes}}
+                    <tr>
+                        <td>
+                            <a href="/quizzes/{{this._id}}/render" class="quiz-title-link">
+                                {{this.titulo}}
+                            </a>
+                        </td>
+                        <td>{{this.difficultyText}}</td>
+                        <td>{{this.preguntas.length}}</td>
+                        <td class="actions-cell">
+                            <a href="/quizzes/{{this._id}}/render" class="action-btn edit-btn" title="Ver">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                                </svg>
+                            </a>
+                            <button onclick="recordVideo('{{this._id}}')" class="action-btn record-btn" title="Grabar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="12" r="8" />
+                                </svg>
+                            </button>
+                            <a href="http://localhost:5173/quizz/{{this._id}}" target="_blank"
+                                class="action-btn play-btn" title="Jugar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <p>No hay quizzes creados aún.</p>
+            <a href="/quizzes/create" class="btn btn-primary">Crear primer quiz</a>
+        </div>
+        {{/if}}
+    </div>
+
+    <style>
+        .quiz-table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .quiz-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .quiz-table th,
+        .quiz-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .quiz-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .quiz-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .quiz-title-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .quiz-title-link:hover {
+            text-decoration: underline;
+        }
+
+        .difficulty-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .difficulty-easy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .difficulty-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty-hard {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .difficulty-impossible {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            margin-right: 5px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            margin-right: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .actions-cell {
+            white-space: nowrap;
+        }
+
+        .edit-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #0056b3;
+            color: white;
+            text-decoration: none;
+        }
+
+        .record-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .record-btn:hover {
+            background-color: #c82333;
+        }
+
+        .play-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .play-btn:hover {
+            background-color: #1e7e34;
+            color: white;
+            text-decoration: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <script>
+        async function recordVideo(quizId) {
+            try {
+                const response = await fetch(`/quizzes/${quizId}/record-mp4`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Video grabado exitosamente');
+                } else {
+                    alert('Error al grabar el video');
+                }
+            } catch (error) {
+                alert('Error al grabar el video: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

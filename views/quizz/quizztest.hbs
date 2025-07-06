@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    {{> head title=quizzTest.titulo}}
+</head>
+
+<body>
+    {{> navmenu}}
+
+    <div class="container">
+        <h1>{{quizzTest.titulo}}</h1>
+
+        <div class="quiz-info">
+            <div class="difficulty-info">
+                <span class="difficulty-label">Dificultad:</span>
+                <span class="difficulty-badge difficulty-{{quizzTest.difficulty}}">
+                    {{#eq quizzTest.difficulty "easy"}}Fácil{{/eq}}
+                    {{#eq quizzTest.difficulty "medium"}}Medio{{/eq}}
+                    {{#eq quizzTest.difficulty "hard"}}Difícil{{/eq}}
+                    {{#eq quizzTest.difficulty "impossible"}}Imposible{{/eq}}
+                </span>
+            </div>
+            {{#if quizzTest.difficultyText}}
+            <div class="difficulty-description">{{quizzTest.difficultyText}}</div>
+            {{/if}}
+            {{#if quizzTest.scores}}
+            {{#if quizzTest.scores.length}}
+            <div class="scores-info">
+                <span class="scores-label">Niveles de puntuación:</span>
+                <div class="scores-list">
+                    {{#each quizzTest.scores}}
+                    <span class="score-item">{{this}}</span>
+                    {{/each}}
+                </div>
+            </div>
+            {{/if}}
+            {{/if}}
+        </div>
+
+        {{#each quizzTest.preguntas}}
+        <div class="pregunta">
+            <div class="pregunta-numero">Pregunta {{add @index 1}}</div>
+            <div class="pregunta-texto">{{this.texto}}</div>
+
+            {{#if this.imagen}}
+            <img src="{{this.imagen}}" alt="Imagen de la pregunta" class="pregunta-imagen">
+            {{/if}}
+
+            <ul class="respuestas">
+                {{#each this.respuestas}}
+                <li class="respuesta {{#if (eq @index ../this.indiceRespuestaCorrecta)}}correcta{{/if}}">
+                    {{add @index 1}}. {{this}}
+                </li>
+                {{/each}}
+            </ul>
+        </div>
+        {{/each}}
+    </div>
+
+    <style>
+        .quiz-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+
+        .difficulty-info {
+            margin-bottom: 10px;
+        }
+
+        .difficulty-label,
+        .scores-label {
+            font-weight: bold;
+            color: #333;
+            margin-right: 10px;
+        }
+
+        .difficulty-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .difficulty-easy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .difficulty-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .difficulty-hard {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .difficulty-impossible {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .difficulty-description {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .scores-info {
+            margin-top: 15px;
+        }
+
+        .scores-list {
+            margin-top: 5px;
+        }
+
+        .score-item {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+
+        .pregunta {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .pregunta-numero {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .pregunta-texto {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .pregunta-imagen {
+            max-width: 100%;
+            height: auto;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .respuestas {
+            list-style: none;
+            padding: 0;
+        }
+
+        .respuesta {
+            padding: 10px 15px;
+            margin: 5px 0;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .respuesta:hover {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+
+        .respuesta.correcta {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+    </style>
+</body>
+
+</html>

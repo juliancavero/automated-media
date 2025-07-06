@@ -19,6 +19,11 @@ function registerHelpers(hbs) {
     return text.substring(0, length) + '...';
   });
 
+  // Equality helper - checks if two values are equal
+  hbs.registerHelper('eq', function (value1, value2) {
+    return value1 === value2;
+  });
+
   // You can add more helpers here as needed
 }
 
