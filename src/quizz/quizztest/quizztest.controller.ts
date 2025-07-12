@@ -21,6 +21,7 @@ import { CreateQuizzTestDto } from './dto/create-quizztest.dto';
 import { UpdateQuizzTestDto } from './dto/update-quizztest.dto';
 import { PuppeteerService } from '../puppeteer/puppeteer.service';
 import { FFmpegConverterService } from '../helpers/ffmpeg-converter';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('quizzes')
 export class QuizzTestController {
@@ -60,6 +61,7 @@ export class QuizzTestController {
     );
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.quizzTestService.findOne(id);
