@@ -44,7 +44,7 @@ export class QuizzTestController {
   @Render('quizz/quiz-list')
   async showList() {
     const quizzes = await this.quizzTestService.findAll();
-    return { quizzes };
+    return { quizzes, frontUrl: process.env.QUIZZ_FRONT_URL || '' };
   }
 
   @Get('create')
