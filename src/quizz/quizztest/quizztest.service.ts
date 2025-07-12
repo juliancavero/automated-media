@@ -54,7 +54,80 @@ export class QuizzTestService {
     return updatedQuizzTest;
   }
 
+  async updateWithQuestions(
+    id: string,
+    updateQuizzWithQuestionsDto: any,
+  ): Promise<QuizzTest> {
+    const { titulo, difficulty, difficultyText, scores, preguntas } =
+      updateQuizzWithQuestionsDto;
+
+    // Find existing quiz
+    const existingQuiz = await this.quizzTestModel.findById(id).exec();
+    if (!existingQuiz) {
+      throw new NotFoundException(`QuizzTest con ID ${id} no encontrado`);
+    }
+
+    // Handle questions update
+    if (preguntas && preguntas.length > 0) {
+      // Delete old questions
+      await this.preguntaModel
+        .deleteMany({ _id: { $in: existingQuiz.preguntas } })
+        .exec();
+
+      // Create new questions
+      const createdQuestions = await this.preguntaModel.insertMany(
+        preguntas.map(({ _id, ...question }) => question),
+      );
+      const questionIds = createdQuestions.map((q) => q._id);
+
+      // Update quiz with new questions
+      await this.quizzTestModel
+        .findByIdAndUpdate(
+          id,
+          {
+            titulo,
+            difficulty: difficulty ?? existingQuiz.difficulty,
+            difficultyText,
+            scores: scores ?? existingQuiz.scores,
+            preguntas: questionIds,
+          },
+          { new: true },
+        )
+        .exec();
+
+      return this.findOne(id);
+    } else {
+      // Update only quiz properties without questions
+      await this.quizzTestModel
+        .findByIdAndUpdate(
+          id,
+          {
+            titulo,
+            difficulty,
+            difficultyText,
+            scores,
+          },
+          { new: true },
+        )
+        .exec();
+
+      return this.findOne(id);
+    }
+  }
+
   async remove(id: string): Promise<void> {
+    // Find the quiz to get associated questions
+    const quizzTest = await this.quizzTestModel.findById(id).exec();
+    if (!quizzTest) {
+      throw new NotFoundException(`QuizzTest con ID ${id} no encontrado`);
+    }
+
+    // Delete associated questions first
+    await this.preguntaModel
+      .deleteMany({ _id: { $in: quizzTest.preguntas } })
+      .exec();
+
+    // Delete the quiz
     const result = await this.quizzTestModel.findByIdAndDelete(id).exec();
     if (!result) {
       throw new NotFoundException(`QuizzTest con ID ${id} no encontrado`);

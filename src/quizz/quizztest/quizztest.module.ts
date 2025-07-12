@@ -6,6 +6,7 @@ import { QuizzTest, QuizzTestSchema } from './schemas/quizztest.schema';
 import { PreguntaModule } from '../pregunta/pregunta.module';
 import { Pregunta, PreguntaSchema } from '../pregunta/schemas/pregunta.schema';
 import { PuppeteerModule } from '../puppeteer/puppeteer.module';
+import { FFmpegConverterService } from '../helpers/ffmpeg-converter';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { PuppeteerModule } from '../puppeteer/puppeteer.module';
     PuppeteerModule,
   ],
   controllers: [QuizzTestController],
-  providers: [QuizzTestService],
+  providers: [QuizzTestService, FFmpegConverterService],
   exports: [QuizzTestService],
 })
 export class QuizzTestModule {}

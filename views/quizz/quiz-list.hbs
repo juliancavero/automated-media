@@ -33,12 +33,24 @@
                         <td>{{this.difficultyText}}</td>
                         <td>{{this.preguntas.length}}</td>
                         <td class="actions-cell">
-                            <a href="/quizzes/{{this._id}}/render" class="action-btn edit-btn" title="Ver">
+                            <a href="/quizzes/{{this._id}}/render" class="action-btn view-btn" title="Ver">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                            </a>
+                            <a href="/quizzes/{{this._id}}/edit" class="action-btn edit-btn" title="Editar">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path
                                         d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                                 </svg>
                             </a>
+                            <button onclick="deleteQuiz('{{this._id}}')" class="action-btn delete-btn" title="Eliminar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                </svg>
+                            </button>
                             <button onclick="recordVideo('{{this._id}}')" class="action-btn record-btn" title="Grabar">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <circle cx="12" cy="12" r="8" />
@@ -169,6 +181,26 @@
             text-decoration: none;
         }
 
+        .view-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background-color: #545b62;
+            color: white;
+            text-decoration: none;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
         .record-btn {
             background-color: #dc3545;
             color: white;
@@ -207,7 +239,7 @@
     <script>
         async function recordVideo(quizId) {
             try {
-                const response = await fetch(`/quizzes/${quizId}/record-mp4`, {
+                const response = await fetch(`/quizzes/${quizId}/record`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -224,6 +256,26 @@
                 }
             } catch (error) {
                 alert('Error al grabar el video: ' + error.message);
+            }
+        }
+
+        async function deleteQuiz(quizId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este quiz? Esta acción no se puede deshacer y eliminará también todas las preguntas asociadas.')) {
+                try {
+                    const response = await fetch(`/quizzes/${quizId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Quiz eliminado exitosamente!');
+                        location.reload(); // Reload the page to update the list
+                    } else {
+                        const result = await response.json();
+                        alert('Error al eliminar el quiz: ' + (result.message || 'Error desconocido'));
+                    }
+                } catch (error) {
+                    alert('Error al eliminar el quiz: ' + error.message);
+                }
             }
         }
     </script>

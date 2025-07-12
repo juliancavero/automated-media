@@ -9,7 +9,24 @@
     {{> navmenu}}
 
     <div class="container">
-        <h1>{{quizzTest.titulo}}</h1>
+        <div class="quiz-header">
+            <h1>{{quizzTest.titulo}}</h1>
+            <div class="quiz-actions">
+                <a href="/quizzes/{{quizzTest._id}}/edit" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                    </svg>
+                    Editar
+                </a>
+                <button onclick="deleteQuiz()" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                    </svg>
+                    Eliminar
+                </button>
+            </div>
+        </div>
 
         <div class="quiz-info">
             <div class="difficulty-info">
@@ -59,6 +76,59 @@
     </div>
 
     <style>
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .quiz-header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .quiz-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
         .quiz-info {
             background: #f8f9fa;
             padding: 20px;
@@ -183,6 +253,28 @@
             border-color: #28a745;
         }
     </style>
+
+    <script>
+        async function deleteQuiz() {
+            if (confirm('¿Estás seguro de que quieres eliminar este quiz? Esta acción no se puede deshacer y eliminará también todas las preguntas asociadas.')) {
+                try {
+                    const response = await fetch(`/quizzes/{{quizzTest._id}}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Quiz eliminado exitosamente!');
+                        window.location.href = '/quizzes/list';
+                    } else {
+                        const result = await response.json();
+                        alert('Error al eliminar el quiz: ' + (result.message || 'Error desconocido'));
+                    }
+                } catch (error) {
+                    alert('Error al eliminar el quiz: ' + error.message);
+                }
+            }
+        }
+    </script>
 </body>
 
 </html>

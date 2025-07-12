@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    {{> head title="Editar Quiz"}}
+</head>
+
+<body>
+    {{> navmenu}}
+
+    <div class="container">
+        <h1>Editar Quiz</h1>
+
+        <div id="message-container"></div>
+
+        <form id="quiz-form">
+            <div class="form-group">
+                <label for="titulo">Título del Quiz:</label>
+                <input type="text" id="titulo" name="titulo" value="{{quizzTest.titulo}}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="difficulty">Dificultad:</label>
+                <select id="difficulty" name="difficulty" required>
+                    <option value="easy" {{#eq quizzTest.difficulty "easy" }}selected{{/eq}}>Fácil</option>
+                    <option value="medium" {{#eq quizzTest.difficulty "medium" }}selected{{/eq}}>Medio</option>
+                    <option value="hard" {{#eq quizzTest.difficulty "hard" }}selected{{/eq}}>Difícil</option>
+                    <option value="impossible" {{#eq quizzTest.difficulty "impossible" }}selected{{/eq}}>Imposible
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="difficultyText">Descripción de Dificultad:</label>
+                <input type="text" id="difficultyText" name="difficultyText" value="{{quizzTest.difficultyText}}"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label for="scores">Puntuaciones (separadas por comas):</label>
+                <input type="text" id="scores" name="scores"
+                    value="{{#each quizzTest.scores}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}">
+                <small style="color: #666; font-size: 12px;">Deja vacío para no incluir puntuaciones</small>
+            </div>
+
+            <div id="questions-container">
+                <div class="questions-header">
+                    <h3>Preguntas</h3>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="addQuestion()">Agregar Pregunta</button>
+            <button type="submit" class="btn btn-success">Actualizar Quiz</button>
+            <button type="button" class="btn btn-danger" onclick="deleteQuiz()">Eliminar Quiz</button>
+        </form>
+    </div>
+
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .question-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .remove-question {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .answer-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .answer-input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .correct-radio {
+            width: auto;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .questions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .questions-header h3 {
+            margin: 0;
+        }
+    </style>
+
+    <script>
+        let questionCounter = 0;
+
+        // Load existing questions via API call
+        async function loadExistingQuestions() {
+            try {
+                const response = await fetch(`/quizzes/{{quizzTest._id}}`);
+                const quizData = await response.json();
+
+                if (quizData.preguntas && quizData.preguntas.length > 0) {
+                    quizData.preguntas.forEach(question => {
+                        addQuestion(question);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                // If API fails, add at least one empty question
+                addQuestion();
+            }
+        }
+
+        function addQuestion(questionData = null) {
+            questionCounter++;
+            const questionHtml = `
+                <div class="question-container" id="question-${questionCounter}">
+                    <div class="question-header">
+                        <div class="question-title">Pregunta ${questionCounter}</div>
+                        <div>
+                            <button type="button" class="remove-question" onclick="removeQuestion(${questionCounter})">Eliminar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Texto de la pregunta:</label>
+                        <textarea name="preguntas[${questionCounter}][texto]" required rows="3">${questionData ? questionData.texto : ''}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Imagen (URL opcional):</label>
+                        <input type="url" name="preguntas[${questionCounter}][imagen]" value="${questionData ? (questionData.imagen || '') : ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Respuestas (marca la correcta):</label>
+                        <div id="answers-${questionCounter}">
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="0" class="correct-radio" required ${questionData && questionData.indiceRespuestaCorrecta === 0 ? 'checked' : ''}>
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 1" required value="${questionData ? (questionData.respuestas[0] || '') : ''}">
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="1" class="correct-radio" ${questionData && questionData.indiceRespuestaCorrecta === 1 ? 'checked' : ''}>
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 2" required value="${questionData ? (questionData.respuestas[1] || '') : ''}">
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="2" class="correct-radio" ${questionData && questionData.indiceRespuestaCorrecta === 2 ? 'checked' : ''}>
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 3" required value="${questionData ? (questionData.respuestas[2] || '') : ''}">
+                            </div>
+                            <div class="answer-group">
+                                <input type="radio" name="preguntas[${questionCounter}][correcta]" value="3" class="correct-radio" ${questionData && questionData.indiceRespuestaCorrecta === 3 ? 'checked' : ''}>
+                                <input type="text" name="preguntas[${questionCounter}][respuestas][]" class="answer-input" placeholder="Respuesta 4" required value="${questionData ? (questionData.respuestas[3] || '') : ''}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('questions-container').insertAdjacentHTML('beforeend', questionHtml);
+        }
+
+        function removeQuestion(questionId) {
+            document.getElementById(`question-${questionId}`).remove();
+        }
+
+        // Load existing questions when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            loadExistingQuestions();
+        });
+
+        // Handle form submission
+        document.getElementById('quiz-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const scoresInput = formData.get('scores');
+            const scores = scoresInput ? scoresInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+
+            const quizData = {
+                titulo: formData.get('titulo'),
+                difficulty: formData.get('difficulty'),
+                difficultyText: formData.get('difficultyText'),
+                scores: scores,
+                preguntas: []
+            };
+
+            // Process questions
+            for (let i = 1; i <= questionCounter; i++) {
+                const questionElement = document.getElementById(`question-${i}`);
+                if (questionElement) {
+                    const texto = formData.get(`preguntas[${i}][texto]`);
+                    const imagen = formData.get(`preguntas[${i}][imagen]`);
+                    const respuestas = formData.getAll(`preguntas[${i}][respuestas][]`);
+                    const correcta = formData.get(`preguntas[${i}][correcta]`);
+
+                    if (texto && respuestas.length === 4 && correcta !== null) {
+                        quizData.preguntas.push({
+                            texto,
+                            imagen: imagen || undefined,
+                            respuestas,
+                            indiceRespuestaCorrecta: parseInt(correcta)
+                        });
+                    }
+                }
+            }
+
+            try {
+                const response = await fetch(`/quizzes/{{quizzTest._id}}/with-questions`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quizData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Quiz actualizado exitosamente!', 'success');
+                } else {
+                    showMessage('Error al actualizar el quiz: ' + (result.message || 'Error desconocido'), 'error');
+                }
+            } catch (error) {
+                showMessage('Error al actualizar el quiz: ' + error.message, 'error');
+            }
+        });
+
+        async function deleteQuiz() {
+            if (confirm('¿Estás seguro de que quieres eliminar este quiz? Esta acción no se puede deshacer.')) {
+                try {
+                    const response = await fetch(`/quizzes/{{quizzTest._id}}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        showMessage('Quiz eliminado exitosamente!', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/quizzes/list';
+                        }, 2000);
+                    } else {
+                        const result = await response.json();
+                        showMessage('Error al eliminar el quiz: ' + (result.message || 'Error desconocido'), 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error al eliminar el quiz: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>

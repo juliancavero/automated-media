@@ -10,16 +10,16 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs';
-import { PuppeteerService } from './puppeteer.service';
+import { PlaywrightService } from './playwright.service';
 
-@Controller('puppeteer')
-export class PuppeteerController {
-  constructor(private readonly puppeteerService: PuppeteerService) {}
+@Controller('playwright')
+export class PlaywrightController {
+  constructor(private readonly playwrightService: PlaywrightService) {}
 
   @Post('record')
   async recordQuiz(@Body() body: { url: string; outputPath?: string }) {
     try {
-      const videoPath = await this.puppeteerService.recordQuizVideo(
+      const videoPath = await this.playwrightService.recordQuizVideo(
         body.url,
         body.outputPath,
       );
@@ -27,8 +27,7 @@ export class PuppeteerController {
       return {
         success: true,
         videoPath,
-        message:
-          'Quiz video recorded successfully with Puppeteer Screen Recorder',
+        message: 'High quality MP4 video recorded successfully with Playwright',
       };
     } catch (error) {
       throw new HttpException(
@@ -44,7 +43,7 @@ export class PuppeteerController {
     @Body() body: { baseUrl?: string } = {},
   ) {
     try {
-      const videoPath = await this.puppeteerService.recordQuizById(
+      const videoPath = await this.playwrightService.recordQuizById(
         id,
         body.baseUrl,
       );
@@ -53,7 +52,7 @@ export class PuppeteerController {
         success: true,
         videoPath,
         message:
-          'Quiz video recorded successfully with Puppeteer Screen Recorder',
+          'Quiz video recorded successfully in MP4 format with Playwright',
       };
     } catch (error) {
       throw new HttpException(
