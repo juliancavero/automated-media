@@ -46,7 +46,11 @@ async function bootstrap() {
   // Enable CORS
   const frontUrl = process.env.QUIZZ_FRONT_URL ?? 'http://localhost:5173';
   app.enableCors({
-    origin: [frontUrl, 'http://127.0.0.1:5173'],
+    origin: [
+      frontUrl,
+      'http://127.0.0.1:5173',
+      'https://quizz-front-alpha.vercel.app',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
