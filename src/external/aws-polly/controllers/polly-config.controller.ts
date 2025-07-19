@@ -20,7 +20,6 @@ export class PollyConfigController {
 
   @Get()
   async getConfig(@Query('lang') lang: Languages): Promise<PollyConfig> {
-    console.log('Fetching Polly configuration for language:', lang);
     const config = await this.pollyConfigService.getCurrentConfig(lang, false);
     if (!config) {
       throw new NotFoundException('No Polly configuration found');

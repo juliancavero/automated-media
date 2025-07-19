@@ -18,9 +18,10 @@ Requirements:
 
 4. **Image Descriptions**
    After each paragraph, add an “image” field with a **detailed prompt in English**:
-   • Include references to documents, redacted files, archival footage, dimly-lit rooms, analog equipment, cold or sterile environments.
-   • Use **realistic visuals, cinematic lighting**, and clear visual continuity across recurring elements.
-   • If a document or setting reappears, describe it again with consistent visual traits.
+   • Prioritize visual storytelling through **settings, objects, environments, people in motion or gesture**, and small physical details — **not just documents**.
+   • Use **cinematic, moody, or archival lighting** with a cold, investigative tone.
+   • Reference documents and files only when essential, and always **intercut with scenes, places, and ambient clues** (e.g. rooms, devices, storage facilities, isolated offices, old computers, hands holding objects).
+   • Ensure visual continuity: if a location, person, or object appears more than once, describe it again with consistent traits.
 
 5. **Consistency Rule**
    Ensure all recurring names, places, devices, and lighting styles match previous mentions.
@@ -28,7 +29,7 @@ Requirements:
 6. **Output Format**
    Return a JSON array of objects with:
    - `"text"`: the paragraph (in {{lang}}, clear and mysteriously neutral)
-   - `"image"`: the detailed visual description (English, realistic, cold/archival aesthetic)
+   - `"image"`: the detailed visual description (English, realistic, cinematic, and not overly reliant on documents)
 
 Structure Example:
 
