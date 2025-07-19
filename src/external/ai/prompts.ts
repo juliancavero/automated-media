@@ -1,5 +1,5 @@
 export const VIDEO_DESCRIPTION_PROMPT =
-  'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 40 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #shorthorror, #urbanlegend, #unusual, #stories, #story, and similar trending tags in {{lang}}. Respond with only the caption text, written in {{lang}}.';
+  'Analyze this video and create a compelling description with relevant hashtags. The description (excluding hashtags) must be NO MORE THAN 30 WORDS. Use a serious, mysterious, and realistic tone that conveys depth and authenticity. Avoid playful or casual language. Include trending hashtags relevant to dark/mysterious content such as #thriller, #suspense, #scary, #creepytok, #mysterytok, #urbanlegend, #unusual, #stories, #story, and similar trending tags in {{lang}}. Respond with only the caption text, written in {{lang}}.';
 
 export const TRANSLATION_PROMPT =
   'Translate the following text to {{translatedLang}}. Return ONLY the translation, without any additional text or suggestions:';

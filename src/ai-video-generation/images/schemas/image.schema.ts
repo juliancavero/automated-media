@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, ObjectId } from 'mongoose';
+import { ObjectId } from 'mongodb';
+import { Document } from 'mongoose';
 import { Status } from 'src/ai-video-generation/types';
 
 export type ImageDocument = Image & Document;

@@ -13,6 +13,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { VideoQueueService } from './queues/video-queue.service';
 import { CreatedStoriesModule } from '../created-stories/created-stories.module';
 import { VideoTestService } from './services/videotest.service';
+import { AwsPollyModule } from 'src/external/aws-polly/aws-polly.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { VideoTestService } from './services/videotest.service';
     CloudinaryModule,
     AiModule,
     CreatedStoriesModule,
+    AwsPollyModule,
   ],
   controllers: [VideoController, VideoGenerationController],
   providers: [

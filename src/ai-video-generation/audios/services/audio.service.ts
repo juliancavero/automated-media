@@ -5,6 +5,7 @@ import { Audio, AudioDocument } from '../schemas/audio.schema';
 import { AudioQueueService } from '../queues/audio-queue.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
 import { Languages, Status } from 'src/ai-video-generation/types';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class AudioService {
@@ -22,12 +23,14 @@ export class AudioService {
     videoId: string,
     order: number,
     lang: string,
+    configId: ObjectId,
   ): Promise<Audio> {
     return await this.audioModel.create({
       text,
       videoId,
       order,
       lang,
+      configId,
     });
   }
 

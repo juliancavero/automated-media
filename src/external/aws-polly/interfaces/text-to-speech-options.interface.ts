@@ -1,18 +1,8 @@
-import { SynthesizeSpeechCommandInput } from '@aws-sdk/client-polly';
-
-export type PollyVoiceId =
-  | 'Joanna'
-  | 'Matthew'
-  | 'Amy'
-  | 'Brian'
-  | 'Enrique'
-  | 'Conchita'
-  | 'Salli'
-  | 'Joey'
-  | 'Kimberly'
-  | 'Justin'
-  | 'Ivy'
-  | 'Kendra';
+import {
+  LanguageCode,
+  SynthesizeSpeechCommandInput,
+  VoiceId,
+} from '@aws-sdk/client-polly';
 
 export type PollyLanguageCode =
   | 'en-US'
@@ -24,14 +14,14 @@ export type PollyLanguageCode =
   | 'de-DE'
   | 'it-IT';
 
-export type PollyEngine = 'standard' | 'neural';
+export type PollyEngine = 'standard' | 'neural' | 'long-form' | 'generative';
 
 export type PollyOutputFormat = 'mp3' | 'ogg_vorbis' | 'pcm' | 'json';
 
 export interface TextToSpeechOptions {
-  voiceId: PollyVoiceId;
+  voiceId: VoiceId;
   outputFormat: PollyOutputFormat;
-  languageCode: PollyLanguageCode;
+  languageCode: LanguageCode;
   engine: PollyEngine;
 }
 

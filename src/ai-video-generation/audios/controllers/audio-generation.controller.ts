@@ -2,6 +2,8 @@ import { Body, Controller, Logger, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AudioGenerationService } from '../services/audio-generation.service';
 import { Languages } from 'src/ai-video-generation/types';
+import { Public } from 'src/auth/decorators/public.decorator';
+import { ObjectId } from 'mongodb';
 
 @Controller('audio-generation')
 export class AudioGenerationController {
@@ -12,6 +14,7 @@ export class AudioGenerationController {
   ) {}
 
   @Post()
+  @Public()
   async generateAudio(
     @Query('lang') lang: Languages,
     @Body() body: { text: string },
@@ -21,6 +24,7 @@ export class AudioGenerationController {
       body.text,
       'videoId',
       lang,
+      '680375d126fe69ba2768db44',
     );
 
     if (!audio) {

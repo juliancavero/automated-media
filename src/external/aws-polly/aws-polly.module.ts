@@ -14,12 +14,8 @@ import { PollyConfigController } from './controllers/polly-config.controller';
       { name: PollyConfig.name, schema: PollyConfigSchema },
     ]),
   ],
-  providers: [
-    AwsPollyService,
-    PollyConfigRepository,
-    PollyConfigService,
-  ],
+  providers: [AwsPollyService, PollyConfigRepository, PollyConfigService],
   controllers: [PollyConfigController],
-  exports: [AwsPollyService],
+  exports: [AwsPollyService, PollyConfigService],
 })
 export class AwsPollyModule {}

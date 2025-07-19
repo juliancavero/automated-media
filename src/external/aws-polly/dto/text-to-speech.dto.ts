@@ -1,11 +1,11 @@
+import { VoiceId } from '@aws-sdk/client-polly';
 import {
   PollyEngine,
   PollyLanguageCode,
-  PollyVoiceId,
 } from '../interfaces/text-to-speech-options.interface';
 
 export class TextToSpeechOptionsDto {
-  voiceId?: PollyVoiceId;
+  voiceId?: VoiceId;
   languageCode?: PollyLanguageCode;
   engine?: PollyEngine;
 }

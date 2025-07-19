@@ -8,6 +8,7 @@ interface AudioGenerationJob {
   text: string;
   id: string;
   lang: Languages;
+  configId: string;
 }
 
 @Processor('audio-generation')
@@ -19,7 +20,7 @@ export class AudioQueueConsumer extends WorkerHost {
   }
 
   async process(job: Job<AudioGenerationJob>): Promise<any> {
-    const { text, id, lang } = job.data;
+    const { text, id, lang, configId } = job.data;
     this.logger.debug(`Generating audio for text: ${text.substring(0, 30)}...`);
 
     try {
@@ -27,6 +28,7 @@ export class AudioQueueConsumer extends WorkerHost {
         text,
         id,
         lang,
+        configId,
       );
 
       this.logger.debug(`Audio: ${id} - URL: ${audioUrl}`);

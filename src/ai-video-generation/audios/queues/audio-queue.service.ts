@@ -13,13 +13,13 @@ export class AudioQueueService {
   ) {}
 
   async addAudioGenerationJob(audio: Audio): Promise<string> {
-    const { text, order, _id, lang } = audio;
+    const { text, order, _id, lang, configId } = audio;
 
     try {
       const uuid = v4();
       await this.audioQueue.add(
         'generate-audio',
-        { text, id: _id, order, lang },
+        { text, id: _id, order, lang, configId },
         {
           attempts: 3,
           backoff: {

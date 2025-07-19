@@ -13,6 +13,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Languages, Status, VideoType } from 'src/ai-video-generation/types';
 import { CreatedStoriesService } from 'src/ai-video-generation/created-stories/services/created-stories.service';
+import { PollyConfigService } from 'src/external/aws-polly/services/polly-config.service';
 
 @Injectable()
 export class VideoService {
@@ -26,6 +27,7 @@ export class VideoService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly aiService: AiService,
     private readonly createdStoriesService: CreatedStoriesService,
+    private readonly pollyConfigService: PollyConfigService,
     @InjectModel(Video.name)
     private readonly videoModel: Model<VideoDocument>,
   ) {}
@@ -89,6 +91,19 @@ export class VideoService {
   async createVideoJob(generateVideoDto: GenerateVideoDto): Promise<boolean> {
     try {
       const { texts, images, series, type, lang } = generateVideoDto;
+
+      const audioConfig = await this.pollyConfigService.getCurrentConfig(
+        lang,
+        true,
+      );
+
+      if (!audioConfig) {
+        this.logger.error(
+          'No audio configuration found for the specified language',
+        );
+        throw new NotFoundException('Audio configuration not found');
+      }
+
       // Create and save VideoGeneration entity
       const videoGeneration = await this.videoModel.create({
         texts,
@@ -116,6 +131,7 @@ export class VideoService {
           videoId,
           index,
           lang,
+          audioConfig._id,
         );
 
         await this.audioQueue.addAudioGenerationJob(audio);
@@ -148,6 +164,18 @@ export class VideoService {
     const video = await this.videoModel.findById(id);
     if (!video) {
       throw new NotFoundException(`Video with ID ${id} not found`);
+    }
+
+    const audioConfig = await this.pollyConfigService.getCurrentConfig(
+      video.lang === Languages.EN ? Languages.ES : Languages.EN,
+      true,
+    );
+
+    if (!audioConfig) {
+      this.logger.error(
+        'No audio configuration found for the specified language',
+      );
+      throw new NotFoundException('Audio configuration not found');
     }
 
     const lang = video.lang === Languages.EN ? Languages.ES : Languages.EN;

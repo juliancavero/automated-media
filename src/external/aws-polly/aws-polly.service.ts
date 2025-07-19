@@ -10,6 +10,7 @@ import { TextToSpeechOptions } from './interfaces/text-to-speech-options.interfa
 import { validateAWSConfig } from './utils/aws-config';
 import { PollyConfigService } from './services/polly-config.service';
 import { Languages } from 'src/ai-video-generation/types';
+import { ObjectId } from 'mongoose';
 
 const DEFAULT_CONFIG: TextToSpeechOptions = {
   voiceId: 'Joanna',
@@ -95,16 +96,19 @@ export class AwsPollyService {
   async convertTextsToSpeech(
     text: string,
     lang: Languages = Languages.EN,
-    options?: TextToSpeechOptions,
+    configId: string,
+    //options?: TextToSpeechOptions,
   ): Promise<Buffer> {
     // Try to get configuration from database
     let dbConfig = {};
     try {
-      const configFromDb = await this.pollyConfigService.getCurrentConfig(lang);
+      const configFromDb =
+        await this.pollyConfigService.getConfigById(configId);
       if (configFromDb) {
         dbConfig = {
           voiceId: configFromDb.voiceId,
           languageCode: configFromDb.languageCode,
+          engine: configFromDb.engine,
         };
       }
     } catch (error) {
@@ -116,7 +120,6 @@ export class AwsPollyService {
     const mergedOptions: TextToSpeechOptions = {
       ...DEFAULT_CONFIG,
       ...dbConfig,
-      ...options,
     };
 
     if (!this.isConfigured) {
@@ -125,6 +128,10 @@ export class AwsPollyService {
       );
       throw new Error('AWS Polly service is not properly configured');
     }
+
+    this.logger.log(
+      `Converting text to speech with options: ${JSON.stringify(mergedOptions)}`,
+    );
 
     this.logger.log(
       `Converting text to speech: "${text.substring(0, 50)}${

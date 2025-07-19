@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, ObjectId } from 'mongoose';
+import { ObjectId } from 'mongodb';
+import { Document } from 'mongoose';
 import { Languages, Status } from 'src/ai-video-generation/types';
 
 export type AudioDocument = Audio & Document;
@@ -31,6 +32,9 @@ export class Audio {
 
   @Prop({ required: true })
   order: number;
+
+  @Prop({ type: ObjectId, ref: 'AudioConfig' })
+  configId: ObjectId;
 }
 
 export const AudioSchema = SchemaFactory.createForClass(Audio);

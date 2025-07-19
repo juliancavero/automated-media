@@ -21,7 +21,7 @@ export class PollyConfigController {
   @Get()
   async getConfig(@Query('lang') lang: Languages): Promise<PollyConfig> {
     console.log('Fetching Polly configuration for language:', lang);
-    const config = await this.pollyConfigService.getCurrentConfig(lang);
+    const config = await this.pollyConfigService.getCurrentConfig(lang, false);
     if (!config) {
       throw new NotFoundException('No Polly configuration found');
     }
@@ -34,9 +34,9 @@ export class PollyConfigController {
   }
 
   @Post()
-  async createConfig(
+  async updateDefault(
     @Body() createDto: CreatePollyConfigDto,
   ): Promise<PollyConfig | null> {
-    return this.pollyConfigService.createConfig(createDto);
+    return this.pollyConfigService.updateDefault(createDto);
   }
 }

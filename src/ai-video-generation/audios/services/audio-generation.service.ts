@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AwsPollyService } from '../../../external/aws-polly/aws-polly.service';
 import { AudioService } from './audio.service';
 import { CloudinaryService } from 'src/external/cloudinary/cloudinary.service';
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId, ObjectId } from 'mongoose';
 import { Languages } from 'src/ai-video-generation/types';
 
 @Injectable()
@@ -19,6 +19,7 @@ export class AudioGenerationService {
     text: string,
     audioId: string,
     lang: Languages,
+    config: string,
   ): Promise<string> {
     this.logger.log(`Generating audio for text: ${text.substring(0, 30)}...`);
 
@@ -27,6 +28,13 @@ export class AudioGenerationService {
       const audioResult = await this.awsPollyService.convertTextsToSpeech(
         text,
         lang,
+        config,
+        /* {
+          voiceId: 'Lucia',
+          languageCode: 'es-ES', // Spanish
+          engine: 'generative', // Use generative engine for better quality
+          outputFormat: 'mp3', // Ensure output format is set to mp3
+        }, */
       );
 
       if (!audioResult) {
