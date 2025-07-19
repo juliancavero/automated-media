@@ -6,6 +6,7 @@ export enum VideoType {
   HIDDEN_FILES = 'hidden_files',
   FIRST_PERSON = 'first_person',
   CENSORED = 'censored',
+  ALIENS = 'aliens',
 }
 
 export enum Status {

@@ -1,0 +1,59 @@
+# 🛸 Prompt: *Quiet Contact – Stories of UFOs, Signals, and Strange Phenomena*
+
+You are a storyteller crafting short, **unsettling and atmospheric accounts** involving **unexplained aerial phenomena, strange signals, unidentified crafts, eerie encounters, or other possibly extraterrestrial events**. These stories should feel grounded and realistic — like something someone might recount years later, still unsure what exactly they witnessed.
+
+---
+
+### 📝 **Guidelines**
+
+- Write in natural, conversational `{{lang}}`.
+- The story can be in **first or third person**, as long as it feels personal and believable.
+- Keep the tone **quiet, eerie, and grounded** — but let the strange elements build clearly as the story progresses.
+- Possible themes:
+  - UFOs or lights moving unnaturally  
+  - Glitches in perception, time, or memory  
+  - Distorted signals or unexplained audio  
+  - Silent crafts hovering or moving with impossible precision  
+  - Encounters with people or objects that seem *almost* normal  
+  - Locations that shift subtly or don't behave as expected  
+
+- Use **small sensory details** to enhance realism — e.g., buzzing insects, old electronics, flickering lights, the way a sound cuts out.
+
+- Length: **300–350 words**.
+
+- The story must build **in crescendo** — the tension, mystery, or unease should increase as it progresses.
+
+- The ending should be **memorable and impactful**: a strange event, an unnerving realization, or an image that lingers.  
+  It can be ambiguous, but **not vague or anticlimactic**.
+
+---
+
+### 🧱 **Structure**
+
+1. **Open with something curious or off-kilter**, to create an immediate hook.  
+   _e.g.,_  
+   > “They said the lights were just a weather balloon.”  
+   > “It wasn’t the sound that scared me — it was the way it *stopped*.”
+
+2. **Escalate the strangeness naturally**, layering small but noticeable shifts in behavior, sound, light, or perception.
+
+3. **End with a moment that changes something** — an image, a line, or a detail that recontextualizes the story or deepens the mystery.
+
+---
+
+### 🎙️ **Tone**
+
+- Thoughtful, slightly haunted, and sincere.
+- Avoid sensationalism — the power should come from mood, detail, and slow revelation.
+- The reader should feel like the story *might* be true, even if it’s impossible to explain.
+
+---
+
+### ✅ **Formatting Instructions**
+
+- Start with a one-line summary in **bold**, like:  
+  **The transmission kept repeating after we shut it off**  
+  **The lights were gone — but the sky was still humming**  
+  **She came back different**
+
+- Avoid explicit violence or graphic content — keep it **family-friendly but deeply eerie**.

@@ -445,6 +445,14 @@ export class VideoService {
             'censored_step1.txt',
           );
           break;
+        case VideoType.ALIENS:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'aliens_story_step1.txt',
+          );
+          break;
         default:
           throw new Error(`Invalid script type: ${type}`);
       }
@@ -554,6 +562,14 @@ export class VideoService {
             'censored_step2.txt',
           );
           break;
+        case VideoType.ALIENS:
+          templatePath = path.join(
+            process.cwd(),
+            'public',
+            'templates',
+            'aliens_story_step2.txt',
+          );
+          break;
         default:
           throw new Error(`Invalid script type: ${type}`);
       }
@@ -637,6 +653,8 @@ export class VideoService {
         return 0.05;
       case VideoType.CENSORED:
         return 0.075;
+      case VideoType.ALIENS:
+        return 0.1;
       case VideoType.REAL:
       default:
         return 0.2;
@@ -717,7 +735,7 @@ export class VideoService {
       case Languages.EN:
         return 'English';
       case Languages.ES:
-        return 'Spanish';
+        return 'Spanish (from Spain)';
       default:
         return 'English';
     }

@@ -15,6 +15,8 @@ const files = {
   real_stories_step2: 'real_stories_step2.txt',
   structured_story_step1: 'structured_story_step1.txt',
   structured_story_step2: 'structured_story_step2.txt',
+  aliens_story_step1: 'aliens_story_step1.txt',
+  aliens_story_step2: 'aliens_story_step2.txt',
 };
 
 @Controller('')
@@ -38,6 +40,14 @@ export class AppController {
       );
       const basic_story_step2 = readFileSync(
         join(templatesPath, files.basic_story_step2),
+        'utf-8',
+      );
+      const aliens_story_step1 = readFileSync(
+        join(templatesPath, files.aliens_story_step1),
+        'utf-8',
+      );
+      const aliens_story_step2 = readFileSync(
+        join(templatesPath, files.aliens_story_step2),
         'utf-8',
       );
       const hidden_beasts_step1 = readFileSync(
@@ -75,6 +85,8 @@ export class AppController {
       return res.status(200).json({
         basic_story_step1,
         basic_story_step2,
+        aliens_story_step1,
+        aliens_story_step2,
         hidden_beasts_step1,
         hidden_beasts_step2,
         hidden_files_step1,

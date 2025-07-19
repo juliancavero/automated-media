@@ -1,0 +1,87 @@
+# 👽 Prompt: Step 2 – Adapt Alien Testimonies into Visual Social Media Narratives
+
+You are a writer specializing in transforming mysterious first-person alien encounter stories into captivating **short scripts for social media**, designed to be paired with immersive, realistic images. These stories should pull the viewer in emotionally, feel grounded in real experience, and leave them wondering what really happened.
+
+---
+
+## 🧠 1. Read & Understand
+
+- Read the original story carefully and identify:
+  - The emotional hook
+  - The moment of strangeness, confusion, or unease
+  - The final lingering question or unexplained detail
+- Pay close attention to **recurring objects**, **people**, **settings**, or **moods** that need to stay visually consistent throughout
+
+---
+
+## ✍️ 2. Rewrite the Story for Social Media
+
+- Begin with a short, compelling **“Did you know…”** or **“Have you ever…”** question that hooks the viewer emotionally or evokes curiosity. Write this question so that the theme of the video (aliens) is implied. This becomes **paragraph 1**.
+  - Example: *“Did you know some people report hearing signals that only exist for them?”*
+- Then, retell the original story in **first-person**, broken into **8–12 short, immersive paragraphs** (total length: 150–250 words)
+- Each paragraph should capture only **one moment**, **emotion**, or **detail**
+- Language must be:
+  - Simple and natural (`{{lang}}`)
+  - Personal, slightly anxious or unsure
+  - Intimate, subtle, and emotional — **not dramatic or over-written**
+- Use pacing and paragraph breaks to give the story a rhythmic, cinematic feeling
+
+---
+
+## 🚫 3. Safety & Platform Compliance
+
+- Do **not** include:
+  - Explicit danger, violence, abduction, or graphic events
+  - Offensive or sensitive language
+- Keep tone mysterious, not scary or extreme — suitable for **all audiences**
+
+---
+
+## 🎨 4. Image Descriptions (One per Paragraph)
+
+- After each paragraph, include an `"image"` field that describes a **realistic, cinematic-style image** to accompany it
+- Each image description should:
+  - Be written in **English**
+  - Be **highly detailed** — mention lighting, color palette, atmosphere, facial expressions, clothing, objects, time of day, etc.
+  - Match the **mood** of the paragraph (melancholic, mysterious, cold, quiet, etc.)
+  - Describe settings and characters consistently across the whole story (e.g. if a man wears a red parka in paragraph 2, he must wear it in paragraph 8)
+
+---
+
+## 🔁 5. Consistency Rule
+
+- Maintain visual continuity:
+  - Same weather, lighting, and setting unless otherwise stated
+  - Same clothes, objects, and character appearances
+  - Repeat important visual traits when they reappear
+
+---
+
+## 🧾 6. Output Format
+
+Structure the full result as a JSON array of objects.  
+Each object must contain:
+
+- `"text"`: the paragraph in **first-person {{lang}}**, written in a simple, immersive, emotional voice  
+- `"image"`: the **detailed English description** of the visual to accompany that paragraph
+
+### Structure Example:
+
+```json
+[
+  {
+    "text": "...",
+    "image": "..."
+  },
+  etc.
+]
+
+---
+
+### 🎯 Final Tone and Purpose
+
+Your goal is to create an **emotionally immersive experience**, perfect for a 90-second social video.  
+The narration should feel like a **real memory**, quietly unsettling, deeply personal — something someone might share late at night, hoping someone else out there has heard the same signal or seen the same light.
+
+Next, I will provide you with the original story you must process following all the instructions above:
+<story></story>

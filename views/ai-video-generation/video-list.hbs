@@ -346,6 +346,13 @@
               <i class="fas fa-dragon"></i>
               Hidden Beasts
             </label>
+            <label class="video-type-btn {{#if (eq currentTypeFilter 'aliens' )}}active{{/if}}"
+              style="padding: 5px 8px; font-size: 0.8rem;">
+              <input type="radio" name="type" value="aliens" {{#if (eq currentTypeFilter 'aliens' )}}checked{{/if}}
+                style="display:none;">
+              <i class="fas fa-user-astronaut"></i>
+              Aliens
+            </label>
           </div>
           <div class="video-type-selector">
             <label class="video-type-btn {{#if (eq currentTypeFilter 'hidden_files' )}}active{{/if}}"

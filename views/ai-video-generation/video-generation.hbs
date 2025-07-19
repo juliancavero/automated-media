@@ -496,6 +496,11 @@
                     Hidden Beasts {{#if (eq this
                     'hidden_beasts')}}<b>({{../videoCount.hidden_beasts}})</b>{{else}}({{../videoCount.hidden_beasts}}){{/if}}
                 </div>
+                <div class="video-type-btn {{#if (eq this 'aliens')}}active{{/if}}" data-value="aliens">
+                    <i class="fas fa-user-astronaut"></i>
+                    Aliens {{#if (eq this
+                    'aliens')}}<b>({{../videoCount.aliens}})</b>{{else}}({{../videoCount.aliens}}){{/if}}
+                </div>
                 <div class="video-type-btn {{#if (eq this 'hidden_files')}}active{{/if}}" data-value="hidden_files">
                     <i class="fas fa-folder-open"></i>
                     Hidden Files {{#if (eq this
