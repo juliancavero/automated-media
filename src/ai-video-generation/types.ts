@@ -28,6 +28,6 @@ export const getTargetLanguage = (lang: Languages): Languages => {
     case Languages.ES:
       return Languages.EN;
     default:
-      return Languages.EN;
+      return Languages.ES;
   }
 };

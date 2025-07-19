@@ -355,7 +355,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialize for voice settings
             try {
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'es';
                 const voicesResponse = await fetch('/polly-config/voices');
                 if (!voicesResponse.ok) throw new Error('Failed to fetch voices');
                 allVoices = await voicesResponse.json();
@@ -411,7 +411,7 @@
         document.getElementById('saveConfigBtn').addEventListener('click', async function () {
             const languageCode = document.getElementById('languageSelect').value;
             const voiceId = document.getElementById('voiceSelect').value;
-            const lang = localStorage.getItem('lang') || 'en';
+            const lang = localStorage.getItem('lang') || 'es';
             if (!languageCode || !voiceId) return;
 
             try {

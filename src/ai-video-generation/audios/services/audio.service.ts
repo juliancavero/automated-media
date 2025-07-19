@@ -92,7 +92,7 @@ export class AudioService {
   async getAllAudios(
     page = 1,
     limit = 10,
-    lang = Languages.EN,
+    lang = Languages.ES,
   ): Promise<{ audios: Audio[]; total: number; pages: number }> {
     const skip = (page - 1) * limit;
     const [audios, total] = await Promise.all([

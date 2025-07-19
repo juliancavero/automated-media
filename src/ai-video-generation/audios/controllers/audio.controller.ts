@@ -74,7 +74,7 @@ export class AudioController {
   async getAudiosListView(
     @Query('page') page = '1',
     @Query('limit') limit = '10',
-    @Query('lang') lang = Languages.EN,
+    @Query('lang') lang = Languages.ES,
     @Res() res: Response,
   ) {
     const pageNumber = parseInt(page, 10) || 1;

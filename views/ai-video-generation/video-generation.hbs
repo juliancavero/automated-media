@@ -1,4 +1,4 @@
-<html lang='en'>
+<html lang='es'>
 
 <head>
     {{> head}}
@@ -686,7 +686,7 @@
         addSafeEventListener('saveConfigBtn', 'click', async function () {
             const languageSelect = document.getElementById('languageSelect');
             const voiceSelect = document.getElementById('voiceSelect');
-            const lang = localStorage.getItem('lang') || 'en';
+            const lang = localStorage.getItem('lang') || 'es';
             if (!languageSelect || !voiceSelect) return;
 
             const languageCode = languageSelect.value;
@@ -786,7 +786,7 @@
             document.getElementById('generateBtn').disabled = true;
 
             try {
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'es';
                 const response = await fetch('/videos/create-video-job', {
                     method: 'POST',
                     headers: {
@@ -933,7 +933,7 @@
         addSafeEventListener('generateScriptBtn', 'click', async function () {
             try {
                 const type = document.getElementById('videoTypeSelect').value;
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'es';
                 document.getElementById('scriptOutput').value = 'Generating script...';
                 document.getElementById('generateScriptBtn').disabled = true;
 
@@ -1007,7 +1007,7 @@
         addSafeEventListener('generateCustomScriptBtn', 'click', async function () {
             try {
                 const type = document.getElementById('videoTypeSelect').value;
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'es';
                 const customText = document.getElementById('scriptOutput').value.trim();
                 if (!customText) {
                     alert('Please enter a custom story idea or topic.');

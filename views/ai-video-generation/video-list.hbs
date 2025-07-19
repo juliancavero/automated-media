@@ -1,4 +1,4 @@
-<html lang='en'>
+<html lang='es'>
 
 <head>
   {{> head}}
@@ -570,7 +570,7 @@
         const type = document.querySelector('input[name="type"]:checked').value;
         const status = document.querySelector('input[name="status"]:checked').value;
         const notRelated = notRelatedFilter.checked;
-        const lang = localStorage.getItem('lang') || 'en';
+        const lang = localStorage.getItem('lang') || 'es';
 
         let url = '/videos/list?lang=' + lang + '&';
         if (type) url += `type=${encodeURIComponent(type)}&`;

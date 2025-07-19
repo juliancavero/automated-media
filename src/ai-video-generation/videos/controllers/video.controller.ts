@@ -320,7 +320,7 @@ export class VideoController {
     @Query('status') status?: string,
     @Query('page') pageQuery?: string,
     @Query('limit') limitQuery?: string,
-    @Query('lang') lang: Languages = Languages.EN,
+    @Query('lang') lang: Languages = Languages.ES,
     @Query('notRelated') notRelated?: string,
   ) {
     const page = pageQuery ? parseInt(pageQuery, 10) : 1;

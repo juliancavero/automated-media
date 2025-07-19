@@ -36,7 +36,7 @@ export class VideoService {
     statusFilter?: string,
     page = 1,
     limit = 10,
-    lang: Languages = Languages.EN,
+    lang: Languages = Languages.ES,
     notRelated = false,
   ): Promise<{ videos: Video[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;

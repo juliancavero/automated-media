@@ -1,4 +1,4 @@
-<html lang='en'>
+<html lang='es'>
 
 <head>
     {{> head}}
@@ -474,7 +474,7 @@
             // Function to fetch available videos
             function fetchAvailableVideos(dateStr) {
                 videoList.innerHTML = '<div class="no-videos-message">Loading available videos...</div>';
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'es';
                 fetch(`/videos/available-for-date/${dateStr}?lang=${lang}`)
                     .then(response => response.json())
                     .then(data => {
@@ -597,7 +597,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             let month = parseInt(urlParams.get('month') || new Date().getMonth() + 1);
             let year = parseInt(urlParams.get('year') || new Date().getFullYear());
-            const lang = localStorage.getItem('lang') || 'en';
+            const lang = localStorage.getItem('lang') || 'es';
             month += direction;
 
             if (month > 12) {

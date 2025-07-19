@@ -32,7 +32,7 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const lang = localStorage.getItem('lang') || 'en';
+        const lang = localStorage.getItem('lang') || 'es';
         const currentUrl = new URL(window.location.href);
         const params = new URLSearchParams(currentUrl.search);
         params.set('lang', lang);
@@ -48,7 +48,7 @@
     (function () {
         var langElements = document.querySelectorAll('.language');
         function updateSelection() {
-            var currentLang = localStorage.getItem('lang') || 'en';
+            var currentLang = localStorage.getItem('lang') || 'es';
             langElements.forEach(function (el) {
                 if (el.getAttribute('data-lang') === currentLang) {
                     el.classList.add('selected');

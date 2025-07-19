@@ -24,7 +24,7 @@ export class AppController {
   @Public()
   @Get()
   async redirectToVideosList(@Res() res: Response) {
-    return res.redirect('/videos/calendar?lang=en');
+    return res.redirect('/videos/calendar?lang=es');
   }
 
   @Get('templates')
